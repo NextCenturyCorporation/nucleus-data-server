@@ -9,7 +9,6 @@ import com.ncc.neon.server.models.query.clauses.OffsetClause;
 import com.ncc.neon.server.models.query.clauses.SelectClause;
 import com.ncc.neon.server.models.query.clauses.SortClause;
 import com.ncc.neon.server.models.query.filter.Filter;
-import com.ncc.neon.server.models.query.result.Transform;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -32,6 +31,4 @@ public class Query {
     List<SortClause> sortClauses = List.of();
     LimitClause limitClause;
     OffsetClause offsetClause;
-    Transform[] transforms;
-
 }

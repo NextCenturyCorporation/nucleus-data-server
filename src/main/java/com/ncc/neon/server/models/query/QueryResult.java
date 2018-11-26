@@ -7,10 +7,6 @@ import lombok.NoArgsConstructor;
 /**
  * QueryResult
  */
-@Data 
-@AllArgsConstructor
-@NoArgsConstructor
-public class QueryResult {
-    String queryResult;
-
+public interface QueryResult<T> {
+   T getData();
 }

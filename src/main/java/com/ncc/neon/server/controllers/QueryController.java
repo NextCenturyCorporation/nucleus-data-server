@@ -48,7 +48,7 @@ public class QueryController {
             @RequestParam(value = "ignoreFilterIds", defaultValue = "false") Set<String> ignoreFilterIds,
             @RequestBody Query query) {
         System.out.print(query.getQuery());
-        return Mono.just(new QueryResult(host + databaseType + ignoreFilters + query.getQuery()));
+        return Mono.just(new QueryResult(host + databaseType + ignoreFilters + query.getFields()));
     }
 
     /**
