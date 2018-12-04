@@ -1,4 +1,4 @@
-package com.ncc.neon.server.models.query;
+package com.ncc.neon.server.models.query.result;
 
 import java.util.Collections;
 import java.util.List;
