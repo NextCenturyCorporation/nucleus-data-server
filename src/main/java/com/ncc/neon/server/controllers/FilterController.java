@@ -25,11 +25,11 @@ import reactor.core.publisher.Mono;
 @RequestMapping("filterservice")
 public class FilterController {
 
-    private FilterState filterState;
+  //  private FilterState filterState;
 
     @Autowired
-    public FilterController(FilterState filterState) {
-        this.filterState = filterState;
+    public FilterController(){//(FilterState filterState) {
+       // this.filterState = filterState;
     }
 
     /**

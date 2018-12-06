@@ -2,7 +2,6 @@ package com.ncc.neon.server.services.adapters;
 
 import java.util.Map;
 
-import com.ncc.neon.server.models.connection.ConnectionInfo;
 import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;

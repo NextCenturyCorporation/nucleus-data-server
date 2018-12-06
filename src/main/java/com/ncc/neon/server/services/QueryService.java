@@ -9,6 +9,8 @@ import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
 import com.ncc.neon.server.services.adapters.QueryAdapter;
 
+import org.springframework.stereotype.Component;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
@@ -16,6 +18,7 @@ import reactor.util.function.Tuple2;
 /**
  * QueryService
  */
+@Component
 public class QueryService {
 
     private QueryAdapterLocator queryExecutorLocator;

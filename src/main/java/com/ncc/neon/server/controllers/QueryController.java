@@ -90,7 +90,7 @@ public class QueryController {
      * @return The field names and their types.
      */
 
-    @GetMapping(path = "fields/types/{host}/{databaseType}/{databaseName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @GetMapping(path = "tablenames/{host}/{databaseType}/{databaseName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     Flux<String> getTableNames(@PathVariable String host, @PathVariable String databaseType,
             @PathVariable String databaseName) {
         ConnectionInfo ci = new ConnectionInfo(databaseType, host);
@@ -122,7 +122,7 @@ public class QueryController {
      * @param database     The database that contains the tables
      * @return The list of table names
      */
-    @GetMapping(path = "fields/{host}/{databaseType}/{databaseName}/{tableName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @GetMapping(path = "fields/types/{host}/{databaseType}/{databaseName}/{tableName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     Mono<Map<String, String>> getFieldTypes(@PathVariable String host, @PathVariable String databaseType,
             @PathVariable String databaseName, @PathVariable String tableName) {
         ConnectionInfo ci = new ConnectionInfo(databaseType, host);
@@ -137,11 +137,11 @@ public class QueryController {
      * @param databaseName The database containing the data
      * @return The result of the query
      */
-    @GetMapping(path = "tableandfields/{host}/{databaseType}/{databaseName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @GetMapping(path = "tablesandfields/{host}/{databaseType}/{databaseName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     Mono<Map<String, Flux<String>>> getTablesAndFields(@PathVariable String host, @PathVariable String databaseType,
             @PathVariable String databaseName) {
 
-        Flux<String> tableNames = getTableNames(host, databaseType, databaseName);∏
+        Flux<String> tableNames = getTableNames(host, databaseType, databaseName);
         return tableNames.collectMap(tableName -> tableName, tableName -> {
             return getFields(host, databaseType, databaseName, tableName);
         });
