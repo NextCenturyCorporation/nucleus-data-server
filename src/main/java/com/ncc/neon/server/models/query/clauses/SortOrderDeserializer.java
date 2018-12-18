@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
  */
 public class SortOrderDeserializer extends StdDeserializer<SortOrder> {
 
+    private static final long serialVersionUID = 1428331383389586619L;
+
     public SortOrderDeserializer() {
         this(null);
     }

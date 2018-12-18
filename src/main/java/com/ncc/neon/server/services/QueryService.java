@@ -1,8 +1,5 @@
 package com.ncc.neon.server.services;
 
-import java.util.List;
-import java.util.Map;
-
 import com.ncc.neon.server.models.connection.ConnectionInfo;
 import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
@@ -14,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
 
 /**
  * QueryService

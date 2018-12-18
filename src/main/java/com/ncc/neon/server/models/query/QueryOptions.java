@@ -3,7 +3,6 @@ package com.ncc.neon.server.models.query;
 import java.util.HashSet;
 import java.util.Set;
 
-import lombok.Data;
 import lombok.Value;
 
 /**

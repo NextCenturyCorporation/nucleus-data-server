@@ -5,7 +5,6 @@ import java.util.List;
 import com.ncc.neon.server.models.query.filter.Filter;
 import com.ncc.neon.server.models.query.filter.FilterEvent;
 import com.ncc.neon.server.models.query.filter.FilterKey;
-import com.ncc.neon.server.stores.FilterState;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;

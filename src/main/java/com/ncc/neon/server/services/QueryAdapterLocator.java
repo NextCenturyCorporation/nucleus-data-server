@@ -10,21 +10,23 @@ import com.ncc.neon.server.services.adapters.QueryAdapterFactory;
 
 import org.springframework.stereotype.Component;
 
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * QueryExecutorLocator
  */
 @Component
-@Log
+@Slf4j
 public class QueryAdapterLocator {
 
     private final Map<String, QueryAdapterFactory> initialContext = new HashMap<>();
     private final Map<ConnectionInfo, QueryAdapter> cache = new HashMap<>();
 
     QueryAdapterLocator(List<QueryAdapterFactory> queryAdapterFactories) throws Exception {
-        if (queryAdapterFactories.size() == 0)
+        if (queryAdapterFactories.size() == 0) {
+            log.error("Must have at least one factory");
             throw new Exception("Must have at least one factory");
+        }
 
         for (QueryAdapterFactory queryAdapterFactory : queryAdapterFactories) {
             initialContext.put(queryAdapterFactory.getName(), queryAdapterFactory);
