@@ -1,9 +1,13 @@
 package com.ncc.neon.server.services.adapters.dummy;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
+import com.ncc.neon.server.models.query.result.FieldTypePair;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
 import com.ncc.neon.server.services.adapters.QueryAdapter;
 
@@ -17,28 +21,34 @@ public class DummyQueryAdapter implements QueryAdapter {
 
     @Override
     public Mono<TabularQueryResult> execute(Query query, QueryOptions options) {
-        return null;
+        List<Map<String, Object>> table = new ArrayList<>();
+        Map<String, Object> row = new HashMap<>();
+        row.put("column1", "value1");
+        row.put("column2", 2);
+        table.add(row);
+        table.add(row);
+		return Mono.just(new TabularQueryResult(table));
     }
 
     @Override
     public Flux<String> showDatabases() {
-        return null;
+        return Flux.just("A", "B", "C", "X", "Y", "Z");
     }
 
     @Override
     public Flux<String> showTables(String dbName) {
-        return null;
+        return Flux.just("1", "2");
     }
 
     @Override
-	public Flux<String> getFieldNames(String databaseName, String tableName) {
-		return null;
-	}
+    public Flux<String> getFieldNames(String databaseName, String tableName) {
+        return Flux.just("id", "date", "msg");
+    }
 
-	@Override
-	public Mono<Map<String, String>> getFieldTypes(String databaseName, String tableName) {
-		return null;
-	}
+    @Override
+    public Flux<FieldTypePair> getFieldTypes(String databaseName, String tableName) {
+        Flux<FieldTypePair> fieldTypes = getFieldNames("", "").map(name -> new FieldTypePair(name, name + "-type"));
+        return fieldTypes;
+    }
 
-    
 }

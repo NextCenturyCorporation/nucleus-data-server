@@ -4,17 +4,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import lombok.Value;
+
 /**
  * TabularQueryResult
  */
+
 public class TabularQueryResult implements QueryResult<List<Map<String, Object>>> {
     final List<Map<String, Object>> data;
 
-    TabularQueryResult() {
+   public TabularQueryResult() {
         this(Collections.emptyList());
     }
 
-    TabularQueryResult(List<Map<String, Object>> table) {
+    public TabularQueryResult(List<Map<String, Object>> table) {
         this.data = table;
     }
 

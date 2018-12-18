@@ -1,18 +1,15 @@
 package com.ncc.neon.server.controllers;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-
-import javax.swing.text.TabExpander;
+import java.util.stream.Collectors;
 
 import com.ncc.neon.server.models.connection.ConnectionInfo;
 import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
+import com.ncc.neon.server.models.query.result.FieldTypePair;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
 import com.ncc.neon.server.services.QueryService;
 
@@ -23,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import reactor.core.publisher.Flux;
@@ -57,6 +55,7 @@ public class QueryController {
      * @return The result of the query
      */
     @PostMapping(path = "query/{host}/{databaseType}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+   // @ResponseBody
     Mono<TabularQueryResult> executeQuery(@PathVariable String host, @PathVariable String databaseType,
             @RequestParam(value = "ignoreFilters", defaultValue = "false") boolean ignoreFilters,
             @RequestParam(value = "selectionOnly", defaultValue = "false") boolean selectionOnly,
@@ -75,9 +74,9 @@ public class QueryController {
      * @return The list of database names
      */
     @GetMapping(path = "databasenames/{host}/{databaseType}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    Flux<String> getDatabaseNames(@PathVariable String host, @PathVariable String databaseType) {
+    Mono<List<String>> getDatabaseNames(@PathVariable String host, @PathVariable String databaseType) {
         ConnectionInfo ci = new ConnectionInfo(databaseType, host);
-        return queryService.getDatabaseNames(ci);
+        return queryService.getDatabaseNames(ci).collectList();
     }
 
     /**
@@ -91,10 +90,10 @@ public class QueryController {
      */
 
     @GetMapping(path = "tablenames/{host}/{databaseType}/{databaseName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    Flux<String> getTableNames(@PathVariable String host, @PathVariable String databaseType,
+    Mono<List<String>> getTableNames(@PathVariable String host, @PathVariable String databaseType,
             @PathVariable String databaseName) {
         ConnectionInfo ci = new ConnectionInfo(databaseType, host);
-        return queryService.getTableNames(ci, databaseName);
+        return queryService.getTableNames(ci, databaseName).collectList();
     }
 
     /**
@@ -108,10 +107,10 @@ public class QueryController {
      */
 
     @GetMapping(path = "fields/{host}/{databaseType}/{databaseName}/{tableName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    Flux<String> getFields(@PathVariable String host, @PathVariable String databaseType,
+    Mono<List<String>> getFields(@PathVariable String host, @PathVariable String databaseType,
             @PathVariable String databaseName, @PathVariable String tableName) {
         ConnectionInfo ci = new ConnectionInfo(databaseType, host);
-        return queryService.getFields(ci, databaseName, tableName);
+        return queryService.getFields(ci, databaseName, tableName).collectList();
     }
 
     /**
@@ -126,7 +125,7 @@ public class QueryController {
     Mono<Map<String, String>> getFieldTypes(@PathVariable String host, @PathVariable String databaseType,
             @PathVariable String databaseName, @PathVariable String tableName) {
         ConnectionInfo ci = new ConnectionInfo(databaseType, host);
-        return queryService.getFieldTypes(ci, databaseName, tableName);
+        return queryService.getFieldTypes(ci, databaseName, tableName).collectMap(p -> p.getField(), p -> p.getType());
     }
 
     /**
@@ -135,16 +134,24 @@ public class QueryController {
      * @param host         The host the database is running on
      * @param databaseType the type of database
      * @param databaseName The database containing the data
+     * @return
      * @return The result of the query
      */
+    // Spring WebFlux can only deal with one reactive type and won't deal with
+    // nested reactive types (like a Mono<Flux<Integer>>
     @GetMapping(path = "tablesandfields/{host}/{databaseType}/{databaseName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    Mono<Map<String, Flux<String>>> getTablesAndFields(@PathVariable String host, @PathVariable String databaseType,
+    Mono<Map<String, List<String>>> getTablesAndFields(@PathVariable String host, @PathVariable String databaseType,
             @PathVariable String databaseName) {
+        ConnectionInfo ci = new ConnectionInfo(databaseType, host);
+        Flux<String> tableNames = this.queryService.getTableNames(ci, databaseName);
 
-        Flux<String> tableNames = getTableNames(host, databaseType, databaseName);
-        return tableNames.collectMap(tableName -> tableName, tableName -> {
-            return getFields(host, databaseType, databaseName, tableName);
-        });
+        return tableNames.collect(Collectors.toMap(tableName -> tableName, tableName -> {
+            Flux<String> fields = this.queryService.getFields(ci, databaseName, tableName);
+            ArrayList<String> fieldList = new ArrayList<>();
+            fields.collectList().subscribe(f -> {
+                fieldList.addAll(f);
+            });
+            return fieldList;
+        }));
     }
-
 }

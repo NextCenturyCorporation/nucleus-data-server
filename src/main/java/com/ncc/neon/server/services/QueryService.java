@@ -6,6 +6,7 @@ import java.util.Map;
 import com.ncc.neon.server.models.connection.ConnectionInfo;
 import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
+import com.ncc.neon.server.models.query.result.FieldTypePair;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
 import com.ncc.neon.server.services.adapters.QueryAdapter;
 
@@ -31,7 +32,7 @@ public class QueryService {
         QueryAdapter adapter = this.queryExecutorLocator.getAdapter(ci);
         return adapter.execute(query, options);
     }
-   
+
     public Flux<String> getDatabaseNames(ConnectionInfo ci) {
         QueryAdapter adapter = this.queryExecutorLocator.getAdapter(ci);
         return adapter.showDatabases();
@@ -42,19 +43,13 @@ public class QueryService {
         return adapter.showTables(databaseName);
     }
 
-    public Mono<Map<String, String>> getFieldTypes(ConnectionInfo ci, String databaseName, String tableName) {
+    public Flux<FieldTypePair> getFieldTypes(ConnectionInfo ci, String databaseName, String tableName) {
         QueryAdapter adapter = this.queryExecutorLocator.getAdapter(ci);
         return adapter.getFieldTypes(databaseName, tableName);
     }
 
-    // TODO: correct signature?
     public Flux<String> getFields(ConnectionInfo ci, String databaseName, String tableName) {
         QueryAdapter adapter = this.queryExecutorLocator.getAdapter(ci);
         return adapter.getFieldNames(databaseName, tableName);
-    }
-
-    // TODO: examine this?
-    public Flux<Tuple2<String, List<String>>> getTablesAndFields() {
-        return null;
     }
 }
