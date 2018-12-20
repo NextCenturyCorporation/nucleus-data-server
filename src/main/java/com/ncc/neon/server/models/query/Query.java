@@ -25,7 +25,6 @@ public class Query {
     boolean aggregateArraysByElement = false;
     boolean isDistinct = false;
     List<String> fields = SelectClause.ALL_FIELDS;
-    // new ArrayList<>(List.of())
     List<AggregateClause> aggregates = List.of();
     List<GroupByClause> groupByClauses = List.of();
     List<SortClause> sortClauses = List.of();

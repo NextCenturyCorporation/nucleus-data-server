@@ -1,14 +1,15 @@
 package com.ncc.neon.server.models.query.clauses;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.experimental.Accessors;
 
 /**
  * LimitClause
  */
 @Data
-@Accessors(fluent = true)
+@AllArgsConstructor
+//@Accessors(fluent = true)
 public class OffsetClause {
 
-    int limit;
+   int limit;
 }

@@ -18,34 +18,34 @@ import reactor.core.publisher.Mono;
 @Component
 public class QueryService {
 
-    private QueryAdapterLocator queryExecutorLocator;
+    private QueryAdapterLocator queryAdapterLocator;
 
     QueryService(QueryAdapterLocator queryExecutorLocator) {
-        this.queryExecutorLocator = queryExecutorLocator;
+        this.queryAdapterLocator = queryExecutorLocator;
     }
 
     public Mono<TabularQueryResult> executeQuery(ConnectionInfo ci, Query query, QueryOptions options) {
-        QueryAdapter adapter = this.queryExecutorLocator.getAdapter(ci);
+        QueryAdapter adapter = this.queryAdapterLocator.getAdapter(ci);
         return adapter.execute(query, options);
     }
 
     public Flux<String> getDatabaseNames(ConnectionInfo ci) {
-        QueryAdapter adapter = this.queryExecutorLocator.getAdapter(ci);
+        QueryAdapter adapter = this.queryAdapterLocator.getAdapter(ci);
         return adapter.showDatabases();
     }
 
     public Flux<String> getTableNames(ConnectionInfo ci, String databaseName) {
-        QueryAdapter adapter = this.queryExecutorLocator.getAdapter(ci);
+        QueryAdapter adapter = this.queryAdapterLocator.getAdapter(ci);
         return adapter.showTables(databaseName);
     }
 
     public Flux<FieldTypePair> getFieldTypes(ConnectionInfo ci, String databaseName, String tableName) {
-        QueryAdapter adapter = this.queryExecutorLocator.getAdapter(ci);
+        QueryAdapter adapter = this.queryAdapterLocator.getAdapter(ci);
         return adapter.getFieldTypes(databaseName, tableName);
     }
 
     public Flux<String> getFields(ConnectionInfo ci, String databaseName, String tableName) {
-        QueryAdapter adapter = this.queryExecutorLocator.getAdapter(ci);
+        QueryAdapter adapter = this.queryAdapterLocator.getAdapter(ci);
         return adapter.getFieldNames(databaseName, tableName);
     }
 }

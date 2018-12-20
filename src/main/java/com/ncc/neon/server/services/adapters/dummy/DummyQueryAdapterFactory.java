@@ -19,8 +19,7 @@ public class DummyQueryAdapterFactory implements QueryAdapterFactory {
 
     @Override
     public QueryAdapter initialize(ConnectionInfo cInfo) {
-		return new DummyQueryAdapter();
-	}
+        return new DummyQueryAdapter();
+    }
 
-    
 }

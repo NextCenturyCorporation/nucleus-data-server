@@ -27,7 +27,7 @@ public class DummyQueryAdapter implements QueryAdapter {
         row.put("column2", 2);
         table.add(row);
         table.add(row);
-		return Mono.just(new TabularQueryResult(table));
+        return Mono.just(new TabularQueryResult(table));
     }
 
     @Override

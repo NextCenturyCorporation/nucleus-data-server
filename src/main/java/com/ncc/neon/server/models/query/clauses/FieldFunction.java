@@ -1,5 +1,6 @@
 package com.ncc.neon.server.models.query.clauses;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 /**
@@ -8,6 +9,7 @@ import lombok.Data;
  * other fields)
  */
 @Data
+@AllArgsConstructor
 public class FieldFunction {
     String name;
     String operation;
