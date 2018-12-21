@@ -4,13 +4,10 @@ import java.util.Arrays;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.experimental.Accessors;
 
-/**
- * SortOrder
- */
-@Accessors(fluent = true)
+@AllArgsConstructor
 @JsonDeserialize(using = SortOrderDeserializer.class)
 public enum SortOrder {
     ASCENDING(1), DESCENDING(-1);
@@ -18,13 +15,7 @@ public enum SortOrder {
     @Getter
     private final int direction;
 
-    SortOrder(int direction) {
-        this.direction = direction;
+    public static SortOrder fromDirection(int direction) {
+        return Arrays.stream(SortOrder.values()).filter(sortOrder -> sortOrder.direction == direction).findAny().get();
     }
-
-    static SortOrder fromDirection(int direction) {
-        // TODO:maybe right
-        return Arrays.stream(SortOrder.values()).filter(so -> so.direction == direction).findAny().get();
-    }
-
 }

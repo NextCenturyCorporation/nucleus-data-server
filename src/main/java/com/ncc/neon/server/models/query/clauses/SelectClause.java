@@ -6,9 +6,6 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-/**
- * SelectClause
- */
 @Data
 @AllArgsConstructor
 public class SelectClause {
