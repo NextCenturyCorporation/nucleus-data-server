@@ -15,6 +15,9 @@ apply plugin: 'eclipse'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
 
+// https://docs.spring.io/spring-boot/docs/current/reference/html/howto-traditional-deployment.html
+// Because Spring WebFlux does not strictly depend on the Servlet API and applications are deployed by default on an embedded Reactor Netty server, War deployment is not supported for WebFlux applications.
+// WHAT? https://stackoverflow.com/questions/52881199/spring-boot-deploying-a-war
 group = 'com.ncc.neon'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = 1.9
