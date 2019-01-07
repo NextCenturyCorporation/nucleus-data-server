@@ -2,6 +2,8 @@ package com.ncc.neon.server.models.query;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ncc.neon.server.models.query.clauses.AggregateClause;
 import com.ncc.neon.server.models.query.clauses.GroupByClause;
 import com.ncc.neon.server.models.query.clauses.LimitClause;
@@ -20,9 +22,11 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+//@JsonIgnoreProperties(value = {"ignoreFilters_", "selectionOnly_", "ignoredFilterIds_"})
 public class Query {
     Filter filter;
     boolean aggregateArraysByElement = false;
+    @JsonProperty(value="isDistinct") 
     boolean isDistinct = false;
     List<String> fields = SelectClause.ALL_FIELDS;
     List<AggregateClause> aggregates = List.of();

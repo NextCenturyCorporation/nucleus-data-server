@@ -1,5 +1,7 @@
 package com.ncc.neon.server.models.query.filter;
 
+import com.ncc.neon.server.models.query.clauses.WhereClause;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,14 +13,13 @@ import lombok.experimental.Accessors;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Accessors(fluent = true)
+//@Accessors(fluent = true)
 public class Filter {
     String databaseName;
     String tableName;
     String filterName;
 
-    // TODO: where clause
-    // WhereClause whereClause
+    WhereClause whereClause;
 
     // TODO: look into @RequiredArgsConstructor
     public Filter(String databaseName, String tableName) {

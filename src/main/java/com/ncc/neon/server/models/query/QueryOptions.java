@@ -1,6 +1,5 @@
 package com.ncc.neon.server.models.query;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import lombok.Value;
@@ -14,7 +13,7 @@ public class QueryOptions {
 
      /** default options that applies filters to the query */
      //TODO: remove?? this is only used for tests...
-     public static final QueryOptions DEFAULT_OPTIONS = new QueryOptions(false, false, null, new HashSet<>());
+     //public static final QueryOptions DEFAULT_OPTIONS = new QueryOptions(false, false, null, new HashSet<>());
 
     boolean ignoreFilters;
 
