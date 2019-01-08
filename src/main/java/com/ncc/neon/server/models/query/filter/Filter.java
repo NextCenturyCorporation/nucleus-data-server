@@ -5,7 +5,6 @@ import com.ncc.neon.server.models.query.clauses.WhereClause;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
 
 /**
  * Filter - A filter is applied to a DataSet and can contain a whereClause

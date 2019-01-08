@@ -1,10 +1,21 @@
 package com.ncc.neon.server.controllers;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
+
+import com.ncc.neon.server.models.query.Query;
+import com.ncc.neon.server.models.query.clauses.AggregateClause;
+import com.ncc.neon.server.models.query.clauses.GroupByClause;
+import com.ncc.neon.server.models.query.clauses.GroupByFieldClause;
+import com.ncc.neon.server.models.query.clauses.LimitClause;
+import com.ncc.neon.server.models.query.clauses.OffsetClause;
+import com.ncc.neon.server.models.query.clauses.SingularWhereClause;
+import com.ncc.neon.server.models.query.clauses.SortClause;
+import com.ncc.neon.server.models.query.clauses.SortOrder;
+import com.ncc.neon.server.models.query.filter.Filter;
+import com.ncc.neon.server.models.query.result.TabularQueryResult;
+
 import org.assertj.core.api.Assertions;
-import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +24,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
+
+import reactor.core.publisher.Mono;
 
 /**
  * QueryControllerTests
@@ -26,7 +39,7 @@ public class QueryControllerTests {
     private WebTestClient webClient;
 
     @Test
-    public void exampleTest() {
+    public void getTablesAndFieldsTest() {
 
         this.webClient.get()
                 .uri("/queryservice/tablesandfields/localhost/elasticsearchrest/ldc_uyg_jul_18")
@@ -46,4 +59,59 @@ public class QueryControllerTests {
                 });
     }
 
+    @Test
+    public void getDatabaseNamesTest() {
+
+        this.webClient.get()
+                .uri("/queryservice/databasenames/localhost/elasticsearchrest")
+                .accept(MediaType.APPLICATION_JSON_UTF8)
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectHeader()
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .expectBody(List.class)
+                .consumeWith(result -> {
+                    // https://github.com/joel-costigliola/assertj-examples/blob/master/assertions-examples/src/test/java/org/assertj/examples/IterableAssertionsExamples.java
+                    List<String> list = result.getResponseBody();
+                    Assertions.assertThat(list).isNotEmpty().hasSize(6);
+                    Assertions.assertThat(list).doesNotContain("D");
+                });
+
+    }
+
+    @Test
+    public void executeQueryTest() {
+
+        Filter filter = new Filter("ldc_uyg_jul_18", "ui_out", null, new SingularWhereClause("topic", "!=", null));
+        List<String> fields = List.of("*");
+        boolean aggregateArraysByElement = false;
+        List<GroupByClause> groupByClauses = List.of(new GroupByFieldClause("topic", "topic"),
+                new GroupByFieldClause("topic", "topic"));
+        boolean isDistinct = false;
+        List<AggregateClause> aggregates = List.of(new AggregateClause("_aggregation", "count", "*"));
+        List<SortClause> sortClauses = List.of(new SortClause("_aggregation", SortOrder.DESCENDING));
+        LimitClause limitClause = new LimitClause(11);
+        OffsetClause offsetClause = new OffsetClause(10);
+
+        Query query = new Query(filter, aggregateArraysByElement, isDistinct, fields, aggregates, groupByClauses,
+                sortClauses, limitClause, offsetClause);
+
+        this.webClient.post()
+                .uri("/queryservice/query/localhost/elasticsearchrest")
+                .accept(MediaType.APPLICATION_JSON_UTF8)
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .body(Mono.just(query), Query.class)
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectHeader()
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .expectBody(TabularQueryResult.class)
+                .consumeWith(result -> {
+                    TabularQueryResult table = result.getResponseBody();
+                    List<Map<String, Object>> data = table.getData();
+                    Assertions.assertThat(data).isNotEmpty().hasSize(2);
+                });
+    }
 }

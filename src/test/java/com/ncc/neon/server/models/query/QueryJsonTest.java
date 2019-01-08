@@ -2,11 +2,8 @@ package com.ncc.neon.server.models.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.clauses.AggregateClause;
 import com.ncc.neon.server.models.query.clauses.GroupByClause;
 import com.ncc.neon.server.models.query.clauses.GroupByFieldClause;
@@ -22,8 +19,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import org.springframework.boot.test.json.JacksonTester;
-import org.springframework.boot.test.json.JsonContent;
-import org.springframework.boot.test.json.ObjectContent;
 import org.springframework.test.context.junit4.SpringRunner;
 
 /**
@@ -36,16 +31,15 @@ public class QueryJsonTest {
 	@Autowired
 	private JacksonTester<Query> json;
 
-/* 	@Test
+	@Test
 	public void testSerialize() throws Exception {
-		JsonContent<Query> f = this.json.write(getQuery());
 		// Assert against a `.json` file in the same package as the test
-		assertThat(f).isEqualToJson("/json/queryPost.json"); // Or use
+		assertThat(this.json.write(getQuery())).isEqualToJson("/json/serializedQuery.json"); // Or use
 		// JSON path based assertions
 		// assertThat(this.json.write(query)).hasJsonPathStringValue("@.make");
 		// assertThat(this.json.write(query)).extractingJsonPathStringValue("@.make")
 		// .isEqualTo("Honda");
-	} */
+	}
 
 	@Test
 	public void testDeserialize() throws Exception {
