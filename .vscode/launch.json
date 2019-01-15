@@ -19,6 +19,16 @@
             "mainClass": "com.ncc.neon.server.NeonServerApplication",
             "projectName": "server",
             "args": ""
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-EsNeonServerApplication<esadapter>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "mainClass": "com.ncc.neon.server.EsNeonServerApplication",
+            "projectName": "esadapter",
+            "args": ""
         }
     ]
 }

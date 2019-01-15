@@ -20,6 +20,8 @@ springBoot {
 //Build traditional jar which is what we want as the library
 jar {
 	enabled = true
+	//Excluding this as its a only use if for VScode see class for more info
+	exclude '**/server/EsNeonServerApplication*'
 }
 
 bootJar {
