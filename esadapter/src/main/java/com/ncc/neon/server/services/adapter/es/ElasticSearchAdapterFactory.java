@@ -21,7 +21,7 @@ public class ElasticSearchAdapterFactory implements QueryAdapterFactory {
 
     @Override
     public QueryAdapter initialize(ConnectionInfo cInfo) {
-        return new ElasticSearchAdapter();
+        return new ElasticSearchAdapter(cInfo.getHost());
     }
 
 }
