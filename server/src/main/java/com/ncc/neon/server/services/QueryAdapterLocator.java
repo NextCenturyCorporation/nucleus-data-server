@@ -29,7 +29,7 @@ public class QueryAdapterLocator {
         }
 
         for (QueryAdapterFactory queryAdapterFactory : queryAdapterFactories) {
-            log.error(queryAdapterFactory.getName());
+            log.debug("Loaded Query Adapter:  " + queryAdapterFactory.getName());
             initialContext.put(queryAdapterFactory.getName(), queryAdapterFactory);
         }
     }

@@ -24,11 +24,14 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Service for executing queries against an arbitrary data store.
  */
 @RestController
 @RequestMapping("queryservice")
+@Slf4j
 public class QueryController {
 
     private QueryService queryService;
