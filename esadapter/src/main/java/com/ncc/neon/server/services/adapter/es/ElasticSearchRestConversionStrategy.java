@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 import javax.management.RuntimeErrorException;
 
@@ -22,6 +23,9 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.index.query.RegexpQueryBuilder;
+import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -117,24 +121,21 @@ public class ElasticSearchRestConversionStrategy {
             whereClauses.add(query.getFilter().getWhereClause());
         }
 
-        // Add the rest of the filters unless told not to.
-        if (!options.isIgnoreFilters()) {
-            whereClauses.addAll(createWhereClausesForFilters(dataSet, filterState, options.ignoredFilterIds));
-        }
-
-        // If selectionOnly, then
-        if (options.isSelectionOnly()) {
-            whereClauses.addAll(createWhereClausesForFilters(dataSet, selectionState));
-        }
-
         whereClauses.addAll(getCountFieldClauses(query));
 
         return whereClauses;
     }
 
     private Collection<? extends WhereClause> getCountFieldClauses(Query query) {
-        //TODO:
-        return null;
+        List<SingularWhereClause> clauses = new ArrayList<>();
+
+        query.getAggregates().forEach(aggClause -> {
+            if (isCountFieldAggregation(aggClause)) {
+                clauses.add(new SingularWhereClause(aggClause.getField(), "!=", null));
+            }
+        });
+
+        return clauses;
     }
 
     /**
@@ -147,9 +148,13 @@ public class ElasticSearchRestConversionStrategy {
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
         // Build the elasticsearch filters for the where clauses
-        List<QueryBuilder> inners = new ArrayList<>();
+        List<QueryBuilder> inners = new ArrayList<QueryBuilder>();
         whereClauses.forEach(whereClause -> {
             inners.add(convertWhereClause(whereClause));
+        });
+
+        inners.forEach(inner -> {
+            queryBuilder.must(inner);
         });
 
         return queryBuilder;
@@ -159,29 +164,80 @@ public class ElasticSearchRestConversionStrategy {
     private static QueryBuilder convertWhereClause(WhereClause clause) {
 
         if (clause instanceof SingularWhereClause) {
-            return convertSingularWhereClause(clause);
-
+            return convertSingularWhereClause((SingularWhereClause) clause);
         } else if (clause instanceof AndWhereClause || clause instanceof OrWhereClause) {
             return convertCompoundWhereClause(clause);
         } else {
-
-            throw new RuntimeErrorException(null, "Unknown where clause: " + clause.getClass());
-            // throw new NeonConnectionException("Unknown where clause:
-            // ${clause.getClass()}")
+            throw new RuntimeException("Unknown where clause: " + clause.getClass());
         }
 
     }
 
     private static QueryBuilder convertCompoundWhereClause(WhereClause clause) {
+        BoolQueryBuilder qb = QueryBuilders.boolQuery();
+        List<QueryBuilder> inners = new ArrayList<>();
 
-        // TODO:
-        return null;
+        if (clause instanceof AndWhereClause) {
+            AndWhereClause andClause = (AndWhereClause) clause;
+            andClause.getWhereClauses().forEach(innerWhere -> {
+                inners.add(convertWhereClause(innerWhere));
+            });
+
+            inners.forEach(inner -> {
+                qb.must(inner);
+            });
+        } else if (clause instanceof OrWhereClause) {
+            OrWhereClause orClause = (OrWhereClause) clause;
+            orClause.getWhereClauses().forEach(innerWhere -> {
+                inners.add(convertWhereClause(innerWhere));
+            });
+
+            inners.forEach(inner -> {
+                qb.should(inner);
+            });
+        } else {
+            throw new RuntimeException("Unknown where clause: " + clause.getClass());
+        }
+
+        return qb;
     }
 
-    private static QueryBuilder convertSingularWhereClause(WhereClause clause) {
+    private static QueryBuilder convertSingularWhereClause(SingularWhereClause clause) {
+        if(Arrays.asList("<", ">", "<=", ">=").contains(clause.getOperator())) {
+            UnaryOperator<RangeQueryBuilder> outputRqb = inputRqb -> {
+                switch (clause.getOperator()) {
+                    case "<": return inputRqb.lt(clause.getRhs());
+                    case ">": return inputRqb.gt(clause.getRhs());
+                    case "<=": return inputRqb.lte(clause.getRhs());
+                    case ">=": return inputRqb.gte(clause.getRhs());
+                    default: return inputRqb;
+                }
+            };
 
-        // TODO:
-        return null;
+            return outputRqb.apply(QueryBuilders.rangeQuery(clause.getLhs()));
+        };
+
+        if(Arrays.asList("contains", "not contains", "notcontains").contains(clause.getOperator())) {
+            RegexpQueryBuilder regexFilter = QueryBuilders.regexpQuery(clause.getLhs(), ".*" + clause.getRhs() + ".*");
+            return clause.getOperator() == "contains" ? regexFilter : QueryBuilders.boolQuery().mustNot(regexFilter);
+        };
+
+        if(Arrays.asList("=", "!=").contains(clause.getOperator())) {
+            boolean hasValue = clause.getRhs() != null;
+
+            QueryBuilder filter = hasValue ?
+                QueryBuilders.termQuery(clause.getLhs(), Arrays.asList(clause.getRhs())) :
+                QueryBuilders.existsQuery(clause.getLhs());
+
+            return (clause.getOperator() == "!=") == !hasValue ? filter : QueryBuilders.boolQuery().mustNot(filter);
+        };
+
+        if(Arrays.asList("in", "notin").contains(clause.getOperator())) {
+            TermsQueryBuilder filter = QueryBuilders.termsQuery(clause.getLhs(), Arrays.asList(clause.getRhs()));
+            return (clause.getOperator() == "in") ? filter : QueryBuilders.boolQuery().mustNot(filter);
+        };
+
+        throw new RuntimeException(clause.getOperator() + " is an invalid operator for a where clause");
     }
 
     public static boolean isCountFieldAggregation(AggregateClause clause) {
