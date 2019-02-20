@@ -113,40 +113,48 @@ public class ElasticSearchAdapter implements QueryAdapter {
         
         SearchRequest request = conversionStrategy.convertQuery(query, options);
 
-        SearchResponse response = this.client.search(request, RequestOptions.DEFAULT);
+        SearchResponse response = null;
+        TabularQueryResult returnVal = null;
 
-        Aggregations aggResults = response.getAggregations();
-
-        TabularQueryResult returnVal;
-
-        if (aggregates != null && groupByClauses == null) {
-            // LOGGER.debug("aggs and no group by ");
-            Map<String, Object> metrics = extractMetrics(aggregates, aggResults != null ? aggResults.asMap() : null,
-                    response.getHits().getTotalHits());
-            returnVal = new TabularQueryResult(List.of(metrics));
-        } else if (groupByClauses != null) {
-            // LOGGER.debug("group by ");
-            List<AggregationBucket> buckets = extractBuckets(groupByClauses,
-                    (MultiBucketsAggregation) aggResults.asList().get(0));
-            buckets = combineDuplicateBuckets(buckets);
-            List<Map<String, Object>> extractedMetrics = extractMetricsFromBuckets(aggregates, buckets);
-            extractedMetrics = sortBuckets(query.getSortClauses(), extractedMetrics);
-            extractedMetrics = limitBuckets(extractedMetrics, query);
-            returnVal = new TabularQueryResult(extractedMetrics);
-        } else if (query.isDistinct()) {
-            // LOGGER.debug("distinct");
-
-            returnVal = new TabularQueryResult(
-                    extractDistinct(query, (MultiBucketsAggregation) aggResults.asList().get(0)));
-        } else if (response.getScrollId() != null) {
-            returnVal = collectScrolledResults(query, response);
-        } else {
-            // LOGGER.debug("none of the above");
-            returnVal = new TabularQueryResult(extractHitsFromResults(response));
+        try {
+            response = this.client.search(request, RequestOptions.DEFAULT);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
 
-        long diffTime = new Date().getTime() - d1;
-        // LOGGER.debug(" Query took: " + diffTime + " ms ");
+        if(response != null) {
+            Aggregations aggResults = response.getAggregations();
+
+            if (aggregates != null && groupByClauses == null) {
+                // LOGGER.debug("aggs and no group by ");
+                Map<String, Object> metrics = extractMetrics(aggregates, aggResults != null ? aggResults.asMap() : null,
+                        response.getHits().getTotalHits());
+                returnVal = new TabularQueryResult(List.of(metrics));
+            } else if (groupByClauses != null) {
+                // LOGGER.debug("group by ");
+                List<AggregationBucket> buckets = extractBuckets(groupByClauses,
+                        (MultiBucketsAggregation) aggResults.asList().get(0));
+                buckets = combineDuplicateBuckets(buckets);
+                List<Map<String, Object>> extractedMetrics = extractMetricsFromBuckets(aggregates, buckets);
+                extractedMetrics = sortBuckets(query.getSortClauses(), extractedMetrics);
+                extractedMetrics = limitBuckets(extractedMetrics, query);
+                returnVal = new TabularQueryResult(extractedMetrics);
+            } else if (query.isDistinct()) {
+                // LOGGER.debug("distinct");
+
+                returnVal = new TabularQueryResult(
+                        extractDistinct(query, (MultiBucketsAggregation) aggResults.asList().get(0)));
+            } else if (response.getScrollId() != null) {
+                returnVal = collectScrolledResults(query, response);
+            } else {
+                // LOGGER.debug("none of the above");
+                returnVal = new TabularQueryResult(extractHitsFromResults(response));
+            }
+
+            long diffTime = new Date().getTime() - d1;
+            // LOGGER.debug(" Query took: " + diffTime + " ms ");
+        }
 
         return Mono.just(returnVal);
     }
