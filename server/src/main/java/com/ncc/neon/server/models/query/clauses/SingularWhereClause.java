@@ -1,6 +1,6 @@
 package com.ncc.neon.server.models.query.clauses;
 
-import java.util.Date;
+import java.time.ZonedDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -18,7 +18,7 @@ public class SingularWhereClause implements WhereClause {
     @JsonIgnore
     Boolean rhsBoolean;
     @JsonIgnore
-    Date rhsDate;
+    ZonedDateTime rhsDate;
     @JsonIgnore
     Double rhsDouble;
     @JsonIgnore
@@ -51,7 +51,7 @@ public class SingularWhereClause implements WhereClause {
         this.rhsBoolean = Boolean.valueOf(rhs);
     }
 
-    private SingularWhereClause(String lhs, String operator, Date rhs) {
+    private SingularWhereClause(String lhs, String operator, ZonedDateTime rhs) {
         this.lhs = lhs;
         this.operator = operator;
         this.rhsDate = rhs;
@@ -73,7 +73,7 @@ public class SingularWhereClause implements WhereClause {
         return new SingularWhereClause(lhs, operator, rhs);
     }
 
-    public static SingularWhereClause fromDate(String lhs, String operator, Date rhs) {
+    public static SingularWhereClause fromDate(String lhs, String operator, ZonedDateTime rhs) {
         return new SingularWhereClause(lhs, operator, rhs);
     }
 

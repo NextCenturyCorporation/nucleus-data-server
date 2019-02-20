@@ -8,16 +8,10 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
+import com.ncc.neon.util.DateUtil;
 
 public class SingularWhereClauseSerializer extends StdSerializer<SingularWhereClause> {
     private static final long serialVersionUID = -3365710011423873638L;
-
-    private static final DateTimeFormatter DATE_FORMATTER = ISODateTimeFormat.dateTimeNoMillis();
 
     public SingularWhereClauseSerializer() {
         this(null);
@@ -35,8 +29,7 @@ public class SingularWhereClauseSerializer extends StdSerializer<SingularWhereCl
             gen.writeBooleanField("rhs", clause.getRhsBoolean());
         }
         else if(clause.isDate()) {
-            DateTime date = new DateTime(clause.getRhsDate());
-            gen.writeStringField("rhs", DATE_FORMATTER.print(date.withZone(DateTimeZone.UTC)));
+            gen.writeStringField("rhs", DateUtil.transformDateToString(clause.getRhsDate()));
         }
         else if(clause.isDouble()) {
             gen.writeNumberField("rhs", clause.getRhsDouble());

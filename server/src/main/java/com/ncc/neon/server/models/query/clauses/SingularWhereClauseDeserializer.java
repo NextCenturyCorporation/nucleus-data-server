@@ -1,7 +1,7 @@
 package com.ncc.neon.server.models.query.clauses;
 
 import java.io.IOException;
-import java.util.Date;
+import java.time.ZonedDateTime;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -10,14 +10,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.DoubleNode;
-
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
+import com.ncc.neon.util.DateUtil;
 
 public class SingularWhereClauseDeserializer extends StdDeserializer<SingularWhereClause> {
     private static final long serialVersionUID = 7819782490334351351L;
-
-    private static final DateTimeFormatter DATE_PARSER = ISODateTimeFormat.dateTimeParser().withZoneUTC();
 
     public SingularWhereClauseDeserializer() {
         this(null);
@@ -41,8 +37,7 @@ public class SingularWhereClauseDeserializer extends StdDeserializer<SingularWhe
         }
         if(rhs.isTextual()) {
             try {
-                // TODO Add non-ISO date parsers
-                Date date = DATE_PARSER.parseDateTime(rhs.asText()).toDate();
+                ZonedDateTime date = DateUtil.transformStringToDate(rhs.asText());
                 return SingularWhereClause.fromDate(node.get("lhs").asText(), node.get("operator").asText(), date);
             }
             catch(Exception e) {
