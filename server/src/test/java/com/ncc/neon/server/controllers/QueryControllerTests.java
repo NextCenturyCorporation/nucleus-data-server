@@ -82,8 +82,7 @@ public class QueryControllerTests {
 
     @Test
     public void executeQueryTest() {
-
-        Filter filter = new Filter("ldc_uyg_jul_18", "ui_out", null, new SingularWhereClause("topic", "!=", null));
+        Filter filter = new Filter("ldc_uyg_jul_18", "ui_out", null, SingularWhereClause.fromNull("topic", "!="));
         List<String> fields = List.of("*");
         boolean aggregateArraysByElement = false;
         List<GroupByClause> groupByClauses = List.of(new GroupByFieldClause("topic", "topic"),

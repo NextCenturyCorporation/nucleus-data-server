@@ -137,7 +137,7 @@ public class ElasticSearchRestConversionStrategy {
 
         query.getAggregates().forEach(aggClause -> {
             if (isCountFieldAggregation(aggClause)) {
-                clauses.add(new SingularWhereClause(aggClause.getField(), "!=", null));
+                clauses.add(SingularWhereClause.fromNull(aggClause.getField(), "!="));
             }
         });
 
@@ -224,7 +224,7 @@ public class ElasticSearchRestConversionStrategy {
         };
 
         if(Arrays.asList("=", "!=").contains(clause.getOperator())) {
-            boolean hasValue = clause.getRhs() != null;
+            boolean hasValue = !(clause.isNull());
 
             QueryBuilder filter = hasValue ?
                 QueryBuilders.termQuery(clause.getLhs(), Arrays.asList(clause.getRhs())) :
