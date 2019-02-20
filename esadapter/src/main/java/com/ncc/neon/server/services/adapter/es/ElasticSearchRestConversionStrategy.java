@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import javax.management.RuntimeErrorException;
 
@@ -12,8 +13,13 @@ import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.clauses.AggregateClause;
 import com.ncc.neon.server.models.query.clauses.AndWhereClause;
+import com.ncc.neon.server.models.query.clauses.FieldFunction;
+import com.ncc.neon.server.models.query.clauses.GroupByClause;
+import com.ncc.neon.server.models.query.clauses.GroupByFieldClause;
 import com.ncc.neon.server.models.query.clauses.OrWhereClause;
+import com.ncc.neon.server.models.query.clauses.SelectClause;
 import com.ncc.neon.server.models.query.clauses.SingularWhereClause;
+import com.ncc.neon.server.models.query.clauses.SortClause;
 import com.ncc.neon.server.models.query.clauses.WhereClause;
 
 import org.elasticsearch.action.search.SearchRequest;
@@ -31,6 +37,8 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.stats.StatsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -63,10 +71,11 @@ public class ElasticSearchRestConversionStrategy {
     SearchRequest convertQuery(Query query, QueryOptions options) {
         //LOGGER.debug("Query is " + query + " QueryOptions is " + options);
 
-        def source = createSourceBuilderWithState(query, options);
+        SearchSourceBuilder source = createSourceBuilderWithState(query, options);
 
-        if (query.fields && query.fields != SelectClause.ALL_FIELDS) {
-            source.fetchSource(query.fields as String[]);
+        if (query.getFields() != null && query.getFields() != SelectClause.ALL_FIELDS) {
+            String[] includes = query.getFields().toArray(new String[query.getFields().size()]);
+            source.fetchSource(includes, null);
         }
 
         convertAggregations(query, source);
@@ -90,16 +99,13 @@ public class ElasticSearchRestConversionStrategy {
     protected SearchSourceBuilder createSourceBuilderWithState(Query query, QueryOptions options,
             WhereClause extraWhereClause) {
 
-        // dataSet = new DataSet(databaseName: query.databaseName, tableName:
-        // query.tableName);
-
         // Get all the (top level) WhereClauses, from the Filter and query
         List<WhereClause> whereClauses = collectWhereClauses(query, options, extraWhereClause);
 
         // Convert the WhereClauses into a single ElasticSearch QueryBuilder object
-        whereFilter = convertWhereClauses(whereClauses);
+        QueryBuilder qbWithWhereClauses = convertWhereClauses(whereClauses);
 
-        SearchSourceBuilder ssb = createSearchSourceBuilder(query).query(whereFilter);
+        SearchSourceBuilder ssb = createSearchSourceBuilder(query).query(qbWithWhereClauses);
         return ssb;
 
         // Was:
@@ -175,24 +181,19 @@ public class ElasticSearchRestConversionStrategy {
 
     private static QueryBuilder convertCompoundWhereClause(WhereClause clause) {
         BoolQueryBuilder qb = QueryBuilders.boolQuery();
-        List<QueryBuilder> inners = new ArrayList<>();
 
         if (clause instanceof AndWhereClause) {
             AndWhereClause andClause = (AndWhereClause) clause;
-            andClause.getWhereClauses().forEach(innerWhere -> {
-                inners.add(convertWhereClause(innerWhere));
-            });
-
-            inners.forEach(inner -> {
+            andClause.getWhereClauses().stream().map(innerWhere -> {
+                return convertWhereClause(innerWhere);
+            }).forEach(inner -> {
                 qb.must(inner);
             });
         } else if (clause instanceof OrWhereClause) {
             OrWhereClause orClause = (OrWhereClause) clause;
-            orClause.getWhereClauses().forEach(innerWhere -> {
-                inners.add(convertWhereClause(innerWhere));
-            });
-
-            inners.forEach(inner -> {
+            orClause.getWhereClauses().stream().map(innerWhere -> {
+                return convertWhereClause(innerWhere);
+            }).forEach(inner -> {
                 qb.should(inner);
             });
         } else {
@@ -240,12 +241,66 @@ public class ElasticSearchRestConversionStrategy {
         throw new RuntimeException(clause.getOperator() + " is an invalid operator for a where clause");
     }
 
+    /**
+     * create the metric aggregations by doing a stats aggregation for any field where
+     * a calculation is requested - this gives us all of the metrics we could
+     * possibly need. Also, don't process the count all clauses here, since
+     * that will be available either through the hit count in the results, or as
+     * doc_count in the buckets
+    */
+    private static void convertAggregations(Query query, SearchSourceBuilder source) {
+        if (query.isDistinct()) {
+            if (query.getFields() == null || query.getFields().size() == 0 || query.getFields().size() > 1) {
+                throw new RuntimeException("Distinct call requires one field");
+            }
+
+            TermsAggregationBuilder termsAggregations = AggregationBuilders.terms("distinct").field(query.getFields().get(0)).size(getLimit(query));
+            source.aggregation(termsAggregations);
+        } else {
+            // TODO: convertMetricAggregations(query, source);
+        }
+    }
+
+    private static List<StatsAggregationBuilder> getMetricAggregations(Query query) {
+        List<StatsAggregationBuilder> aggregates = new ArrayList<StatsAggregationBuilder>();
+
+        aggregates = query.getAggregates().stream()
+            .filter(clause -> {
+                return !isCountAllAggregation(clause) && !isCountFieldAggregation(clause);
+            }).map(agg -> {
+                return agg.getField();
+            }).distinct().map(agg -> {
+                return AggregationBuilders.stats(ElasticSearchRestConversionStrategy.STATS_AGG_PREFIX + agg).field(agg);
+            }).collect(Collectors.toList());
+
+        return aggregates;
+    }
+
+    private static SearchRequest buildRequest(Query query, SearchSourceBuilder source) {
+        SearchRequest request = createSearchRequest(source, query);
+
+        if (query.getFilter() != null && query.getFilter().getTableName() != null) {
+            String[] tableNameAsArray = {query.getFilter().getTableName()};
+            request.types(tableNameAsArray);
+        }
+
+        return request;
+    }
+
     public static boolean isCountFieldAggregation(AggregateClause clause) {
         return clause != null && clause.getOperation() == "count" && clause.getField() != "*";
     }
 
     public static boolean isCountAllAggregation(AggregateClause clause) {
         return clause != null && clause.getOperation() == "count" && clause.getField() == "*";
+    }
+
+    public static SearchSourceBuilder createSearchSourceBuilder(Query query) {
+        int offset = getOffset(query);
+        int size = getLimit(query);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+                .explain(false).from(offset).size(size);
+        return searchSourceBuilder;
     }
 
     public static int getOffset(Query query) {
@@ -258,6 +313,34 @@ public class ElasticSearchRestConversionStrategy {
 
     public static int getLimit(Query query) {
         return getLimit(query, false);
+    }
+
+    public static SearchRequest createSearchRequest(SearchSourceBuilder source, Query params) {
+        SearchRequest req = new SearchRequest();
+
+        // NOTE:  IN version 5, count was replaced by Query_Then_Fetch with a size=0
+        // See: https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-request-search-type.html
+        // req.searchType((params?.aggregates) ? SearchType.COUNT : SearchType.DFS_QUERY_THEN_FETCH)
+        //
+        // TODO:  Set size=0 (i.e. limit clause) when type is counts
+        String indicesValue = 
+            (params != null && params.getFilter() != null & params.getFilter().getDatabaseName() != null)
+            ? params.getFilter().getDatabaseName() : "_all";
+
+        String typesValue = 
+            (params != null && params.getFilter() != null & params.getFilter().getTableName() != null)
+            ? params.getFilter().getTableName() : "_all";
+
+        req.searchType(SearchType.DFS_QUERY_THEN_FETCH)
+                .source(source)
+                .indices(indicesValue)
+                .types(typesValue);
+
+        if (req.searchType() == SearchType.DFS_QUERY_THEN_FETCH
+            && params.getLimitClause() != null && params.getLimitClause().getLimit() > 10000) {
+            req = req.scroll(TimeValue.timeValueMinutes(1));
+        }
+        return req;
     }
 
     public static int getLimit(Query query, boolean supportsUnlimited) {
