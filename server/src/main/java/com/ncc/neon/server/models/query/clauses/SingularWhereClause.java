@@ -15,13 +15,9 @@ public class SingularWhereClause implements WhereClause {
     String lhs;
     String operator;
 
-    @JsonIgnore
     Boolean rhsBoolean;
-    @JsonIgnore
     ZonedDateTime rhsDate;
-    @JsonIgnore
     Double rhsDouble;
-    @JsonIgnore
     String rhsString;
 
     public Object getRhs() {

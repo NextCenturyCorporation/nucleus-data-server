@@ -27,9 +27,6 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 import reactor.core.publisher.Mono;
 
-/**
- * QueryControllerTests
- */
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureWebTestClient
@@ -40,7 +37,6 @@ public class QueryControllerTests {
 
     @Test
     public void getTablesAndFieldsTest() {
-
         this.webClient.get()
                 .uri("/queryservice/tablesandfields/localhost/dummy/ldc_uyg_jul_18")
                 .accept(MediaType.APPLICATION_JSON_UTF8)
@@ -53,6 +49,7 @@ public class QueryControllerTests {
                 .consumeWith(result -> {
                     // Good map assertions examples
                     // https://github.com/joel-costigliola/assertj-examples/blob/master/assertions-examples/src/test/java/org/assertj/examples/MapAssertionsExamples.java
+                    @SuppressWarnings("unchecked")
                     Map<String, List<String>> map = result.getResponseBody();
                     Assertions.assertThat(map).isNotEmpty().hasSize(2);
                     Assertions.assertThat(map).containsKey("1");
@@ -61,7 +58,6 @@ public class QueryControllerTests {
 
     @Test
     public void getDatabaseNamesTest() {
-
         this.webClient.get()
                 .uri("/queryservice/databasenames/localhost/dummy")
                 .accept(MediaType.APPLICATION_JSON_UTF8)
@@ -73,6 +69,7 @@ public class QueryControllerTests {
                 .expectBody(List.class)
                 .consumeWith(result -> {
                     // https://github.com/joel-costigliola/assertj-examples/blob/master/assertions-examples/src/test/java/org/assertj/examples/IterableAssertionsExamples.java
+                    @SuppressWarnings("unchecked")
                     List<String> list = result.getResponseBody();
                     Assertions.assertThat(list).isNotEmpty().hasSize(6);
                     Assertions.assertThat(list).doesNotContain("D");

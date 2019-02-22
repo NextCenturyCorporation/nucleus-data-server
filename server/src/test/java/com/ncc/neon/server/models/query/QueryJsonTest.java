@@ -21,9 +21,6 @@ import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.test.context.junit4.SpringRunner;
 
-/**
- * QueryTests
- */
 @RunWith(SpringRunner.class)
 @JsonTest
 public class QueryJsonTest {
@@ -32,16 +29,13 @@ public class QueryJsonTest {
     private JacksonTester<Query> json;
 
     @Test
-    public void testSerialize() throws Exception {
-		// TODO Do not test serializing queries!  Test serializing query results!
-		// https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-testing.html#boot-features-testing-spring-boot-applications-testing-autoconfigured-json-tests
-        // assertThat(this.json.write(getQuery())).isEqualToJson("/json/serializedQuery.json");
+    public void testSerializeQuery() throws Exception {
+        assertThat(this.json.write(getQuery())).isEqualToJson("/json/serializedQuery.json");
     }
 
     @Test
-    public void testDeserialize() throws Exception {
-        Query query = getQuery();
-        assertThat(this.json.read("/json/queryPost.json")).isEqualTo(query);
+    public void testDeserializeQuery() throws Exception {
+        assertThat(this.json.read("/json/queryPost.json")).isEqualTo(getQuery());
     }
 
     private Query getQuery() {

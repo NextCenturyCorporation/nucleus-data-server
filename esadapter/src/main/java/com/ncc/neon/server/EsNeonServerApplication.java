@@ -11,8 +11,7 @@ https://github.com/Microsoft/vscode-spring-boot-dashboard/issues/63
 */
 @SpringBootApplication()
 public class EsNeonServerApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(EsNeonServerApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(EsNeonServerApplication.class, args);
+    }
 }

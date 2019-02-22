@@ -47,3 +47,4 @@ public class SingularWhereClauseDeserializer extends StdDeserializer<SingularWhe
         return SingularWhereClause.fromNull(node.get("lhs").asText(), node.get("operator").asText());
     }
 }
+

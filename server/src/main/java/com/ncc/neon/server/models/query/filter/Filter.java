@@ -6,13 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Filter - A filter is applied to a DataSet and can contain a whereClause
- */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-//@Accessors(fluent = true)
 public class Filter {
     String databaseName;
     String tableName;

@@ -16,14 +16,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Query
- */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-// @JsonIgnoreProperties(value = {"ignoreFilters_", "selectionOnly_",
-// "ignoredFilterIds_"})
 public class Query {
     Filter filter;
     boolean aggregateArraysByElement = false;
