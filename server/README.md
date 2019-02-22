@@ -21,6 +21,18 @@ Arguments can be passed into bootRun from the command line using `--args='<argum
 ```
 $ ./gradlew bootRun --args='--server.port=8090'
 ```
+
+## VSCode Settings
+
+Recommended:
+
+```
+{
+    "java.home": "<file_path_to_java_home>",
+    "java.configuration.updateBuildConfiguration": "automatic"
+}
+```
+
 ## License
 
 This project is licensed under the  Apache License Version 2.0 - see the [LICENSE](LICENSE) file for details
