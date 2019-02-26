@@ -93,6 +93,7 @@ public class ElasticSearchAdapter implements QueryAdapter {
         }
 
         private Map<String, Object> groupByKeys;
+        // TODO: does this need to be a linked hash map?
         private Map<String, Aggregation> aggregatedValues = new HashMap<>();
         private long docCount;
     }
@@ -106,7 +107,9 @@ public class ElasticSearchAdapter implements QueryAdapter {
         List<AggregateClause> aggregates = query.getAggregates();
         List<GroupByClause> groupByClauses = query.getGroupByClauses();
 
-        checkDatabaseAndTableExists(query.getFilter().getDatabaseName(), query.getFilter().getTableName());
+        if(query != null && query.getFilter() != null) {
+            checkDatabaseAndTableExists(query.getFilter().getDatabaseName(), query.getFilter().getTableName());
+        }
         long d1 = new Date().getTime();
 
         ElasticSearchRestConversionStrategy conversionStrategy = new ElasticSearchRestConversionStrategy();

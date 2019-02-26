@@ -138,11 +138,13 @@ public class ElasticSearchRestConversionStrategy {
     private Collection<? extends WhereClause> getCountFieldClauses(Query query) {
         List<SingularWhereClause> clauses = new ArrayList<>();
 
-        query.getAggregates().forEach(aggClause -> {
-            if (isCountFieldAggregation(aggClause)) {
-                clauses.add(SingularWhereClause.fromNull(aggClause.getField(), "!="));
-            }
-        });
+        if(query.getAggregates() != null) {
+            query.getAggregates().forEach(aggClause -> {
+                if (isCountFieldAggregation(aggClause)) {
+                    clauses.add(SingularWhereClause.fromNull(aggClause.getField(), "!="));
+                }
+            });
+        }
 
         return clauses;
     }
@@ -330,16 +332,19 @@ public class ElasticSearchRestConversionStrategy {
                 source.aggregation(metricAgg);
             });
 
-            query.getSortClauses().stream().map(ElasticSearchRestConversionStrategy::convertSortClause).forEach(clause -> {
-                source.sort(clause);
-            });
+            if(query.getSortClauses() != null) {
+                query.getSortClauses().stream().map(ElasticSearchRestConversionStrategy::convertSortClause).forEach(clause -> {
+                    source.sort(clause);
+                });
+            }
         }
     }
 
     private static List<StatsAggregationBuilder> getMetricAggregations(Query query) {
         List<StatsAggregationBuilder> aggregates = new ArrayList<StatsAggregationBuilder>();
 
-        aggregates = query.getAggregates().stream()
+        if(query.getAggregates() != null) {
+            aggregates = query.getAggregates().stream()
             .filter(clause -> {
                 return !isCountAllAggregation(clause) && !isCountFieldAggregation(clause);
             }).map(agg -> {
@@ -347,6 +352,7 @@ public class ElasticSearchRestConversionStrategy {
             }).distinct().map(agg -> {
                 return AggregationBuilders.stats(ElasticSearchRestConversionStrategy.STATS_AGG_PREFIX + agg).field(agg);
             }).collect(Collectors.toList());
+        }
 
         return aggregates;
     }
@@ -405,11 +411,11 @@ public class ElasticSearchRestConversionStrategy {
         //
         // TODO:  Set size=0 (i.e. limit clause) when type is counts
         String indicesValue = 
-            (params != null && params.getFilter() != null & params.getFilter().getDatabaseName() != null)
+            (params != null && params.getFilter() != null && params.getFilter().getDatabaseName() != null)
             ? params.getFilter().getDatabaseName() : "_all";
 
         String typesValue = 
-            (params != null && params.getFilter() != null & params.getFilter().getTableName() != null)
+            (params != null && params.getFilter() != null && params.getFilter().getTableName() != null)
             ? params.getFilter().getTableName() : "_all";
 
         req.searchType(SearchType.DFS_QUERY_THEN_FETCH)
