@@ -16,6 +16,7 @@ import com.ncc.neon.server.models.query.clauses.AndWhereClause;
 import com.ncc.neon.server.models.query.clauses.FieldFunction;
 import com.ncc.neon.server.models.query.clauses.GroupByClause;
 import com.ncc.neon.server.models.query.clauses.GroupByFieldClause;
+import com.ncc.neon.server.models.query.clauses.GroupByFunctionClause;
 import com.ncc.neon.server.models.query.clauses.OrWhereClause;
 import com.ncc.neon.server.models.query.clauses.SelectClause;
 import com.ncc.neon.server.models.query.clauses.SingularWhereClause;
@@ -23,6 +24,7 @@ import com.ncc.neon.server.models.query.clauses.SortClause;
 import com.ncc.neon.server.models.query.clauses.WhereClause;
 
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.common.unit.TimeValue;
@@ -40,6 +42,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.StatsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -250,14 +253,86 @@ public class ElasticSearchRestConversionStrategy {
     */
     private static void convertAggregations(Query query, SearchSourceBuilder source) {
         if (query.isDistinct()) {
-            if (query.getFields() == null || query.getFields().size() == 0 || query.getFields().size() > 1) {
+            if (query.getFields() == null || query.getFields().isEmpty() || query.getFields().size() > 1) {
                 throw new RuntimeException("Distinct call requires one field");
             }
 
             TermsAggregationBuilder termsAggregations = AggregationBuilders.terms("distinct").field(query.getFields().get(0)).size(getLimit(query));
             source.aggregation(termsAggregations);
         } else {
-            // TODO: convertMetricAggregations(query, source);
+            convertMetricAggregations(query, source);
+        }
+    }
+
+    // TODO: do we need this?
+    // use this for getAggregates() (AggregateClause extends FieldFunction)
+    private static SortClause findMatchingSortClause(Query query, FieldFunction matchClause) {
+        return query.getSortClauses().stream().filter(sc -> {
+            return matchClause.getName() == sc.getFieldName();
+        }).findFirst().orElse(null);
+    }
+
+    private static SortClause findMatchingSortClause(Query query, GroupByFieldClause matchClause) {
+        return query.getSortClauses().stream().filter(sc -> {
+            return matchClause.getField() == sc.getFieldName();
+        }).findFirst().orElse(null);
+    }
+
+    private static void convertMetricAggregations(Query query, SearchSourceBuilder source) {
+        List<StatsAggregationBuilder> metricAggregations = getMetricAggregations(query);
+
+        if (query.getGroupByClauses() != null && !query.getGroupByClauses().isEmpty()) {
+            List<AggregationBuilder> bucketAggs = query.getGroupByClauses().stream().map(clause -> {
+                return convertGroupByClause(query, clause);
+            }).collect(Collectors.toList());
+
+            AggregationBuilder lastBucketAgg = bucketAggs.get(bucketAggs.size() - 1);
+
+            metricAggregations.forEach(metricAggregation -> {
+                lastBucketAgg.subAggregation(metricAggregation);
+            });
+
+            // copy + pasting commented out Groovy code in case its needed in the future
+//            query.aggregates.each { ac ->
+//                def sc = findMatchingSortClause(query, ac)
+//                if (sc) {
+//                    def sortOrder = sc.sortOrder == com.ncc.neon.query.clauses.SortOrder.ASCENDING
+//                    bucketAggregations.each { bucketAgg ->
+//                        if (!(bucketAgg instanceof DateHistogramBuilder)) {
+//                            bucketAgg.order(Terms.Order.aggregation(TERM_PREFIX, sortOrder))
+//                        }
+//                    }
+//                    def lastAgg = bucketAggregations.last()
+//                    if (!(lastAgg instanceof DateHistogramBuilder)) {
+//                        def aggOrder
+//                        if (isCountAllAggregation(ac)) {
+//                            aggOrder = Terms.Order.count(sortOrder)
+//                        } else {
+//                            aggOrder = Terms.Order.aggregation("${STATS_AGG_PREFIX}${ac.field}" as String, ac.operation as String, sortOrder)
+//                        }
+//                        lastAgg.order(aggOrder)
+//                    }
+//                }
+//            }
+
+            // on each aggregation, except the last - nest the next aggregation
+            for (int index = 0; index < bucketAggs.size() - 1; index++) {
+                AggregationBuilder bucketAgg = bucketAggs.get(index);
+                bucketAgg.subAggregation(bucketAggs.get(index + 1));
+                bucketAggs.set(index, bucketAgg);
+            }
+
+            source.aggregation(bucketAggs.get(0));
+
+        } else {
+            // if there are no groupByClauses, apply sort and metricAggregations directly to source
+            metricAggregations.forEach(metricAgg -> {
+                source.aggregation(metricAgg);
+            });
+
+            query.getSortClauses().stream().map(ElasticSearchRestConversionStrategy::convertSortClause).forEach(clause -> {
+                source.sort(clause);
+            });
         }
     }
 
@@ -295,6 +370,12 @@ public class ElasticSearchRestConversionStrategy {
         return clause != null && clause.getOperation() == "count" && clause.getField() == "*";
     }
 
+    private static SortBuilder<FieldSortBuilder> convertSortClause(SortClause clause) {
+        SortOrder order = clause.getSortOrder() == com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING ?
+            SortOrder.ASC : SortOrder.DESC;
+        return SortBuilders.fieldSort(clause.getFieldName()).order(order);
+    }
+ 
     public static SearchSourceBuilder createSearchSourceBuilder(Query query) {
         int offset = getOffset(query);
         int size = getLimit(query);
@@ -320,7 +401,7 @@ public class ElasticSearchRestConversionStrategy {
 
         // NOTE:  IN version 5, count was replaced by Query_Then_Fetch with a size=0
         // See: https://www.elastic.co/guide/en/elasticsearch/reference/2.3/search-request-search-type.html
-        // req.searchType((params?.aggregates) ? SearchType.COUNT : SearchType.DFS_QUERY_THEN_FETCH)
+        // req.searchType((params != null && params.getAggregates().size() > 0) ? SearchType.COUNT : SearchType.DFS_QUERY_THEN_FETCH);
         //
         // TODO:  Set size=0 (i.e. limit clause) when type is counts
         String indicesValue = 
@@ -366,4 +447,54 @@ public class ElasticSearchRestConversionStrategy {
         return Math.max(RESULT_LIMIT - getOffset(query), 0);
     }
 
+
+    // TODO: 964: would there be another case where the other findMatchingSortClause()
+    // for FieldFunction would be needed? - not sure there is currently
+
+    // Used by convertGroupByClause method
+    private static DateHistogramAggregationBuilder createDateHistAggBuilder(GroupByFunctionClause clause,
+        DateHistogramInterval interval, String format) {
+
+        DateHistogramAggregationBuilder dateHist = AggregationBuilders.dateHistogram(clause.getName())
+            .field(clause.getField()).dateHistogramInterval(interval).format(format);
+
+        // TODO: is this needed?
+        if(clause.getOperation() == "dayOfWeek") {
+            dateHist.offset("1d");
+        }
+
+        return dateHist;
+    }
+
+    private static AggregationBuilder convertGroupByClause(Query query, GroupByClause clause) {
+        if(clause instanceof GroupByFieldClause) {
+            GroupByFieldClause fieldClause = (GroupByFieldClause) clause;
+            TermsAggregationBuilder termsAggBuilder = AggregationBuilders.terms(fieldClause.getField()).field(fieldClause.getField()).size(getLimit(query));
+            SortClause sortClause = findMatchingSortClause(query, fieldClause);
+
+            if(sortClause != null) {
+                boolean sortOrder = sortClause.getSortOrder().getDirection() == com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING.getDirection();
+                termsAggBuilder.order(BucketOrder.key(sortOrder));
+            }
+
+            return termsAggBuilder;
+        }
+
+        if(clause instanceof GroupByFunctionClause) {
+            GroupByFunctionClause funcClause = (GroupByFunctionClause) clause;
+            if(Arrays.asList(DATE_OPERATIONS).contains(funcClause.getOperation())) {
+                switch (funcClause.getOperation()) {
+                    case "year": return createDateHistAggBuilder(funcClause, DateHistogramInterval.YEAR, "yyyy");
+                    case "month": return createDateHistAggBuilder(funcClause, DateHistogramInterval.MONTH, "M");
+                    case "dayOfMonth": return createDateHistAggBuilder(funcClause, DateHistogramInterval.DAY, "d");
+                    case "dayOfWeek": return createDateHistAggBuilder(funcClause, DateHistogramInterval.DAY, "e");
+                    case "hour": return createDateHistAggBuilder(funcClause, DateHistogramInterval.HOUR, "H");
+                    case "minute": return createDateHistAggBuilder(funcClause, DateHistogramInterval.MINUTE, "m");
+                    case "second": return createDateHistAggBuilder(funcClause, DateHistogramInterval.SECOND, "s");
+                }
+            }
+        }
+
+        throw new RuntimeException("Unknown groupByClause: " + clause.getClass());
+    }
 }
