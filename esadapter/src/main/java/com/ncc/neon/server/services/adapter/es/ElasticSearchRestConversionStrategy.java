@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import javax.management.RuntimeErrorException;
-
 import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.clauses.AggregateClause;
@@ -34,11 +32,9 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.RegexpQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
-import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.BucketOrder;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.StatsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -225,7 +221,7 @@ public class ElasticSearchRestConversionStrategy {
 
         if(Arrays.asList("contains", "not contains", "notcontains").contains(clause.getOperator())) {
             RegexpQueryBuilder regexFilter = QueryBuilders.regexpQuery(clause.getLhs(), ".*" + clause.getRhs() + ".*");
-            return clause.getOperator() == "contains" ? regexFilter : QueryBuilders.boolQuery().mustNot(regexFilter);
+            return clause.getOperator().equals("contains") ? regexFilter : QueryBuilders.boolQuery().mustNot(regexFilter);
         };
 
         if(Arrays.asList("=", "!=").contains(clause.getOperator())) {
@@ -235,12 +231,12 @@ public class ElasticSearchRestConversionStrategy {
                 QueryBuilders.termQuery(clause.getLhs(), Arrays.asList(clause.getRhs())) :
                 QueryBuilders.existsQuery(clause.getLhs());
 
-            return (clause.getOperator() == "!=") == !hasValue ? filter : QueryBuilders.boolQuery().mustNot(filter);
+            return (clause.getOperator().equals("!=") == !hasValue) ? filter : QueryBuilders.boolQuery().mustNot(filter);
         };
 
         if(Arrays.asList("in", "notin").contains(clause.getOperator())) {
             TermsQueryBuilder filter = QueryBuilders.termsQuery(clause.getLhs(), Arrays.asList(clause.getRhs()));
-            return (clause.getOperator() == "in") ? filter : QueryBuilders.boolQuery().mustNot(filter);
+            return (clause.getOperator().equals("in")) ? filter : QueryBuilders.boolQuery().mustNot(filter);
         };
 
         throw new RuntimeException(clause.getOperator() + " is an invalid operator for a where clause");
@@ -270,13 +266,13 @@ public class ElasticSearchRestConversionStrategy {
     // use this for getAggregates() (AggregateClause extends FieldFunction)
     private static SortClause findMatchingSortClause(Query query, FieldFunction matchClause) {
         return query.getSortClauses().stream().filter(sc -> {
-            return matchClause.getName() == sc.getFieldName();
+            return matchClause.getName().equals(sc.getFieldName());
         }).findFirst().orElse(null);
     }
 
     private static SortClause findMatchingSortClause(Query query, GroupByFieldClause matchClause) {
         return query.getSortClauses().stream().filter(sc -> {
-            return matchClause.getField() == sc.getFieldName();
+            return matchClause.getField().equals(sc.getFieldName());
         }).findFirst().orElse(null);
     }
 
@@ -369,11 +365,11 @@ public class ElasticSearchRestConversionStrategy {
     }
 
     public static boolean isCountFieldAggregation(AggregateClause clause) {
-        return clause != null && clause.getOperation() == "count" && clause.getField() != "*";
+        return clause != null && clause.getOperation().equals("count") && !clause.getField().equals("*");
     }
 
     public static boolean isCountAllAggregation(AggregateClause clause) {
-        return clause != null && clause.getOperation() == "count" && clause.getField() == "*";
+        return clause != null && clause.getOperation().equals("count") && clause.getField().equals("*");
     }
 
     private static SortBuilder<FieldSortBuilder> convertSortClause(SortClause clause) {
@@ -465,7 +461,7 @@ public class ElasticSearchRestConversionStrategy {
             .field(clause.getField()).dateHistogramInterval(interval).format(format);
 
         // TODO: is this needed?
-        if(clause.getOperation() == "dayOfWeek") {
+        if(clause.getOperation().equals("dayOfWeek")) {
             dateHist.offset("1d");
         }
 
