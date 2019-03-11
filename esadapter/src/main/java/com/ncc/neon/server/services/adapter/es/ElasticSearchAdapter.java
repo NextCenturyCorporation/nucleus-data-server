@@ -41,7 +41,7 @@ public class ElasticSearchAdapter implements QueryAdapter {
 
     @Override
     public Mono<TabularQueryResult> execute(Query query, QueryOptions options) {
-        checkDatabaseAndTableExists(query.getFilter().getDatabaseName(), query.getFilter().getTableName());
+        checkDatabaseAndTableExists(query);
 
         SearchRequest request = ElasticsearchTransformer.transformQuery(query, options);
         SearchResponse response = null;
@@ -66,8 +66,13 @@ public class ElasticSearchAdapter implements QueryAdapter {
      * This method allows only the databaseName to be wildcarded to match the
      * behavior of index searches.
      */
-    private void checkDatabaseAndTableExists(String databaseName, String tableName) {
-        if (showTables(tableName).collectList().block().indexOf(tableName) >= 0) {
+    private void checkDatabaseAndTableExists(Query query) {
+        if(query != null && query.getFilter() != null) {
+            throw new ResourceNotFoundException("Query does not exist");
+        }
+
+        String tableName = query.getFilter().getTableName();
+        if(showTables(tableName).collectList().block().indexOf(tableName) >= 0) {
             throw new ResourceNotFoundException("Table ${tableName} does not exist");
         }
     }
