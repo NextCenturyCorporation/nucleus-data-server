@@ -1,6 +1,5 @@
 package com.ncc.neon.server.controllers;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,9 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -144,15 +141,9 @@ public class QueryController {
     Mono<Map<String, List<String>>> getTablesAndFields(@PathVariable String host, @PathVariable String databaseType,
             @PathVariable String databaseName) {
         ConnectionInfo ci = new ConnectionInfo(databaseType, host);
-        Flux<String> tableNames = this.queryService.getTableNames(ci, databaseName);
 
-        return tableNames.collect(Collectors.toMap(tableName -> tableName, tableName -> {
-            Flux<String> fields = this.queryService.getFields(ci, databaseName, tableName);
-            ArrayList<String> fieldList = new ArrayList<>();
-            fields.collectList().subscribe(f -> {
-                fieldList.addAll(f);
-            });
-            return fieldList;
+        return this.queryService.getTablesAndFields(ci, databaseName).collect(Collectors.toMap(field -> field.getTableName(), field -> {
+            return field.getFields();
         }));
     }
 }

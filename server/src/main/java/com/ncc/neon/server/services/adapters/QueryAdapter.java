@@ -4,6 +4,7 @@ import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.result.FieldTypePair;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
+import com.ncc.neon.server.models.query.result.TableWithFields;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -53,4 +54,12 @@ public interface QueryAdapter {
      * @return Mapping of field name to field type
      */
     Flux<FieldTypePair> getFieldTypes(String databaseName, String tableName);
+
+    /**
+     * Gets the tables and fields for a specified dataset
+     * 
+     * @param databaseName
+     * @return Mapping of table names to field names
+     */
+    Flux<TableWithFields> getTableAndFieldNames(String databaseName);
 }
