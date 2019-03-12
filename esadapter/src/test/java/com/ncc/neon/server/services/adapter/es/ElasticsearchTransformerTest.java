@@ -145,7 +145,7 @@ public class ElasticsearchTransformerTest {
     public void transformResultsCountFieldAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testAggregateField")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testAggField")));
         QueryOptions options = new QueryOptions();
 
         Aggregations aggregations = mock(Aggregations.class);
@@ -170,14 +170,14 @@ public class ElasticsearchTransformerTest {
     public void transformResultsAvgAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testAvg", "avg", "testAggregateField")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testAvg", "avg", "testAggField")));
         QueryOptions options = new QueryOptions();
 
         Stats stats = mock(Stats.class);
         when(stats.getAvg()).thenReturn(12.0);
         Aggregations aggregations = mock(Aggregations.class);
         when(aggregations.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats)
+            Map.entry("_statsFor_testAggField", stats)
         ));
         SearchHit[] hitArray = {};
         SearchHits hits = mock(SearchHits.class);
@@ -199,14 +199,14 @@ public class ElasticsearchTransformerTest {
     public void transformResultsMaxAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testMax", "max", "testAggregateField")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testMax", "max", "testAggField")));
         QueryOptions options = new QueryOptions();
 
         Stats stats = mock(Stats.class);
         when(stats.getMax()).thenReturn(12.0);
         Aggregations aggregations = mock(Aggregations.class);
         when(aggregations.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats)
+            Map.entry("_statsFor_testAggField", stats)
         ));
         SearchHit[] hitArray = {};
         SearchHits hits = mock(SearchHits.class);
@@ -228,14 +228,14 @@ public class ElasticsearchTransformerTest {
     public void transformResultsMinAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testMin", "min", "testAggregateField")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testMin", "min", "testAggField")));
         QueryOptions options = new QueryOptions();
 
         Stats stats = mock(Stats.class);
         when(stats.getMin()).thenReturn(12.0);
         Aggregations aggregations = mock(Aggregations.class);
         when(aggregations.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats)
+            Map.entry("_statsFor_testAggField", stats)
         ));
         SearchHit[] hitArray = {};
         SearchHits hits = mock(SearchHits.class);
@@ -257,14 +257,14 @@ public class ElasticsearchTransformerTest {
     public void transformResultsSumAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testSum", "sum", "testAggregateField")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testSum", "sum", "testAggField")));
         QueryOptions options = new QueryOptions();
 
         Stats stats = mock(Stats.class);
         when(stats.getSum()).thenReturn(12.0);
         Aggregations aggregations = mock(Aggregations.class);
         when(aggregations.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats)
+            Map.entry("_statsFor_testAggField", stats)
         ));
         SearchHit[] hitArray = {};
         SearchHits hits = mock(SearchHits.class);
@@ -287,11 +287,11 @@ public class ElasticsearchTransformerTest {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
         query.setAggregates(Arrays.asList(
-            new AggregateClause("testAggregateName1", "count", "*"),
-            new AggregateClause("testAggregateName2", "avg", "testAggregateField"),
-            new AggregateClause("testAggregateName3", "max", "testAggregateField"),
-            new AggregateClause("testAggregateName4", "min", "testAggregateField"),
-            new AggregateClause("testAggregateName5", "sum", "testAggregateField")
+            new AggregateClause("testAggName1", "count", "*"),
+            new AggregateClause("testAggName2", "avg", "testAggField"),
+            new AggregateClause("testAggName3", "max", "testAggField"),
+            new AggregateClause("testAggName4", "min", "testAggField"),
+            new AggregateClause("testAggName5", "sum", "testAggField")
         ));
         QueryOptions options = new QueryOptions();
 
@@ -302,7 +302,7 @@ public class ElasticsearchTransformerTest {
         when(stats.getSum()).thenReturn(78.0);
         Aggregations aggregations = mock(Aggregations.class);
         when(aggregations.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats)
+            Map.entry("_statsFor_testAggField", stats)
         ));
         SearchHit[] hitArray = {};
         SearchHits hits = mock(SearchHits.class);
@@ -315,11 +315,11 @@ public class ElasticsearchTransformerTest {
         TabularQueryResult results = ElasticsearchTransformer.transformResults(query, options, response);
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
-                Map.entry("testAggregateName1", (long) 90),
-                Map.entry("testAggregateName2", 12.0),
-                Map.entry("testAggregateName3", 34.0),
-                Map.entry("testAggregateName4", 56.0),
-                Map.entry("testAggregateName5", 78.0)
+                Map.entry("testAggName1", (long) 90),
+                Map.entry("testAggName2", 12.0),
+                Map.entry("testAggName3", 34.0),
+                Map.entry("testAggName4", 56.0),
+                Map.entry("testAggName5", 78.0)
             )
         ));
     }
@@ -1204,7 +1204,7 @@ public class ElasticsearchTransformerTest {
     public void transformResultsGroupByNonCountAggregationWithSingleBucketTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testSum", "sum", "testAggregateField")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testSum", "sum", "testAggField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         QueryOptions options = new QueryOptions();
 
@@ -1212,7 +1212,7 @@ public class ElasticsearchTransformerTest {
         when(stats1.getSum()).thenReturn(12.0);
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats1)
+            Map.entry("_statsFor_testAggField", stats1)
         ));
         Terms.Bucket bucket1 = mock(Terms.Bucket.class);
         when(bucket1.getAggregations()).thenReturn(bucketAggregations1);
@@ -1245,7 +1245,7 @@ public class ElasticsearchTransformerTest {
     public void transformResultsGroupByNonCountAggregationWithMultipleBucketsTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testSum", "sum", "testAggregateField")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testSum", "sum", "testAggField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         QueryOptions options = new QueryOptions();
 
@@ -1253,7 +1253,7 @@ public class ElasticsearchTransformerTest {
         when(stats1.getSum()).thenReturn(12.0);
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats1)
+            Map.entry("_statsFor_testAggField", stats1)
         ));
         Terms.Bucket bucket1 = mock(Terms.Bucket.class);
         when(bucket1.getAggregations()).thenReturn(bucketAggregations1);
@@ -1263,7 +1263,7 @@ public class ElasticsearchTransformerTest {
         when(stats2.getSum()).thenReturn(34.0);
         Aggregations bucketAggregations2 = mock(Aggregations.class);
         when(bucketAggregations2.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats2)
+            Map.entry("_statsFor_testAggField", stats2)
         ));
         Terms.Bucket bucket2 = mock(Terms.Bucket.class);
         when(bucket2.getAggregations()).thenReturn(bucketAggregations2);
@@ -1300,7 +1300,7 @@ public class ElasticsearchTransformerTest {
     public void transformResultsGroupByNonCountAggregationWithLimitAndOffsetAndSortByAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testSum", "sum", "testAggregateField")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testSum", "sum", "testAggField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
@@ -1311,7 +1311,7 @@ public class ElasticsearchTransformerTest {
         when(stats1.getSum()).thenReturn(12.0);
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats1)
+            Map.entry("_statsFor_testAggField", stats1)
         ));
         Terms.Bucket bucket1 = mock(Terms.Bucket.class);
         when(bucket1.getAggregations()).thenReturn(bucketAggregations1);
@@ -1321,7 +1321,7 @@ public class ElasticsearchTransformerTest {
         when(stats2.getSum()).thenReturn(34.0);
         Aggregations bucketAggregations2 = mock(Aggregations.class);
         when(bucketAggregations2.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats2)
+            Map.entry("_statsFor_testAggField", stats2)
         ));
         Terms.Bucket bucket2 = mock(Terms.Bucket.class);
         when(bucket2.getAggregations()).thenReturn(bucketAggregations2);
@@ -1331,7 +1331,7 @@ public class ElasticsearchTransformerTest {
         when(stats3.getSum()).thenReturn(56.0);
         Aggregations bucketAggregations3 = mock(Aggregations.class);
         when(bucketAggregations3.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats3)
+            Map.entry("_statsFor_testAggField", stats3)
         ));
         Terms.Bucket bucket3 = mock(Terms.Bucket.class);
         when(bucket3.getAggregations()).thenReturn(bucketAggregations3);
@@ -1341,7 +1341,7 @@ public class ElasticsearchTransformerTest {
         when(stats4.getSum()).thenReturn(78.0);
         Aggregations bucketAggregations4 = mock(Aggregations.class);
         when(bucketAggregations4.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats4)
+            Map.entry("_statsFor_testAggField", stats4)
         ));
         Terms.Bucket bucket4 = mock(Terms.Bucket.class);
         when(bucket4.getAggregations()).thenReturn(bucketAggregations4);
@@ -1378,7 +1378,7 @@ public class ElasticsearchTransformerTest {
     public void transformResultsGroupByNonCountAggregationWithLimitAndOffsetAndSortByFieldTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testSum", "sum", "testAggregateField")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testSum", "sum", "testAggField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
@@ -1389,7 +1389,7 @@ public class ElasticsearchTransformerTest {
         when(stats1.getSum()).thenReturn(12.0);
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats1)
+            Map.entry("_statsFor_testAggField", stats1)
         ));
         Terms.Bucket bucket1 = mock(Terms.Bucket.class);
         when(bucket1.getAggregations()).thenReturn(bucketAggregations1);
@@ -1399,7 +1399,7 @@ public class ElasticsearchTransformerTest {
         when(stats2.getSum()).thenReturn(34.0);
         Aggregations bucketAggregations2 = mock(Aggregations.class);
         when(bucketAggregations2.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats2)
+            Map.entry("_statsFor_testAggField", stats2)
         ));
         Terms.Bucket bucket2 = mock(Terms.Bucket.class);
         when(bucket2.getAggregations()).thenReturn(bucketAggregations2);
@@ -1409,7 +1409,7 @@ public class ElasticsearchTransformerTest {
         when(stats3.getSum()).thenReturn(56.0);
         Aggregations bucketAggregations3 = mock(Aggregations.class);
         when(bucketAggregations3.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats3)
+            Map.entry("_statsFor_testAggField", stats3)
         ));
         Terms.Bucket bucket3 = mock(Terms.Bucket.class);
         when(bucket3.getAggregations()).thenReturn(bucketAggregations3);
@@ -1419,7 +1419,7 @@ public class ElasticsearchTransformerTest {
         when(stats4.getSum()).thenReturn(78.0);
         Aggregations bucketAggregations4 = mock(Aggregations.class);
         when(bucketAggregations4.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats4)
+            Map.entry("_statsFor_testAggField", stats4)
         ));
         Terms.Bucket bucket4 = mock(Terms.Bucket.class);
         when(bucket4.getAggregations()).thenReturn(bucketAggregations4);
@@ -1548,7 +1548,7 @@ public class ElasticsearchTransformerTest {
     public void transformResultsMultipleGroupsAndNonCountAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testSum", "sum", "testAggregateField")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testSum", "sum", "testAggField")));
         query.setGroupByClauses(Arrays.asList(
             new GroupByFieldClause("testOuterGroupField", "Test Outer Group Field"),
             new GroupByFieldClause("testInnerGroupField", "Test Inner Group Field")
@@ -1559,7 +1559,7 @@ public class ElasticsearchTransformerTest {
         when(stats1A.getSum()).thenReturn(12.0);
         Aggregations nestedBucketAggregations1A = mock(Aggregations.class);
         when(nestedBucketAggregations1A.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats1A)
+            Map.entry("_statsFor_testAggField", stats1A)
         ));
         Terms.Bucket nestedBucket1A = mock(Terms.Bucket.class);
         when(nestedBucket1A.getAggregations()).thenReturn(nestedBucketAggregations1A);
@@ -1569,7 +1569,7 @@ public class ElasticsearchTransformerTest {
         when(stats1B.getSum()).thenReturn(34.0);
         Aggregations nestedBucketAggregations1B = mock(Aggregations.class);
         when(nestedBucketAggregations1B.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats1B)
+            Map.entry("_statsFor_testAggField", stats1B)
         ));
         Terms.Bucket nestedBucket1B = mock(Terms.Bucket.class);
         when(nestedBucket1B.getAggregations()).thenReturn(nestedBucketAggregations1B);
@@ -1588,7 +1588,7 @@ public class ElasticsearchTransformerTest {
         when(stats2A.getSum()).thenReturn(56.0);
         Aggregations nestedBucketAggregations2A = mock(Aggregations.class);
         when(nestedBucketAggregations2A.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats2A)
+            Map.entry("_statsFor_testAggField", stats2A)
         ));
         Terms.Bucket nestedBucket2A = mock(Terms.Bucket.class);
         when(nestedBucket2A.getAggregations()).thenReturn(nestedBucketAggregations2A);
@@ -1598,7 +1598,7 @@ public class ElasticsearchTransformerTest {
         when(stats2B.getSum()).thenReturn(78.0);
         Aggregations nestedBucketAggregations2B = mock(Aggregations.class);
         when(nestedBucketAggregations2B.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats2B)
+            Map.entry("_statsFor_testAggField", stats2B)
         ));
         Terms.Bucket nestedBucket2B = mock(Terms.Bucket.class);
         when(nestedBucket2B.getAggregations()).thenReturn(nestedBucketAggregations2B);
@@ -1657,11 +1657,11 @@ public class ElasticsearchTransformerTest {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
         query.setAggregates(Arrays.asList(
-            new AggregateClause("testAggregateName1", "count", "*"),
-            new AggregateClause("testAggregateName2", "avg", "testAggregateField"),
-            new AggregateClause("testAggregateName3", "max", "testAggregateField"),
-            new AggregateClause("testAggregateName4", "min", "testAggregateField"),
-            new AggregateClause("testAggregateName5", "sum", "testAggregateField")
+            new AggregateClause("testAggName1", "count", "*"),
+            new AggregateClause("testAggName2", "avg", "testAggField"),
+            new AggregateClause("testAggName3", "max", "testAggField"),
+            new AggregateClause("testAggName4", "min", "testAggField"),
+            new AggregateClause("testAggName5", "sum", "testAggField")
         ));
         query.setGroupByClauses(Arrays.asList(
             new GroupByFieldClause("testOuterGroupField", "Test Outer Group Field"),
@@ -1676,7 +1676,7 @@ public class ElasticsearchTransformerTest {
         when(stats1A.getSum()).thenReturn(12.78);
         Aggregations nestedBucketAggregations1A = mock(Aggregations.class);
         when(nestedBucketAggregations1A.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats1A)
+            Map.entry("_statsFor_testAggField", stats1A)
         ));
         Terms.Bucket nestedBucket1A = mock(Terms.Bucket.class);
         when(nestedBucket1A.getAggregations()).thenReturn(nestedBucketAggregations1A);
@@ -1689,7 +1689,7 @@ public class ElasticsearchTransformerTest {
         when(stats1B.getSum()).thenReturn(34.78);
         Aggregations nestedBucketAggregations1B = mock(Aggregations.class);
         when(nestedBucketAggregations1B.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats1B)
+            Map.entry("_statsFor_testAggField", stats1B)
         ));
         Terms.Bucket nestedBucket1B = mock(Terms.Bucket.class);
         when(nestedBucket1B.getAggregations()).thenReturn(nestedBucketAggregations1B);
@@ -1711,7 +1711,7 @@ public class ElasticsearchTransformerTest {
         when(stats2A.getSum()).thenReturn(56.78);
         Aggregations nestedBucketAggregations2A = mock(Aggregations.class);
         when(nestedBucketAggregations2A.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats2A)
+            Map.entry("_statsFor_testAggField", stats2A)
         ));
         Terms.Bucket nestedBucket2A = mock(Terms.Bucket.class);
         when(nestedBucket2A.getAggregations()).thenReturn(nestedBucketAggregations2A);
@@ -1724,7 +1724,7 @@ public class ElasticsearchTransformerTest {
         when(stats2B.getSum()).thenReturn(78.78);
         Aggregations nestedBucketAggregations2B = mock(Aggregations.class);
         when(nestedBucketAggregations2B.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats2B)
+            Map.entry("_statsFor_testAggField", stats2B)
         ));
         Terms.Bucket nestedBucket2B = mock(Terms.Bucket.class);
         when(nestedBucket2B.getAggregations()).thenReturn(nestedBucketAggregations2B);
@@ -1757,38 +1757,38 @@ public class ElasticsearchTransformerTest {
             Map.ofEntries(
                 Map.entry("testOuterGroupField", "testOuterGroup2"),
                 Map.entry("testInnerGroupField", "testInnerGroupB"),
-                Map.entry("testAggregateName1", (long) 87),
-                Map.entry("testAggregateName2", 78.12),
-                Map.entry("testAggregateName3", 78.34),
-                Map.entry("testAggregateName4", 78.56),
-                Map.entry("testAggregateName5", 78.78)
+                Map.entry("testAggName1", (long) 87),
+                Map.entry("testAggName2", 78.12),
+                Map.entry("testAggName3", 78.34),
+                Map.entry("testAggName4", 78.56),
+                Map.entry("testAggName5", 78.78)
             ),
             Map.ofEntries(
                 Map.entry("testOuterGroupField", "testOuterGroup2"),
                 Map.entry("testInnerGroupField", "testInnerGroupA"),
-                Map.entry("testAggregateName1", (long) 65),
-                Map.entry("testAggregateName2", 56.12),
-                Map.entry("testAggregateName3", 56.34),
-                Map.entry("testAggregateName4", 56.56),
-                Map.entry("testAggregateName5", 56.78)
+                Map.entry("testAggName1", (long) 65),
+                Map.entry("testAggName2", 56.12),
+                Map.entry("testAggName3", 56.34),
+                Map.entry("testAggName4", 56.56),
+                Map.entry("testAggName5", 56.78)
             ),
             Map.ofEntries(
                 Map.entry("testOuterGroupField", "testOuterGroup1"),
                 Map.entry("testInnerGroupField", "testInnerGroupB"),
-                Map.entry("testAggregateName1", (long) 43),
-                Map.entry("testAggregateName2", 34.12),
-                Map.entry("testAggregateName3", 34.34),
-                Map.entry("testAggregateName4", 34.56),
-                Map.entry("testAggregateName5", 34.78)
+                Map.entry("testAggName1", (long) 43),
+                Map.entry("testAggName2", 34.12),
+                Map.entry("testAggName3", 34.34),
+                Map.entry("testAggName4", 34.56),
+                Map.entry("testAggName5", 34.78)
             ),
             Map.ofEntries(
                 Map.entry("testOuterGroupField", "testOuterGroup1"),
                 Map.entry("testInnerGroupField", "testInnerGroupA"),
-                Map.entry("testAggregateName1", (long) 21),
-                Map.entry("testAggregateName2", 12.12),
-                Map.entry("testAggregateName3", 12.34),
-                Map.entry("testAggregateName4", 12.56),
-                Map.entry("testAggregateName5", 12.78)
+                Map.entry("testAggName1", (long) 21),
+                Map.entry("testAggName2", 12.12),
+                Map.entry("testAggName3", 12.34),
+                Map.entry("testAggName4", 12.56),
+                Map.entry("testAggName5", 12.78)
             )
         ));
     }
@@ -1845,7 +1845,7 @@ public class ElasticsearchTransformerTest {
     public void transformResultsDateGroupsAndNonCountAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testSum", "sum", "testAggregateField")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testSum", "sum", "testAggField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFunctionClause("testYear", "year", "testDateField")));
         QueryOptions options = new QueryOptions();
 
@@ -1853,7 +1853,7 @@ public class ElasticsearchTransformerTest {
         when(stats1.getSum()).thenReturn(12.0);
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats1)
+            Map.entry("_statsFor_testAggField", stats1)
         ));
         Terms.Bucket bucket1 = mock(Terms.Bucket.class);
         when(bucket1.getAggregations()).thenReturn(bucketAggregations1);
@@ -1863,7 +1863,7 @@ public class ElasticsearchTransformerTest {
         when(stats2.getSum()).thenReturn(34.0);
         Aggregations bucketAggregations2 = mock(Aggregations.class);
         when(bucketAggregations2.asMap()).thenReturn(Map.ofEntries(
-            Map.entry("_statsFor_testAggregateField", stats2)
+            Map.entry("_statsFor_testAggField", stats2)
         ));
         Terms.Bucket bucket2 = mock(Terms.Bucket.class);
         when(bucket2.getAggregations()).thenReturn(bucketAggregations2);
