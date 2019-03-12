@@ -9,6 +9,7 @@ import java.util.function.BiConsumer;
 import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.result.FieldTypePair;
+import com.ncc.neon.server.models.query.result.TableWithFields;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
 import com.ncc.neon.server.services.adapters.QueryAdapter;
 
@@ -118,7 +119,26 @@ public class ElasticSearchAdapter implements QueryAdapter {
             getMappingProperties(mappingProperties, null).forEach(pair -> sink.next(pair.getField()));
         };
         return getMappings(dbName, tableName, mappingConsumer);
+    }
 
+    @Override
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public Flux<TableWithFields> getTableAndFieldNames(String dbName) {
+        GetMappingsRequest request = new GetMappingsRequest();
+        request.indices(dbName);
+
+        return getMappingRequestToFlux(request, (sink, response) -> {
+            response.getMappings().get(dbName).keysIt().forEachRemaining(tableName -> {
+
+                Map<String, Map> mappingProperties = (Map<String, Map>) response.mappings().get(dbName).get(tableName).sourceAsMap().get("properties");
+
+                List<String> fieldNames = getMappingPropertiesFieldNamesOnly(mappingProperties, null);
+                if(!fieldNames.contains("_id")) {
+                    fieldNames.add("_id");
+                }
+                sink.next(new TableWithFields(tableName, fieldNames));
+            });
+        });
     }
 
     @Override
@@ -165,6 +185,33 @@ public class ElasticSearchAdapter implements QueryAdapter {
             }
         });
         return fieldTypePairs;
+    }
+
+    /* Recursive function to get all the field names */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private List<String> getMappingPropertiesFieldNamesOnly(Map<String, Map> mappingProperties, String parentFieldName) {
+        List<String> fields = new ArrayList<>();
+        mappingProperties.forEach((fieldName, value) -> {
+            /* If we want to include parents of nested fields in list:
+            if (parentFieldName != null) {
+                fieldName = parentFieldName + "." + fieldName;
+            }
+            fields.add(fieldName);
+            if (value.get("properties") != null) {
+                Map<String, Map> subMapping = (Map<String, Map>) value.get("properties");
+                fields.addAll(getMappingPropertiesFieldNamesOnly(subMapping, fieldName));
+            }*/
+            if (value.get("type") != null) {
+                if (parentFieldName != null) {
+                    fieldName = parentFieldName + "." + fieldName;
+                }
+                fields.add(fieldName);
+            } else if (value.get("properties") != null) {
+                Map<String, Map> subMapping = (Map<String, Map>) value.get("properties");
+                fields.addAll(getMappingPropertiesFieldNamesOnly(subMapping, fieldName));
+            }
+        });
+        return fields;
     }
 
     /* Every method need to convert into a flux */

@@ -8,6 +8,7 @@ import java.util.Map;
 import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.result.FieldTypePair;
+import com.ncc.neon.server.models.query.result.TableWithFields;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
 import com.ncc.neon.server.services.adapters.QueryAdapter;
 
@@ -49,6 +50,15 @@ public class DummyQueryAdapter implements QueryAdapter {
     public Flux<FieldTypePair> getFieldTypes(String databaseName, String tableName) {
         Flux<FieldTypePair> fieldTypes = getFieldNames("", "").map(name -> new FieldTypePair(name, name + "-type"));
         return fieldTypes;
+    }
+
+    @Override
+    public Flux<TableWithFields> getTableAndFieldNames(String dbName) {
+        List<String> fields = new ArrayList<String>();
+        fields.add("field1");
+        fields.add("field2");
+        Flux<TableWithFields> tablesAndFields = showTables("").map(name -> new TableWithFields(name, fields));
+        return tablesAndFields;
     }
 
 }
