@@ -142,8 +142,9 @@ public class QueryController {
             @PathVariable String databaseName) {
         ConnectionInfo ci = new ConnectionInfo(databaseType, host);
 
-        return this.queryService.getTablesAndFields(ci, databaseName).collect(Collectors.toMap(field -> field.getTableName(), field -> {
-            return field.getFields();
+        return this.queryService.getTablesAndFields(ci, databaseName)
+            .collect(Collectors.toMap(tableAndFields -> tableAndFields.getTableName(), tableAndFields -> {
+            return tableAndFields.getFields();
         }));
     }
 }

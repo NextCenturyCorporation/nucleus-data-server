@@ -591,11 +591,21 @@ public class ElasticSearchAdapter implements QueryAdapter {
     private List<String> getMappingPropertiesFieldNamesOnly(Map<String, Map> mappingProperties, String parentFieldName) {
         List<String> fields = new ArrayList<>();
         mappingProperties.forEach((fieldName, value) -> {
+            /* If we want to include parents of nested fields in list:
             if (parentFieldName != null) {
                 fieldName = parentFieldName + "." + fieldName;
             }
             fields.add(fieldName);
             if (value.get("properties") != null) {
+                Map<String, Map> subMapping = (Map<String, Map>) value.get("properties");
+                fields.addAll(getMappingPropertiesFieldNamesOnly(subMapping, fieldName));
+            }*/
+            if (value.get("type") != null) {
+                if (parentFieldName != null) {
+                    fieldName = parentFieldName + "." + fieldName;
+                }
+                fields.add(fieldName);
+            } else if (value.get("properties") != null) {
                 Map<String, Map> subMapping = (Map<String, Map>) value.get("properties");
                 fields.addAll(getMappingPropertiesFieldNamesOnly(subMapping, fieldName));
             }
