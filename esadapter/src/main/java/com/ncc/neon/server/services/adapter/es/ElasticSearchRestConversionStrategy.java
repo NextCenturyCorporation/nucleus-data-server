@@ -20,6 +20,7 @@ import com.ncc.neon.server.models.query.clauses.SelectClause;
 import com.ncc.neon.server.models.query.clauses.SingularWhereClause;
 import com.ncc.neon.server.models.query.clauses.SortClause;
 import com.ncc.neon.server.models.query.clauses.WhereClause;
+import com.ncc.neon.util.DateUtil;
 
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
@@ -54,18 +55,8 @@ public class ElasticSearchRestConversionStrategy {
     static final String[] DATE_OPERATIONS = { "year", "month", "dayOfMonth", "dayOfWeek", "hour", "minute", "second" };
 
     public static final int RESULT_LIMIT = 10000;
-    private static final int TERM_AGGREGATION_SIZE = 100;
 
-    public static final DateHistogramInterval YEAR = DateHistogramInterval.YEAR;
-    public static final DateHistogramInterval MONTH = DateHistogramInterval.MONTH;
-    public static final DateHistogramInterval DAY = DateHistogramInterval.DAY;
-    public static final DateHistogramInterval HOUR = DateHistogramInterval.HOUR;
-    public static final DateHistogramInterval MINUTE = DateHistogramInterval.MINUTE;
-    public static final DateHistogramInterval SECOND = DateHistogramInterval.SECOND;
-
-    public ElasticSearchRestConversionStrategy() {
-
-    }
+    public ElasticSearchRestConversionStrategy() {}
 
     SearchRequest convertQuery(Query query, QueryOptions options) {
         //LOGGER.debug("Query is " + query + " QueryOptions is " + options);
@@ -101,10 +92,14 @@ public class ElasticSearchRestConversionStrategy {
         // Get all the (top level) WhereClauses, from the Filter and query
         List<WhereClause> whereClauses = collectWhereClauses(query, options, extraWhereClause);
 
-        // Convert the WhereClauses into a single ElasticSearch QueryBuilder object
-        QueryBuilder qbWithWhereClauses = convertWhereClauses(whereClauses);
+        SearchSourceBuilder ssb = createSearchSourceBuilder(query);
 
-        SearchSourceBuilder ssb = createSearchSourceBuilder(query).query(qbWithWhereClauses);
+        // Convert the WhereClauses into a single ElasticSearch QueryBuilder object
+        if(whereClauses.size() > 0) {
+            QueryBuilder qbWithWhereClauses = convertWhereClauses(whereClauses);
+            ssb = ssb.query(qbWithWhereClauses);
+        }
+
         return ssb;
 
         // Was:
@@ -136,6 +131,7 @@ public class ElasticSearchRestConversionStrategy {
 
         if(query.getAggregates() != null) {
             query.getAggregates().forEach(aggClause -> {
+                // TODO Don't add the new filter (!= null) if it already exists in the query.
                 if (isCountFieldAggregation(aggClause)) {
                     clauses.add(SingularWhereClause.fromNull(aggClause.getField(), "!="));
                 }
@@ -206,12 +202,14 @@ public class ElasticSearchRestConversionStrategy {
 
     private static QueryBuilder convertSingularWhereClause(SingularWhereClause clause) {
         if(Arrays.asList("<", ">", "<=", ">=").contains(clause.getOperator())) {
+            Object rhs = clause.isDate() ? DateUtil.transformDateToString(clause.getRhsDate()) : clause.getRhs();
+
             UnaryOperator<RangeQueryBuilder> outputRqb = inputRqb -> {
                 switch (clause.getOperator()) {
-                    case "<": return inputRqb.lt(clause.getRhs());
-                    case ">": return inputRqb.gt(clause.getRhs());
-                    case "<=": return inputRqb.lte(clause.getRhs());
-                    case ">=": return inputRqb.gte(clause.getRhs());
+                    case "<": return inputRqb.lt(rhs);
+                    case ">": return inputRqb.gt(rhs);
+                    case "<=": return inputRqb.lte(rhs);
+                    case ">=": return inputRqb.gte(rhs);
                     default: return inputRqb;
                 }
             };
@@ -227,13 +225,14 @@ public class ElasticSearchRestConversionStrategy {
         if(Arrays.asList("=", "!=").contains(clause.getOperator())) {
             boolean hasValue = !(clause.isNull());
 
-            QueryBuilder filter = hasValue ?
-                QueryBuilders.termQuery(clause.getLhs(), Arrays.asList(clause.getRhs())) :
+            QueryBuilder filter = hasValue ? QueryBuilders.termQuery(clause.getLhs(),
+                clause.isDate() ? DateUtil.transformDateToString(clause.getRhsDate()) : clause.getRhs()) :
                 QueryBuilders.existsQuery(clause.getLhs());
 
             return (clause.getOperator().equals("!=") == !hasValue) ? filter : QueryBuilders.boolQuery().mustNot(filter);
         };
 
+        // TODO Should the "in" and "notin" operators be deprecated?
         if(Arrays.asList("in", "notin").contains(clause.getOperator())) {
             TermsQueryBuilder filter = QueryBuilders.termsQuery(clause.getLhs(), Arrays.asList(clause.getRhs()));
             return (clause.getOperator().equals("in")) ? filter : QueryBuilders.boolQuery().mustNot(filter);
@@ -260,14 +259,6 @@ public class ElasticSearchRestConversionStrategy {
         } else {
             convertMetricAggregations(query, source);
         }
-    }
-
-    // TODO: do we need this?
-    // use this for getAggregates() (AggregateClause extends FieldFunction)
-    private static SortClause findMatchingSortClause(Query query, FieldFunction matchClause) {
-        return query.getSortClauses().stream().filter(sc -> {
-            return matchClause.getName().equals(sc.getFieldName());
-        }).findFirst().orElse(null);
     }
 
     private static SortClause findMatchingSortClause(Query query, GroupByFieldClause matchClause) {
@@ -420,7 +411,7 @@ public class ElasticSearchRestConversionStrategy {
                 .types(typesValue);
 
         if (req.searchType() == SearchType.DFS_QUERY_THEN_FETCH
-            && params.getLimitClause() != null && params.getLimitClause().getLimit() > 10000) {
+            && params.getLimitClause() != null && params.getLimitClause().getLimit() > RESULT_LIMIT) {
             req = req.scroll(TimeValue.timeValueMinutes(1));
         }
         return req;
@@ -428,12 +419,12 @@ public class ElasticSearchRestConversionStrategy {
 
     public static int getLimit(Query query, boolean supportsUnlimited) {
         if (query != null && query.getLimitClause() != null) {
-            int limitClauselimit = query.getLimitClause().getLimit();
+            int limit = query.getLimitClause().getLimit();
             if (supportsUnlimited) {
-                return limitClauselimit;
+                return limit;
             }
-            if (limitClauselimit < RESULT_LIMIT) {
-                return limitClauselimit;
+            if (limit < RESULT_LIMIT && limit > 0) {
+                return limit;
             }
             return RESULT_LIMIT;
         }
@@ -448,7 +439,6 @@ public class ElasticSearchRestConversionStrategy {
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-from-size.html
         return Math.max(RESULT_LIMIT - getOffset(query), 0);
     }
-
 
     // TODO: 964: would there be another case where the other findMatchingSortClause()
     // for FieldFunction would be needed? - not sure there is currently
