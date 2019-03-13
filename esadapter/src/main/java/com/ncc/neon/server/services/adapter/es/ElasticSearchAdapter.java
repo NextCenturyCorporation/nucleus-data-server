@@ -127,12 +127,12 @@ public class ElasticSearchAdapter implements QueryAdapter {
         if(response != null) {
             Aggregations aggResults = response.getAggregations();
 
-            if (aggregates != null && groupByClauses == null) {
+            if ((aggregates != null && !aggregates.isEmpty()) && (groupByClauses == null || groupByClauses.isEmpty())) {
                 // LOGGER.debug("aggs and no group by ");
                 Map<String, Object> metrics = extractMetrics(aggregates, aggResults != null ? aggResults.asMap() : null,
                         response.getHits().getTotalHits());
                 returnVal = new TabularQueryResult(List.of(metrics));
-            } else if (groupByClauses != null) {
+            } else if (groupByClauses != null && !groupByClauses.isEmpty()) {
                 // LOGGER.debug("group by ");
                 List<AggregationBucket> buckets = extractBuckets(groupByClauses,
                         (MultiBucketsAggregation) aggResults.asList().get(0));
@@ -471,10 +471,10 @@ public class ElasticSearchAdapter implements QueryAdapter {
      * behavior of index searches.
      */
     protected void checkDatabaseAndTableExists(String databaseName, String tableName) {
-
-        if (showTables(tableName).collectList().block().indexOf(tableName) >= 0) {
-            throw new ResourceNotFoundException("Table ${tableName} does not exist");
-        }
+        // TODO: Fix (THOR-1077) - commenting out for now
+        //if (showTables(tableName).collectList().block().indexOf(tableName) >= 0) {
+        //    throw new ResourceNotFoundException("Table ${tableName} does not exist");
+        //}
     }
 
     // TODO: generalize getting flux further?
