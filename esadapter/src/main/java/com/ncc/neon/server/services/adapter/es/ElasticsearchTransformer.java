@@ -80,7 +80,7 @@ public class ElasticsearchTransformer {
         TabularQueryResult results;
 
         if (aggregateClauses.size() > 0 && groupByClauses.size() == 0) {
-            Map<String, Object> metrics = extractMetrics(aggregateClauses, aggregationResults.asMap(), response.getHits().getTotalHits());
+            Map<String, Object> metrics = extractMetrics(aggregateClauses, aggregationResults != null ? aggregationResults.asMap() : null, response.getHits().getTotalHits());
             results = new TabularQueryResult(List.of(metrics));
         } else if (aggregateClauses.size() > 0 && groupByClauses.size() > 0) {
             List<AggregationBucket> buckets = extractBuckets(groupByClauses, (MultiBucketsAggregation) aggregationResults.asList().get(0));

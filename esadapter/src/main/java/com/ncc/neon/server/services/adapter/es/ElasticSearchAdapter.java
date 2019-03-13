@@ -68,14 +68,15 @@ public class ElasticSearchAdapter implements QueryAdapter {
      * behavior of index searches.
      */
     private void checkDatabaseAndTableExists(Query query) {
-        if(query != null && query.getFilter() != null) {
+        if(query == null || query.getFilter() == null) {
             throw new ResourceNotFoundException("Query does not exist");
         }
 
-        String tableName = query.getFilter().getTableName();
-        if(showTables(tableName).collectList().block().indexOf(tableName) >= 0) {
-            throw new ResourceNotFoundException("Table ${tableName} does not exist");
-        }
+        // TODO: Fix (THOR-1077) - commenting out for now
+        //String tableName = query.getFilter().getTableName();
+        //if(showTables(tableName).collectList().block().indexOf(tableName) >= 0) {
+        //    throw new ResourceNotFoundException("Table ${tableName} does not exist");
+        //}
     }
 
     // TODO: generalize getting flux further?
