@@ -36,11 +36,11 @@ public class SingularWhereClauseDeserializer extends StdDeserializer<SingularWhe
                 ((DoubleNode) rhs).doubleValue());
         }
         if(rhs.isTextual()) {
-            try {
-                ZonedDateTime date = DateUtil.transformStringToDate(rhs.asText());
+            ZonedDateTime date = DateUtil.transformStringToDate(rhs.asText());
+
+            if(date != null) {
                 return SingularWhereClause.fromDate(node.get("lhs").asText(), node.get("operator").asText(), date);
-            }
-            catch(Exception e) {
+            } else {
                 return SingularWhereClause.fromString(node.get("lhs").asText(), node.get("operator").asText(), rhs.asText());
             }
         }
