@@ -346,7 +346,17 @@ public class ElasticsearchTransformer {
                 for (SortClause sortClause : sortClauses) {
                     Object aField = a.get(sortClause.getFieldName());
                     Object bField = b.get(sortClause.getFieldName());
-                    int order = sortClause.getSortDirection() * (aField.toString().compareTo(bField.toString()));
+                    int order = 0;
+
+                    if(isFieldDouble(aField.toString()) && isFieldDouble(bField.toString())) {
+                        Double aFieldAsDouble = Double.parseDouble(aField.toString());
+                        Double bFieldAsDouble = Double.parseDouble(bField.toString());
+
+                        order = sortClause.getSortDirection() * (aFieldAsDouble.compareTo(bFieldAsDouble));
+                    } else {
+                        order = sortClause.getSortDirection() * (aField.toString().compareTo(bField.toString()));
+                    }
+
                     if (order != 0) {
                         return order;
                     }
@@ -356,6 +366,15 @@ public class ElasticsearchTransformer {
         }
 
         return buckets;
+    }
+
+    private static boolean isFieldDouble(String input) {
+        try {
+            Double.parseDouble(input);
+            return true;
+        } catch(Exception e) {
+            return false;
+        }
     }
 
     private static List<Map<String, Object>> limitBuckets(List<Map<String, Object>> buckets, Query query) {
