@@ -261,6 +261,8 @@ public class ElasticSearchRestConversionStrategy {
         }
     }
 
+    // Previously this method took either a GroupByFieldClause or FieldFunction clause. It does
+    // not currently look like the FieldFunction case is being used, so that was removed.
     private static SortClause findMatchingSortClause(Query query, GroupByFieldClause matchClause) {
         return query.getSortClauses().stream().filter(sc -> {
             return matchClause.getField().equals(sc.getFieldName());
@@ -439,9 +441,6 @@ public class ElasticSearchRestConversionStrategy {
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-from-size.html
         return Math.max(RESULT_LIMIT - getOffset(query), 0);
     }
-
-    // TODO: 964: would there be another case where the other findMatchingSortClause()
-    // for FieldFunction would be needed? - not sure there is currently
 
     // Used by convertGroupByClause method
     private static DateHistogramAggregationBuilder createDateHistAggBuilder(GroupByFunctionClause clause,
