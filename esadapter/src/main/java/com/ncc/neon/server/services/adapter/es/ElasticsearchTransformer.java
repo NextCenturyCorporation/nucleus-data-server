@@ -28,6 +28,11 @@ import org.elasticsearch.search.aggregations.metrics.stats.InternalStats;
 import org.elasticsearch.search.aggregations.metrics.stats.Stats;
 import org.elasticsearch.search.aggregations.pipeline.PipelineAggregator;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class ElasticsearchTransformer {
 
     /*
@@ -37,33 +42,26 @@ public class ElasticsearchTransformer {
      * Neon API uses.
      */
 
-    private static class AggregationBucket {
-        Map<String, Object> getGroupByKeys() {
-            return groupByKeys;
-        }
-
-        void setGroupByKeys(Map<String, Object> newGroupByKeys) {
-            groupByKeys = newGroupByKeys;
-        }
-
-        Map<String, Aggregation> getAggregatedValues() {
-            return aggregatedValues;
-        }
-
-        long getDocCount() {
-            return docCount;
-        }
-
-        void setDocCount(long newCount) {
-            docCount = newCount;
-        }
-
-        private Map<String, Object> groupByKeys;
+    @Data
+    private static class TransformedAggregationBucket {
         private Map<String, Aggregation> aggregatedValues = new LinkedHashMap<>();
+        private Map<String, TransformedAggregationData> groupByKeys = new LinkedHashMap<>();
+        // TODO Deprecated
         private long docCount;
     }
 
+    @AllArgsConstructor
+    @Data
+    private static class TransformedAggregationData {
+        private long count;
+        private Object value;
+    }
+
     public ElasticsearchTransformer() {
+    }
+
+    private static void logObject(String name, Object object) {
+        log.debug(name + ":  " + object.toString());
     }
 
     public static SearchRequest transformQuery(Query query, QueryOptions options) {
@@ -80,12 +78,14 @@ public class ElasticsearchTransformer {
         TabularQueryResult results;
 
         if (aggregateClauses.size() > 0 && groupByClauses.size() == 0) {
-            Map<String, Object> metrics = extractMetrics(aggregateClauses, aggregationResults != null ? aggregationResults.asMap() : null, response.getHits().getTotalHits());
+            Map<String, Object> metrics = extractMetrics(aggregateClauses, aggregationResults != null ? aggregationResults.asMap() : null,
+                response.getHits().getTotalHits());
             results = new TabularQueryResult(List.of(metrics));
         } else if (aggregateClauses.size() > 0 && groupByClauses.size() > 0) {
-            List<AggregationBucket> buckets = extractBuckets(groupByClauses, (MultiBucketsAggregation) aggregationResults.asList().get(0));
+            List<TransformedAggregationBucket> buckets = extractBuckets(groupByClauses,
+                (MultiBucketsAggregation) aggregationResults.asList().get(0));
             buckets = combineDuplicateBuckets(buckets);
-            List<Map<String, Object>> extractedMetrics = extractMetricsFromBuckets(aggregateClauses, buckets);
+            List<Map<String, Object>> extractedMetrics = extractMetricsFromBuckets(aggregateClauses, buckets, response.getHits().getTotalHits());
             extractedMetrics = sortBuckets(query.getSortClauses(), extractedMetrics);
             extractedMetrics = limitBuckets(extractedMetrics, query);
             results = new TabularQueryResult(extractedMetrics);
@@ -163,13 +163,21 @@ public class ElasticsearchTransformer {
 
     private static Map<String, Object> extractMetrics(List<AggregateClause> clauses, Map<String, Aggregation> results,
             long totalCount) {
+        return extractMetrics(clauses, results, new LinkedHashMap<>(), totalCount);
+    }
 
-        Map<Boolean, List<AggregateClause>> groups = clauses.stream().collect(Collectors.partitioningBy(it ->
-            ElasticSearchRestConversionStrategy.isCountAllAggregation(it) ||
-            ElasticSearchRestConversionStrategy.isCountFieldAggregation(it)));
+    private static Map<String, Object> extractMetrics(List<AggregateClause> clauses, Map<String, Aggregation> results,
+            Map<String, TransformedAggregationData> groupResults, long totalCount) {
 
-        List<AggregateClause> countClauses = groups.get(true);
-        List<AggregateClause> metricsClauses = groups.get(false);
+        List<AggregateClause> metricsClauses = clauses.stream().filter(it ->
+            !ElasticSearchRestConversionStrategy.isTotalCountAggregation(it) &&
+            !ElasticSearchRestConversionStrategy.isCountFieldAggregation(it)).collect(Collectors.toList());
+
+        List<AggregateClause> countFieldClauses = clauses.stream().filter(it ->
+            ElasticSearchRestConversionStrategy.isCountFieldAggregation(it)).collect(Collectors.toList());
+
+        List<AggregateClause> totalCountClauses = clauses.stream().filter(it ->
+            ElasticSearchRestConversionStrategy.isTotalCountAggregation(it)).collect(Collectors.toList());
 
         Map<String, Object> metrics = metricsClauses.stream().collect(Collectors.toMap(clause -> clause.getName(), clause -> {
             Stats result = (Stats) results.get(ElasticSearchRestConversionStrategy.STATS_AGG_PREFIX + clause.getField());
@@ -188,13 +196,17 @@ public class ElasticsearchTransformer {
                 metric = result.getSum();
                 break;
             }
-
             return metric;
         }));
 
-        if (!countClauses.isEmpty()) {
-            metrics.put(countClauses.get(0).getName(), totalCount);
+        if (!totalCountClauses.isEmpty()) {
+            metrics.putAll(totalCountClauses.stream().collect(Collectors.toMap(clause -> clause.getName(), clause -> totalCount)));
         }
+
+        metrics.putAll(countFieldClauses.stream().collect(Collectors.toMap(clause -> clause.getName(), clause -> {
+            TransformedAggregationData data = groupResults.get(clause.getField());
+            return data != null ? data.getCount() : totalCount;
+        })));
 
         return metrics;
     }
@@ -216,19 +228,20 @@ public class ElasticsearchTransformer {
      * reached the bottom of the tree we add any metric aggregations to the bucket
      * and push it onto the result list.
      */
-    private static List<AggregationBucket> extractBuckets(List<GroupByClause> groupByClauses,
-            MultiBucketsAggregation value) {
-        return extractBuckets(groupByClauses, value, new LinkedHashMap<>(), new ArrayList<>());
+    private static List<TransformedAggregationBucket> extractBuckets(List<GroupByClause> groupByClauses,
+            MultiBucketsAggregation aggregation) {
+        return extractBuckets(groupByClauses, aggregation, new LinkedHashMap<>(), new ArrayList<>());
 
     }
 
-    private static List<AggregationBucket> extractBuckets(List<GroupByClause> groupByClauses,
-            MultiBucketsAggregation value, Map<String, Object> accumulator, List<AggregationBucket> results) {
-        value.getBuckets().forEach(bucket -> {
-            Map<String, Object> newAccumulator = new LinkedHashMap<>();
+    private static List<TransformedAggregationBucket> extractBuckets(List<GroupByClause> groupByClauses,
+            MultiBucketsAggregation aggregation, Map<String, TransformedAggregationData> accumulator,
+            List<TransformedAggregationBucket> results) {
+
+        aggregation.getBuckets().forEach(bucket -> {
+            Map<String, TransformedAggregationData> newAccumulator = new LinkedHashMap<>();
             newAccumulator.putAll(accumulator);
             extractBucket(groupByClauses, bucket, newAccumulator, results);
-
         });
 
         return results;
@@ -238,26 +251,23 @@ public class ElasticsearchTransformer {
         return inputData.matches("[-+]?\\d+(\\.\\d+)?");
     }
 
-    private static void extractBucket(List<GroupByClause> groupByClauses, Bucket value, Map<String, Object> accumulator,
-            List<AggregationBucket> results) {
+    private static void extractBucket(List<GroupByClause> groupByClauses, Bucket bucket,
+            Map<String, TransformedAggregationData> accumulator, List<TransformedAggregationBucket> results) {
+
         GroupByClause currentClause = groupByClauses.get(0);
 
         if (currentClause instanceof GroupByFieldClause) {
-            accumulator.put(((GroupByFieldClause) currentClause).getField(), value.getKey());
+            accumulator.put(((GroupByFieldClause) currentClause).getField(), new TransformedAggregationData(
+                bucket.getDocCount(), bucket.getKey()));
         } else if (currentClause instanceof GroupByFunctionClause) {
-            // If the group by field is a function of a date (e.g., group by month), then
-            // the
-            // key field will still be just a date, but getKeyAsString() will return the
-            // value
-            // returned by the function (e.g., the month).
-            String key = value.getKeyAsString();
+            // Date groups will return numbers (year=2018, month=12, day=30, etc.)
+            String key = bucket.getKeyAsString();
 
             boolean isDateClause = Arrays.asList(ElasticSearchRestConversionStrategy.DATE_OPERATIONS)
                     .indexOf(((GroupByFunctionClause) currentClause).getOperation()) >= 0 && isNumeric(key);
 
-            // TODO Why does the date need to be a float?
-            accumulator.put(((GroupByFunctionClause) currentClause).getName(),
-                    isDateClause ? Float.parseFloat(key) : key);
+            accumulator.put(((GroupByFunctionClause) currentClause).getName(), new TransformedAggregationData(
+                    bucket.getDocCount(), isDateClause ? Float.parseFloat(key) : key));
         } else {
             throw new RuntimeException("Bad implementation - ${currentClause.getClass()} is not a valid groupByClause");
             // throw new NeonConnectionException("Bad implementation -
@@ -266,23 +276,24 @@ public class ElasticsearchTransformer {
 
         List<GroupByClause> tail = groupByClauses.subList(1, groupByClauses.size());
         if (tail != null && tail.size() > 0) {
-            extractBuckets(tail, (MultiBucketsAggregation) value.getAggregations().asList().get(0), accumulator,
-                    results);
+            extractBuckets(tail, (MultiBucketsAggregation) bucket.getAggregations().asList().get(0), accumulator, results);
         } else {
-            AggregationBucket bucket = new AggregationBucket();
-            bucket.setGroupByKeys(accumulator);
-            bucket.setDocCount(value.getDocCount());
+            TransformedAggregationBucket transformedAggregationBucket = new TransformedAggregationBucket();
+            transformedAggregationBucket.setGroupByKeys(accumulator);
 
-            Aggregations terminalAggs = value.getAggregations();
+            // TODO Deprecated
+            transformedAggregationBucket.setDocCount(bucket.getDocCount());
+
+            Aggregations terminalAggs = bucket.getAggregations();
             if (terminalAggs != null) {
-                bucket.getAggregatedValues().putAll(terminalAggs.asMap());
+                transformedAggregationBucket.getAggregatedValues().putAll(terminalAggs.asMap());
             }
-            results.add(bucket);
+            results.add(transformedAggregationBucket);
         }
     }
 
-    private static List<AggregationBucket> combineDuplicateBuckets(List<AggregationBucket> buckets) {
-        Map<Map<String, Object>, AggregationBucket> mappedBuckets = new LinkedHashMap<>();
+    private static List<TransformedAggregationBucket> combineDuplicateBuckets(List<TransformedAggregationBucket> buckets) {
+        Map<Map<String, TransformedAggregationData>, TransformedAggregationBucket> mappedBuckets = new LinkedHashMap<>();
         // Iterate over all of the buckets, looking for any that have the same
         // groupByKeys
 
@@ -291,7 +302,7 @@ public class ElasticsearchTransformer {
             // histogram to
             // replicate group-by functionality.
             if (bucket.getDocCount() > 0) {
-                AggregationBucket existingBucket = mappedBuckets.get(bucket.getGroupByKeys());
+                TransformedAggregationBucket existingBucket = mappedBuckets.get(bucket.getGroupByKeys());
                 if (existingBucket != null) {
 
                     // If we've already found a bucket with these groupByKeys, then combine them
@@ -330,11 +341,13 @@ public class ElasticsearchTransformer {
     }
 
     private static List<Map<String, Object>> extractMetricsFromBuckets(List<AggregateClause> clauses,
-            List<AggregationBucket> buckets) {
+            List<TransformedAggregationBucket> buckets, long totalCount) {
 
         return buckets.stream().map(bucket -> {
-            Map<String, Object> result = bucket.getGroupByKeys();
-            result.putAll(extractMetrics(clauses, bucket.getAggregatedValues(), bucket.getDocCount()));
+            Map<String, TransformedAggregationData> groupResults = bucket.getGroupByKeys();
+            Map<String, Object> result = groupResults.keySet().stream().collect(Collectors.toMap(key -> key,
+                key -> groupResults.get(key).getValue()));
+            result.putAll(extractMetrics(clauses, bucket.getAggregatedValues(), groupResults, totalCount));
             return result;
         }).collect(Collectors.toList());
     }

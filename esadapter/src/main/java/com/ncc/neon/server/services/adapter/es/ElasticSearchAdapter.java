@@ -29,15 +29,27 @@ import org.elasticsearch.client.RestHighLevelClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * ElasticSearchAdapter
  */
+@Slf4j
 public class ElasticSearchAdapter implements QueryAdapter {
     RestHighLevelClient client;
 
     public ElasticSearchAdapter(String host) {
         this.client = new RestHighLevelClient(RestClient.builder(new HttpHost(host, 9200)));
+    }
+
+    private void logQuery(Query query, SearchRequest request) {
+        log.debug("Neon Query:  " + query.toString());
+        log.debug("ES Query:  " + request.toString());
+    }
+
+    private void logResults(SearchResponse response, TabularQueryResult results) {
+        log.debug("ES Results:  " + response.toString());
+        log.debug("Neon Results:  " + results.toString());
     }
 
     @Override
