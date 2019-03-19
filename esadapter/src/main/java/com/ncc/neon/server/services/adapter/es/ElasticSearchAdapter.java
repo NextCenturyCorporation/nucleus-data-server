@@ -31,9 +31,6 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * ElasticSearchAdapter
- */
 @Slf4j
 public class ElasticSearchAdapter implements QueryAdapter {
     RestHighLevelClient client;

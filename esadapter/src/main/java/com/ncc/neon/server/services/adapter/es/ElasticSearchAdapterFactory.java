@@ -6,11 +6,6 @@ import com.ncc.neon.server.services.adapters.QueryAdapterFactory;
 
 import org.springframework.stereotype.Component;
 
-//import org.springframework.stereotype.Component;
-
-/**
- * ElasticSearchAdapterFactory
- */
 @Component
 public class ElasticSearchAdapterFactory implements QueryAdapterFactory {
 

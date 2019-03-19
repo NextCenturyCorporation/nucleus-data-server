@@ -41,7 +41,6 @@ public class ElasticsearchTransformer {
      * arrangement and when everything can be extracted into the format that the
      * Neon API uses.
      */
-
     @Data
     private static class TransformedAggregationBucket {
         private Map<String, Aggregation> aggregatedValues = new LinkedHashMap<>();
@@ -270,8 +269,6 @@ public class ElasticsearchTransformer {
                     bucket.getDocCount(), isDateClause ? Float.parseFloat(key) : key));
         } else {
             throw new RuntimeException("Bad implementation - ${currentClause.getClass()} is not a valid groupByClause");
-            // throw new NeonConnectionException("Bad implementation -
-            // ${currentClause.getClass()} is not a valid groupByClause");
         }
 
         List<GroupByClause> tail = groupByClauses.subList(1, groupByClauses.size());
@@ -317,7 +314,7 @@ public class ElasticsearchTransformer {
                                     Math.max(stats.getMax(), statsValue.getMax()), DocValueFormat.RAW);
                             existingBucket.getAggregatedValues().put(key, newAgg);
                         } else {
-                            throw new RuntimeException("Look at the code something is crazy");
+                            throw new RuntimeException("Unknown error on combine duplicate buckets with key:  " + key);
                             // existingBucket.put(key, value);
                         }
                     });

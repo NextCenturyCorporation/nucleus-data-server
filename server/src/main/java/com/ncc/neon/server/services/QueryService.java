@@ -13,9 +13,6 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-/**
- * QueryService
- */
 @Component
 public class QueryService {
 

@@ -44,21 +44,15 @@ import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 
-/**
- * ElasticSearchRestConversionStrategy
- */
 public class ElasticSearchRestConversionStrategy {
-    static final String TERM_PREFIX = "_term";
-    static final String STATS_AGG_PREFIX = "_statsFor_";
     static final String[] DATE_OPERATIONS = { "year", "month", "dayOfMonth", "dayOfWeek", "hour", "minute", "second" };
-
-    public static final int RESULT_LIMIT = 10000;
+    static final int RESULT_LIMIT = 10000;
+    static final String STATS_AGG_PREFIX = "_statsFor_";
+    static final String TERM_PREFIX = "_term";
 
     public ElasticSearchRestConversionStrategy() {}
 
     SearchRequest convertQuery(Query query, QueryOptions options) {
-        //LOGGER.debug("Query is " + query + " QueryOptions is " + options);
-
         SearchSourceBuilder source = createSourceBuilderWithState(query, options);
 
         if (query.getFields() != null && query.getFields() != SelectClause.ALL_FIELDS) {
@@ -79,7 +73,6 @@ public class ElasticSearchRestConversionStrategy {
      * ConversionStrategy to it and returns a SourceBuilder seeded with the
      * resultant query param.
      */
-
     protected SearchSourceBuilder createSourceBuilderWithState(Query query, QueryOptions options) {
         return createSourceBuilderWithState(query, options, null);
     }
@@ -99,11 +92,6 @@ public class ElasticSearchRestConversionStrategy {
         }
 
         return ssb;
-
-        // Was:
-        // return
-        // createSearchSourceBuilder(query).query(QueryBuilders.filteredQuery(null,
-        // whereFilter))
     }
 
     /**
@@ -148,7 +136,6 @@ public class ElasticSearchRestConversionStrategy {
      * objects
      */
     protected static QueryBuilder convertWhereClauses(List<WhereClause> whereClauses) {
-
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
         // Build the elasticsearch filters for the where clauses
@@ -162,11 +149,9 @@ public class ElasticSearchRestConversionStrategy {
         });
 
         return queryBuilder;
-
     }
 
     private static QueryBuilder convertWhereClause(WhereClause clause) {
-
         if (clause instanceof SingularWhereClause) {
             return convertSingularWhereClause((SingularWhereClause) clause);
         } else if (clause instanceof AndWhereClause || clause instanceof OrWhereClause) {
@@ -174,7 +159,6 @@ public class ElasticSearchRestConversionStrategy {
         } else {
             throw new RuntimeException("Unknown where clause: " + clause.getClass());
         }
-
     }
 
     private static QueryBuilder convertCompoundWhereClause(WhereClause clause) {
@@ -283,29 +267,6 @@ public class ElasticSearchRestConversionStrategy {
             metricAggregations.forEach(metricAggregation -> {
                 lastBucketAgg.subAggregation(metricAggregation);
             });
-
-            // copy + pasting commented out Groovy code in case its needed in the future
-//            query.aggregates.each { ac ->
-//                def sc = findMatchingSortClause(query, ac)
-//                if (sc) {
-//                    def sortOrder = sc.sortOrder == com.ncc.neon.query.clauses.SortOrder.ASCENDING
-//                    bucketAggregations.each { bucketAgg ->
-//                        if (!(bucketAgg instanceof DateHistogramBuilder)) {
-//                            bucketAgg.order(Terms.Order.aggregation(TERM_PREFIX, sortOrder))
-//                        }
-//                    }
-//                    def lastAgg = bucketAggregations.last()
-//                    if (!(lastAgg instanceof DateHistogramBuilder)) {
-//                        def aggOrder
-//                        if (isTotalCountAggregation(ac)) {
-//                            aggOrder = Terms.Order.count(sortOrder)
-//                        } else {
-//                            aggOrder = Terms.Order.aggregation("${STATS_AGG_PREFIX}${ac.field}" as String, ac.operation as String, sortOrder)
-//                        }
-//                        lastAgg.order(aggOrder)
-//                    }
-//                }
-//            }
 
             // on each aggregation, except the last - nest the next aggregation
             for (int index = 0; index < bucketAggs.size() - 1; index++) {

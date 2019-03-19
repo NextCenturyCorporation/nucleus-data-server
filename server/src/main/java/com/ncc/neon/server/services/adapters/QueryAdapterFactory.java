@@ -2,9 +2,6 @@ package com.ncc.neon.server.services.adapters;
 
 import com.ncc.neon.server.models.connection.ConnectionInfo;
 
-/**
- * QueryAdapterFactory
- */
 public interface QueryAdapterFactory {
 
     /**

@@ -6,20 +6,17 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data
 @AllArgsConstructor
+@Data
 @NoArgsConstructor
 public class Filter {
     String databaseName;
     String tableName;
     String filterName;
-
     WhereClause whereClause;
 
-    // TODO: look into @RequiredArgsConstructor
     public Filter(String databaseName, String tableName) {
         this.databaseName = databaseName;
         this.tableName = tableName;
     }
-
 }
