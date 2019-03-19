@@ -16,7 +16,7 @@ public class ElasticSearchAdapterFactory implements QueryAdapterFactory {
 
     @Override
     public String getName() {
-        return "elasticsearchrest1";
+        return "elasticsearchrest";
     }
 
     @Override

@@ -6,7 +6,8 @@ Neon is a software platform designed to help you, as a developer, to integrate y
 Provides the Data Access API makes it easy for widgets to query NoSQL databases directly from JavaScript or RESTful endpoints, while still letting the server do the heavy lifting. Aslo providing, the Interaction API provides capabilities for inter-widget communication, which easily links your widgets together. Neon Server does not provide any user interface components. Instead, Neon Server shines under-the-hood by removing the pressure from developers to figure out how to make different components work together and allowing them to focus more on the fun stuff, like creating valuable data exploration applications and workflows.
 
 ## Prerequisites
-* Java 9
+* Java 9+
+* ES 6.4+
 
 ## Running Application with Gradle
 
