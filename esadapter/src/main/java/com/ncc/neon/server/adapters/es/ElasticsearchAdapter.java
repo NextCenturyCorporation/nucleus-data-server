@@ -8,7 +8,6 @@ import java.util.function.BiConsumer;
 
 import com.ncc.neon.server.adapters.QueryAdapter;
 import com.ncc.neon.server.models.query.Query;
-import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.result.FieldTypePair;
 import com.ncc.neon.server.models.query.result.TableWithFields;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
@@ -50,10 +49,10 @@ public class ElasticsearchAdapter implements QueryAdapter {
     }
 
     @Override
-    public Mono<TabularQueryResult> execute(Query query, QueryOptions options) {
+    public Mono<TabularQueryResult> execute(Query query) {
         checkDatabaseAndTableExists(query);
 
-        SearchRequest request = ElasticsearchTransformer.transformQuery(query, options);
+        SearchRequest request = ElasticsearchTransformer.transformQuery(query);
         SearchResponse response = null;
         TabularQueryResult results = null;
 
@@ -64,7 +63,7 @@ public class ElasticsearchAdapter implements QueryAdapter {
         }
 
         if(response != null) {
-            results = ElasticsearchTransformer.transformResults(query, options, response);
+            results = ElasticsearchTransformer.transformResults(query, response);
         }
 
         return Mono.just(results);

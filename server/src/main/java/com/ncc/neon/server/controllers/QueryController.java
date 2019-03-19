@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 
 import com.ncc.neon.server.models.connection.ConnectionInfo;
 import com.ncc.neon.server.models.query.Query;
-import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
 import com.ncc.neon.server.services.QueryService;
 
@@ -59,9 +58,9 @@ public class QueryController {
             @RequestParam(value = "selectionOnly", defaultValue = "false") boolean selectionOnly,
             @RequestParam(value = "ignoreFilterIds", defaultValue = "false") Set<String> ignoreFilterIds,
             @RequestBody Query query) {
+        // TODO THOR-1088 Remove unused request parameters!
         ConnectionInfo ci = new ConnectionInfo(databaseType, host);
-        QueryOptions options = new QueryOptions(ignoreFilters, selectionOnly, null, ignoreFilterIds);
-        return queryService.executeQuery(ci, query, options);
+        return queryService.executeQuery(ci, query);
     }
 
     /**

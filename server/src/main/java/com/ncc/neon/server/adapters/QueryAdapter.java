@@ -1,7 +1,6 @@
 package com.ncc.neon.server.adapters;
 
 import com.ncc.neon.server.models.query.Query;
-import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.result.FieldTypePair;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
 import com.ncc.neon.server.models.query.result.TableWithFields;
@@ -20,7 +19,7 @@ public interface QueryAdapter {
      *                query execution
      * @return An object containing the results of the query
      */
-    Mono<TabularQueryResult> execute(Query query, QueryOptions options);
+    Mono<TabularQueryResult> execute(Query query);
 
     /**
      * @return Returns all the databases

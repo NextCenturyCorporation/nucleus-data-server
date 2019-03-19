@@ -11,7 +11,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import com.ncc.neon.server.models.query.Query;
-import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.clauses.AggregateClause;
 import com.ncc.neon.server.models.query.clauses.AndWhereClause;
 import com.ncc.neon.server.models.query.clauses.GroupByClause;
@@ -95,8 +94,8 @@ public class ElasticsearchTransformer {
         log.debug(name + ":  " + object.toString());
     }
 
-    public static SearchRequest transformQuery(Query query, QueryOptions options) {
-        SearchSourceBuilder source = createSourceBuilderWithState(query, options);
+    public static SearchRequest transformQuery(Query query) {
+        SearchSourceBuilder source = createSourceBuilderWithState(query);
 
         if (query.getFields() != null && query.getFields() != SelectClause.ALL_FIELDS) {
             String[] includes = query.getFields().toArray(new String[query.getFields().size()]);
@@ -116,15 +115,13 @@ public class ElasticsearchTransformer {
      * ConversionStrategy to it and returns a SourceBuilder seeded with the
      * resultant query param.
      */
-    private static SearchSourceBuilder createSourceBuilderWithState(Query query, QueryOptions options) {
-        return createSourceBuilderWithState(query, options, null);
+    private static SearchSourceBuilder createSourceBuilderWithState(Query query) {
+        return createSourceBuilderWithState(query, null);
     }
 
-    private static SearchSourceBuilder createSourceBuilderWithState(Query query, QueryOptions options,
-            WhereClause extraWhereClause) {
-
+    private static SearchSourceBuilder createSourceBuilderWithState(Query query, WhereClause extraWhereClause) {
         // Get all the (top level) WhereClauses, from the Filter and query
-        List<WhereClause> whereClauses = collectWhereClauses(query, options, extraWhereClause);
+        List<WhereClause> whereClauses = collectWhereClauses(query, extraWhereClause);
 
         SearchSourceBuilder ssb = createSearchSourceBuilder(query);
 
@@ -141,7 +138,7 @@ public class ElasticsearchTransformer {
      * Returns a list of Neon WhereClause objects, some of which might have embedded
      * WhereClauses
      */
-    private static List<WhereClause> collectWhereClauses(Query query, QueryOptions options, WhereClause extraWhereClause) {
+    private static List<WhereClause> collectWhereClauses(Query query, WhereClause extraWhereClause) {
         // Start the list as empty unless an extra WhereClause is passed
         List<WhereClause> whereClauses = extraWhereClause != null ? Arrays.asList(extraWhereClause) : new ArrayList<>();
 
@@ -494,7 +491,7 @@ public class ElasticsearchTransformer {
         throw new RuntimeException("Unknown groupByClause: " + clause.getClass());
     }
 
-    public static TabularQueryResult transformResults(Query query, QueryOptions options, SearchResponse response) {
+    public static TabularQueryResult transformResults(Query query, SearchResponse response) {
         List<AggregateClause> aggregateClauses = query.getAggregates();
         List<GroupByClause> groupByClauses = query.getGroupByClauses();
 

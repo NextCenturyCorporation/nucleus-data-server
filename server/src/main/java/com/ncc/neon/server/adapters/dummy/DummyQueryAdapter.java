@@ -7,7 +7,6 @@ import java.util.Map;
 
 import com.ncc.neon.server.adapters.QueryAdapter;
 import com.ncc.neon.server.models.query.Query;
-import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.result.FieldTypePair;
 import com.ncc.neon.server.models.query.result.TableWithFields;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
@@ -21,7 +20,7 @@ import reactor.core.publisher.Mono;
 public class DummyQueryAdapter implements QueryAdapter {
 
     @Override
-    public Mono<TabularQueryResult> execute(Query query, QueryOptions options) {
+    public Mono<TabularQueryResult> execute(Query query) {
         List<Map<String, Object>> table = new ArrayList<>();
         Map<String, Object> row = new HashMap<>();
         row.put("column1", "value1");
