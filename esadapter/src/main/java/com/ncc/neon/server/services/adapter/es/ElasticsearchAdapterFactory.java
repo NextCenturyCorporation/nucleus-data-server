@@ -7,7 +7,7 @@ import com.ncc.neon.server.services.adapters.QueryAdapterFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ElasticSearchAdapterFactory implements QueryAdapterFactory {
+public class ElasticsearchAdapterFactory implements QueryAdapterFactory {
 
     @Override
     public String getName() {
@@ -16,7 +16,7 @@ public class ElasticSearchAdapterFactory implements QueryAdapterFactory {
 
     @Override
     public QueryAdapter initialize(ConnectionInfo cInfo) {
-        return new ElasticSearchAdapter(cInfo.getHost());
+        return new ElasticsearchAdapter(cInfo.getHost());
     }
 
 }

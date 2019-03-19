@@ -32,10 +32,10 @@ import reactor.core.publisher.Mono;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class ElasticSearchAdapter implements QueryAdapter {
+public class ElasticsearchAdapter implements QueryAdapter {
     RestHighLevelClient client;
 
-    public ElasticSearchAdapter(String host) {
+    public ElasticsearchAdapter(String host) {
         this.client = new RestHighLevelClient(RestClient.builder(new HttpHost(host, 9200)));
     }
 
