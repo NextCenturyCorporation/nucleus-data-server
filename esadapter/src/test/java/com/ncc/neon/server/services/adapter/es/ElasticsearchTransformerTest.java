@@ -117,7 +117,7 @@ public class ElasticsearchTransformerTest {
     }
 
     @Test
-    public void transformResultsCountAllAggregationTest() {
+    public void transformResultsTotalCountAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
         query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
@@ -326,10 +326,47 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithSingleBucketTest() {
+    public void transformResultsGroupByTotalCountAggregationWithSingleBucketTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testTotal", "count", "*")));
+        query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
+        QueryOptions options = new QueryOptions();
+
+        Aggregations bucketAggregations1 = mock(Aggregations.class);
+        when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries());
+        Terms.Bucket bucket1 = mock(Terms.Bucket.class);
+        when(bucket1.getAggregations()).thenReturn(bucketAggregations1);
+        when(bucket1.getDocCount()).thenReturn((long) 21);
+        when(bucket1.getKey()).thenReturn("testGroup1");
+        List termsAggregationList = Arrays.asList(bucket1);
+        Terms termsAggregation = mock(Terms.class);
+        when(termsAggregation.getBuckets()).thenReturn(termsAggregationList);
+        Aggregations aggregations = mock(Aggregations.class);
+        when(aggregations.asList()).thenReturn(Arrays.asList(termsAggregation));
+        SearchHit[] hitArray = {};
+        SearchHits hits = mock(SearchHits.class);
+        when(hits.getHits()).thenReturn(hitArray);
+        when(hits.getTotalHits()).thenReturn((long) 90);
+        SearchResponse response = mock(SearchResponse.class);
+        when(response.getAggregations()).thenReturn(aggregations);
+        when(response.getHits()).thenReturn(hits);
+
+        TabularQueryResult results = ElasticsearchTransformer.transformResults(query, options, response);
+        assertThat(results.getData()).isEqualTo(Arrays.asList(
+            Map.ofEntries(
+                Map.entry("testGroupField", "testGroup1"),
+                Map.entry("testTotal", (long) 90)
+            )
+        ));
+    }
+
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public void transformResultsGroupByCountFieldAggregationWithSingleBucketTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         QueryOptions options = new QueryOptions();
 
@@ -363,10 +400,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithMultipleBucketsTest() {
+    public void transformResultsGroupByCountFieldAggregationWithMultipleBucketsTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         QueryOptions options = new QueryOptions();
 
@@ -410,10 +447,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithBooleanGroupsTest() {
+    public void transformResultsGroupByCountFieldAggregationWithBooleanGroupsTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         QueryOptions options = new QueryOptions();
 
@@ -457,10 +494,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithNumberGroupsTest() {
+    public void transformResultsGroupByCountFieldAggregationWithNumberGroupsTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         QueryOptions options = new QueryOptions();
 
@@ -504,10 +541,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithLimitTest() {
+    public void transformResultsGroupByCountFieldAggregationWithLimitTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         QueryOptions options = new QueryOptions();
@@ -564,10 +601,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithLimitAndOffsetTest() {
+    public void transformResultsGroupByCountFieldAggregationWithLimitAndOffsetTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
@@ -625,10 +662,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithLimitAndSortByAggregationTest() {
+    public void transformResultsGroupByCountFieldAggregationWithLimitAndSortByAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setSortClauses(Arrays.asList(new SortClause("testCount", SortOrder.ASCENDING)));
@@ -686,10 +723,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithLimitAndSortByFieldTest() {
+    public void transformResultsGroupByCountFieldAggregationWithLimitAndSortByFieldTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setSortClauses(Arrays.asList(new SortClause("testGroupField", SortOrder.ASCENDING)));
@@ -747,10 +784,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithLimitAndOffsetAndSortByAggregationTest() {
+    public void transformResultsGroupByCountFieldAggregationWithLimitAndOffsetAndSortByAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
@@ -809,10 +846,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithLimitAndOffsetAndSortByFieldTest() {
+    public void transformResultsGroupByCountFieldAggregationWithLimitAndOffsetAndSortByFieldTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
@@ -871,10 +908,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithOffsetTest() {
+    public void transformResultsGroupByCountFieldAggregationWithOffsetTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setOffsetClause(new OffsetClause(1));
         QueryOptions options = new QueryOptions();
@@ -935,10 +972,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithOffsetAndSortByAggregationTest() {
+    public void transformResultsGroupByCountFieldAggregationWithOffsetAndSortByAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setOffsetClause(new OffsetClause(1));
         query.setSortClauses(Arrays.asList(new SortClause("testCount", SortOrder.ASCENDING)));
@@ -1000,10 +1037,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithOffsetAndSortByFieldTest() {
+    public void transformResultsGroupByCountFieldAggregationWithOffsetAndSortByFieldTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setOffsetClause(new OffsetClause(1));
         query.setSortClauses(Arrays.asList(new SortClause("testGroupField", SortOrder.ASCENDING)));
@@ -1065,10 +1102,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithSortByAggregationTest() {
+    public void transformResultsGroupByCountFieldAggregationWithSortByAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setSortClauses(Arrays.asList(new SortClause("testCount", SortOrder.ASCENDING)));
         QueryOptions options = new QueryOptions();
@@ -1133,10 +1170,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsGroupByCountAggregationWithSortByFieldTest() {
+    public void transformResultsGroupByCountFieldAggregationWithSortByFieldTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setSortClauses(Arrays.asList(new SortClause("testGroupField", SortOrder.ASCENDING)));
         QueryOptions options = new QueryOptions();
@@ -1453,10 +1490,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsMultipleGroupsAndCountAggregationTest() {
+    public void transformResultsMultipleGroupsAndCountFieldAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testInnerGroupField")));
         query.setGroupByClauses(Arrays.asList(
             new GroupByFieldClause("testOuterGroupField", "Test Outer Group Field"),
             new GroupByFieldClause("testInnerGroupField", "Test Inner Group Field")
@@ -1539,6 +1576,107 @@ public class ElasticsearchTransformerTest {
                 Map.entry("testOuterGroupField", "testOuterGroup1"),
                 Map.entry("testInnerGroupField", "testInnerGroupA"),
                 Map.entry("testCount", (long) 21)
+            )
+        ));
+    }
+
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public void transformResultsMultipleGroupsAndMultipleCountFieldAggregationsTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setAggregates(Arrays.asList(
+            new AggregateClause("testOuterCount", "count", "testOuterGroupField"),
+            new AggregateClause("testInnerCount", "count", "testInnerGroupField")
+        ));
+        query.setGroupByClauses(Arrays.asList(
+            new GroupByFieldClause("testOuterGroupField", "Test Outer Group Field"),
+            new GroupByFieldClause("testInnerGroupField", "Test Inner Group Field")
+        ));
+        QueryOptions options = new QueryOptions();
+
+        Aggregations nestedBucketAggregations1A = mock(Aggregations.class);
+        when(nestedBucketAggregations1A.asMap()).thenReturn(Map.ofEntries());
+        Terms.Bucket nestedBucket1A = mock(Terms.Bucket.class);
+        when(nestedBucket1A.getAggregations()).thenReturn(nestedBucketAggregations1A);
+        when(nestedBucket1A.getDocCount()).thenReturn((long) 21);
+        when(nestedBucket1A.getKey()).thenReturn("testInnerGroupA");
+        Aggregations nestedBucketAggregations1B = mock(Aggregations.class);
+        when(nestedBucketAggregations1B.asMap()).thenReturn(Map.ofEntries());
+        Terms.Bucket nestedBucket1B = mock(Terms.Bucket.class);
+        when(nestedBucket1B.getAggregations()).thenReturn(nestedBucketAggregations1B);
+        when(nestedBucket1B.getDocCount()).thenReturn((long) 43);
+        when(nestedBucket1B.getKey()).thenReturn("testInnerGroupB");
+        List nestedTermsAggregationList1 = Arrays.asList(nestedBucket1B, nestedBucket1A);
+        Terms nestedTermsAggregation1 = mock(Terms.class);
+        when(nestedTermsAggregation1.getBuckets()).thenReturn(nestedTermsAggregationList1);
+        Aggregations bucketAggregations1 = mock(Aggregations.class);
+        when(bucketAggregations1.asList()).thenReturn(Arrays.asList(nestedTermsAggregation1));
+        Terms.Bucket bucket1 = mock(Terms.Bucket.class);
+        when(bucket1.getAggregations()).thenReturn(bucketAggregations1);
+        when(bucket1.getDocCount()).thenReturn((long) 123);
+        when(bucket1.getKey()).thenReturn("testOuterGroup1");
+
+        Aggregations nestedBucketAggregations2A = mock(Aggregations.class);
+        when(nestedBucketAggregations2A.asMap()).thenReturn(Map.ofEntries());
+        Terms.Bucket nestedBucket2A = mock(Terms.Bucket.class);
+        when(nestedBucket2A.getAggregations()).thenReturn(nestedBucketAggregations2A);
+        when(nestedBucket2A.getDocCount()).thenReturn((long) 65);
+        when(nestedBucket2A.getKey()).thenReturn("testInnerGroupA");
+        Aggregations nestedBucketAggregations2B = mock(Aggregations.class);
+        when(nestedBucketAggregations2B.asMap()).thenReturn(Map.ofEntries());
+        Terms.Bucket nestedBucket2B = mock(Terms.Bucket.class);
+        when(nestedBucket2B.getAggregations()).thenReturn(nestedBucketAggregations2B);
+        when(nestedBucket2B.getDocCount()).thenReturn((long) 87);
+        when(nestedBucket2B.getKey()).thenReturn("testInnerGroupB");
+        List nestedTermsAggregationList2 = Arrays.asList(nestedBucket2B, nestedBucket2A);
+        Terms nestedTermsAggregation2 = mock(Terms.class);
+        when(nestedTermsAggregation2.getBuckets()).thenReturn(nestedTermsAggregationList2);
+        Aggregations bucketAggregations2 = mock(Aggregations.class);
+        when(bucketAggregations2.asList()).thenReturn(Arrays.asList(nestedTermsAggregation2));
+        Terms.Bucket bucket2 = mock(Terms.Bucket.class);
+        when(bucket2.getAggregations()).thenReturn(bucketAggregations2);
+        when(bucket2.getDocCount()).thenReturn((long) 456);
+        when(bucket2.getKey()).thenReturn("testOuterGroup2");
+
+        List termsAggregationList = Arrays.asList(bucket2, bucket1);
+        Terms termsAggregation = mock(Terms.class);
+        when(termsAggregation.getBuckets()).thenReturn(termsAggregationList);
+        Aggregations aggregations = mock(Aggregations.class);
+        when(aggregations.asList()).thenReturn(Arrays.asList(termsAggregation));
+        SearchHit[] hitArray = {};
+        SearchHits hits = mock(SearchHits.class);
+        when(hits.getHits()).thenReturn(hitArray);
+        when(hits.getTotalHits()).thenReturn((long) 90);
+        SearchResponse response = mock(SearchResponse.class);
+        when(response.getAggregations()).thenReturn(aggregations);
+        when(response.getHits()).thenReturn(hits);
+
+        TabularQueryResult results = ElasticsearchTransformer.transformResults(query, options, response);
+        assertThat(results.getData()).isEqualTo(Arrays.asList(
+            Map.ofEntries(
+                Map.entry("testOuterGroupField", "testOuterGroup2"),
+                Map.entry("testInnerGroupField", "testInnerGroupB"),
+                Map.entry("testOuterCount", (long) 456),
+                Map.entry("testInnerCount", (long) 87)
+            ),
+            Map.ofEntries(
+                Map.entry("testOuterGroupField", "testOuterGroup2"),
+                Map.entry("testInnerGroupField", "testInnerGroupA"),
+                Map.entry("testOuterCount", (long) 456),
+                Map.entry("testInnerCount", (long) 65)
+            ),
+            Map.ofEntries(
+                Map.entry("testOuterGroupField", "testOuterGroup1"),
+                Map.entry("testInnerGroupField", "testInnerGroupB"),
+                Map.entry("testOuterCount", (long) 123),
+                Map.entry("testInnerCount", (long) 43)
+            ),
+            Map.ofEntries(
+                Map.entry("testOuterGroupField", "testOuterGroup1"),
+                Map.entry("testInnerGroupField", "testInnerGroupA"),
+                Map.entry("testOuterCount", (long) 123),
+                Map.entry("testInnerCount", (long) 21)
             )
         ));
     }
@@ -1657,7 +1795,7 @@ public class ElasticsearchTransformerTest {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
         query.setAggregates(Arrays.asList(
-            new AggregateClause("testAggName1", "count", "*"),
+            new AggregateClause("testAggName1", "count", "testInnerGroupField"),
             new AggregateClause("testAggName2", "avg", "testAggField"),
             new AggregateClause("testAggName3", "max", "testAggField"),
             new AggregateClause("testAggName4", "min", "testAggField"),
@@ -1795,10 +1933,10 @@ public class ElasticsearchTransformerTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void transformResultsDateGroupsAndCountAggregationTest() {
+    public void transformResultsDateGroupsAndCountFieldAggregationTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testYear")));
         query.setGroupByClauses(Arrays.asList(new GroupByFunctionClause("testYear", "year", "testGroupField")));
         QueryOptions options = new QueryOptions();
 
@@ -1900,7 +2038,7 @@ public class ElasticsearchTransformerTest {
     public void transformResultsMultipleDateGroupsTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testYear")));
         query.setGroupByClauses(Arrays.asList(
             new GroupByFunctionClause("testMonth", "month", "testDateField"),
             new GroupByFunctionClause("testYear", "year", "testDateField")
@@ -1992,7 +2130,7 @@ public class ElasticsearchTransformerTest {
     public void transformResultsDateAndNonDateGroupsTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(
             new GroupByFunctionClause("testYear", "year", "testDateField"),
             new GroupByFieldClause("testGroupField", "Test Group Field")
@@ -2084,7 +2222,7 @@ public class ElasticsearchTransformerTest {
     public void transformResultsNonDateAndDateGroupsTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "*")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testYear")));
         query.setGroupByClauses(Arrays.asList(
             new GroupByFieldClause("testGroupField", "Test Group Field"),
             new GroupByFunctionClause("testYear", "year", "testDateField")

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -11,7 +12,6 @@ import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.clauses.AggregateClause;
 import com.ncc.neon.server.models.query.clauses.AndWhereClause;
-import com.ncc.neon.server.models.query.clauses.FieldFunction;
 import com.ncc.neon.server.models.query.clauses.GroupByClause;
 import com.ncc.neon.server.models.query.clauses.GroupByFieldClause;
 import com.ncc.neon.server.models.query.clauses.GroupByFunctionClause;
@@ -43,8 +43,6 @@ import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * ElasticSearchRestConversionStrategy
@@ -130,9 +128,11 @@ public class ElasticSearchRestConversionStrategy {
         List<SingularWhereClause> clauses = new ArrayList<>();
 
         if(query.getAggregates() != null) {
+            Map<String, Boolean> groupNames = query.getGroupByClauses().stream().filter(clause -> clause instanceof GroupByFunctionClause)
+                .map(clause -> ((GroupByFunctionClause) clause).getName()).collect(Collectors.toMap(name -> name, name -> true));
             query.getAggregates().forEach(aggClause -> {
                 // TODO Don't add the new filter (!= null) if it already exists in the query.
-                if (isCountFieldAggregation(aggClause)) {
+                if (isCountFieldAggregation(aggClause) && !groupNames.containsKey(aggClause.getField())) {
                     clauses.add(SingularWhereClause.fromNull(aggClause.getField(), "!="));
                 }
             });
@@ -296,7 +296,7 @@ public class ElasticSearchRestConversionStrategy {
 //                    def lastAgg = bucketAggregations.last()
 //                    if (!(lastAgg instanceof DateHistogramBuilder)) {
 //                        def aggOrder
-//                        if (isCountAllAggregation(ac)) {
+//                        if (isTotalCountAggregation(ac)) {
 //                            aggOrder = Terms.Order.count(sortOrder)
 //                        } else {
 //                            aggOrder = Terms.Order.aggregation("${STATS_AGG_PREFIX}${ac.field}" as String, ac.operation as String, sortOrder)
@@ -335,7 +335,7 @@ public class ElasticSearchRestConversionStrategy {
         if(query.getAggregates() != null) {
             aggregates = query.getAggregates().stream()
             .filter(clause -> {
-                return !isCountAllAggregation(clause) && !isCountFieldAggregation(clause);
+                return !isTotalCountAggregation(clause) && !isCountFieldAggregation(clause);
             }).map(agg -> {
                 return agg.getField();
             }).distinct().map(agg -> {
@@ -361,7 +361,7 @@ public class ElasticSearchRestConversionStrategy {
         return clause != null && clause.getOperation().equals("count") && !clause.getField().equals("*");
     }
 
-    public static boolean isCountAllAggregation(AggregateClause clause) {
+    public static boolean isTotalCountAggregation(AggregateClause clause) {
         return clause != null && clause.getOperation().equals("count") && clause.getField().equals("*");
     }
 
