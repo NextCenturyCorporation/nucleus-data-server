@@ -1,4 +1,4 @@
-package com.ncc.neon.server.services.adapter.es;
+package com.ncc.neon.server.adapters.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

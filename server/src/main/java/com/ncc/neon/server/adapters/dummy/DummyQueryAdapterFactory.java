@@ -1,8 +1,8 @@
-package com.ncc.neon.server.services.adapters.dummy;
+package com.ncc.neon.server.adapters.dummy;
 
+import com.ncc.neon.server.adapters.QueryAdapter;
+import com.ncc.neon.server.adapters.QueryAdapterFactory;
 import com.ncc.neon.server.models.connection.ConnectionInfo;
-import com.ncc.neon.server.services.adapters.QueryAdapter;
-import com.ncc.neon.server.services.adapters.QueryAdapterFactory;
 
 import org.springframework.stereotype.Component;
 

@@ -1,16 +1,16 @@
-package com.ncc.neon.server.services.adapters.dummy;
+package com.ncc.neon.server.adapters.dummy;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.ncc.neon.server.adapters.QueryAdapter;
 import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.result.FieldTypePair;
 import com.ncc.neon.server.models.query.result.TableWithFields;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
-import com.ncc.neon.server.services.adapters.QueryAdapter;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

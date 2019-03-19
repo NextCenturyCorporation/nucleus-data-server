@@ -1,4 +1,4 @@
-package com.ncc.neon.server.services.adapter.es;
+package com.ncc.neon.server.adapters.es;
 
 import java.util.ArrayList;
 import java.util.Arrays;

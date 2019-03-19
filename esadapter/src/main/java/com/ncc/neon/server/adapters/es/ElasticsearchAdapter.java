@@ -1,4 +1,4 @@
-package com.ncc.neon.server.services.adapter.es;
+package com.ncc.neon.server.adapters.es;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -6,12 +6,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
+import com.ncc.neon.server.adapters.QueryAdapter;
 import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.result.FieldTypePair;
 import com.ncc.neon.server.models.query.result.TableWithFields;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
-import com.ncc.neon.server.services.adapters.QueryAdapter;
 
 import org.apache.http.HttpHost;
 import org.elasticsearch.ResourceNotFoundException;

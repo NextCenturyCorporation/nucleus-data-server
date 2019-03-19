@@ -1,12 +1,12 @@
 package com.ncc.neon.server.services;
 
+import com.ncc.neon.server.adapters.QueryAdapter;
 import com.ncc.neon.server.models.connection.ConnectionInfo;
 import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.result.FieldTypePair;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
 import com.ncc.neon.server.models.query.result.TableWithFields;
-import com.ncc.neon.server.services.adapters.QueryAdapter;
 
 import org.springframework.stereotype.Component;
 

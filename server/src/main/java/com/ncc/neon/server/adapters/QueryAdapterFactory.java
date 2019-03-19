@@ -1,4 +1,4 @@
-package com.ncc.neon.server.services.adapters;
+package com.ncc.neon.server.adapters;
 
 import com.ncc.neon.server.models.connection.ConnectionInfo;
 
