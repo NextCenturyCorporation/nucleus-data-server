@@ -11,30 +11,1079 @@ import java.util.Map;
 import com.ncc.neon.server.models.query.Query;
 import com.ncc.neon.server.models.query.QueryOptions;
 import com.ncc.neon.server.models.query.clauses.AggregateClause;
+import com.ncc.neon.server.models.query.clauses.AndWhereClause;
 import com.ncc.neon.server.models.query.clauses.GroupByFieldClause;
 import com.ncc.neon.server.models.query.clauses.GroupByFunctionClause;
 import com.ncc.neon.server.models.query.clauses.LimitClause;
 import com.ncc.neon.server.models.query.clauses.OffsetClause;
+import com.ncc.neon.server.models.query.clauses.OrWhereClause;
 import com.ncc.neon.server.models.query.clauses.SingularWhereClause;
 import com.ncc.neon.server.models.query.clauses.SortClause;
-import com.ncc.neon.server.models.query.clauses.SortOrder;
 import com.ncc.neon.server.models.query.filter.Filter;
 import com.ncc.neon.server.models.query.result.TabularQueryResult;
+import com.ncc.neon.util.DateUtil;
 
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.BucketOrder;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.Stats;
+import org.elasticsearch.search.aggregations.metrics.stats.StatsAggregationBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes=ElasticsearchTransformer.class)
 public class ElasticsearchTransformerTest {
+
+    private SearchSourceBuilder createSourceBuilder() {
+        return createSourceBuilder(0, 10000);
+    }
+
+    private SearchSourceBuilder createSourceBuilder(int from, int size) {
+        return new SearchSourceBuilder().explain(false).from(from).size(size);
+    }
+
+    private SearchRequest createRequest(String database, String table, SearchSourceBuilder source) {
+        return new SearchRequest().searchType(SearchType.DFS_QUERY_THEN_FETCH).indices(database).types(table).source(source);
+    }
+
+    @Test
+    public void transformQueryBaseTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        SearchSourceBuilder source = createSourceBuilder();
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFieldsTest() {
+        Query query = new Query();
+        query.setFields(Arrays.asList("testField1", "testField2"));
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        SearchSourceBuilder source = createSourceBuilder().fetchSource(new String[]{ "testField1", "testField2" }, null);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryDistinctTest() {
+        Query query = new Query();
+        query.setDistinct(true);
+        query.setFields(Arrays.asList("testField1"));
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        TermsAggregationBuilder aggBuilder = AggregationBuilders.terms("distinct").field("testField1").size(10000);
+        SearchSourceBuilder source = createSourceBuilder().fetchSource(new String[]{ "testField1" }, null).aggregation(aggBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterEqualsBooleanTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromBoolean("testFilterField", "=", true)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.termQuery("testFilterField", true));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterEqualsDateTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromDate("testFilterField", "=",
+            DateUtil.transformStringToDate("2019-01-01T00:00Z"))));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.termQuery("testFilterField", "2019-01-01T00:00:00Z"));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterEqualsEmptyTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromString("testFilterField", "=", "")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.termQuery("testFilterField", ""));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterEqualsFalseTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromBoolean("testFilterField", "=", false)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.termQuery("testFilterField", false));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterEqualsNullTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromNull("testFilterField", "=")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery().mustNot(
+            QueryBuilders.existsQuery("testFilterField")));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterEqualsNumberTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromDouble("testFilterField", "=", 12.34)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.termQuery("testFilterField", 12.34));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterEqualsStringTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromString("testFilterField", "=",
+            "testFilterValue")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.termQuery("testFilterField", "testFilterValue"));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterEqualsZeroTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromDouble("testFilterField", "=", 0)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.termQuery("testFilterField", 0.0));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterNotEqualsBooleanTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromBoolean("testFilterField", "!=", true)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery().mustNot(
+            QueryBuilders.termQuery("testFilterField", true)));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterNotEqualsDateTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromDate("testFilterField", "!=",
+            DateUtil.transformStringToDate("2019-01-01T00:00Z"))));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery().mustNot(
+            QueryBuilders.termQuery("testFilterField", "2019-01-01T00:00:00Z")));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterNotEqualsEmptyTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromString("testFilterField", "!=", "")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery().mustNot(
+            QueryBuilders.termQuery("testFilterField", "")));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterNotEqualsFalseTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromBoolean("testFilterField", "!=", false)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery().mustNot(
+            QueryBuilders.termQuery("testFilterField", false)));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterNotEqualsNullTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromNull("testFilterField", "!=")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.existsQuery("testFilterField"));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterNotEqualsNumberTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromDouble("testFilterField", "!=", 12.34)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery().mustNot(
+            QueryBuilders.termQuery("testFilterField", 12.34)));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterNotEqualsStringTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromString("testFilterField", "!=",
+            "testFilterValue")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery().mustNot(
+            QueryBuilders.termQuery("testFilterField", "testFilterValue")));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterNotEqualsZeroTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromDouble("testFilterField", "!=", 0)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery().mustNot(
+            QueryBuilders.termQuery("testFilterField", 0.0)));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterGreaterThanTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromDouble("testFilterField", ">", 12.34)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.rangeQuery("testFilterField").gt(12.34));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterGreaterThanOrEqualToTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromDouble("testFilterField", ">=", 12.34)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.rangeQuery("testFilterField").gte(12.34));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterLessThanTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromDouble("testFilterField", "<", 12.34)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.rangeQuery("testFilterField").lt(12.34));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterLessThanOrEqualToTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromDouble("testFilterField", "<=", 12.34)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.rangeQuery("testFilterField").lte(12.34));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterContainsTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromString("testFilterField", "contains",
+            "testFilterValue")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(
+            QueryBuilders.regexpQuery("testFilterField", ".*testFilterValue.*"));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterNotContainsTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromString("testFilterField", "not contains",
+            "testFilterValue")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery().mustNot(
+            QueryBuilders.regexpQuery("testFilterField", ".*testFilterValue.*")));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterAndTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, new AndWhereClause(Arrays.asList(
+            SingularWhereClause.fromString("testFilterField1", "=", "testFilterValue1"),
+            SingularWhereClause.fromString("testFilterField2", "=", "testFilterValue2")
+        ))));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery()
+            .must(QueryBuilders.termQuery("testFilterField1", "testFilterValue1"))
+            .must(QueryBuilders.termQuery("testFilterField2", "testFilterValue2")));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterOrTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, new OrWhereClause(Arrays.asList(
+            SingularWhereClause.fromString("testFilterField1", "=", "testFilterValue1"),
+            SingularWhereClause.fromString("testFilterField2", "=", "testFilterValue2")
+        ))));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery()
+            .should(QueryBuilders.termQuery("testFilterField1", "testFilterValue1"))
+            .should(QueryBuilders.termQuery("testFilterField2", "testFilterValue2")));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryAggregateAvgTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setAggregates(Arrays.asList(new AggregateClause("testAggName", "avg", "testAggField")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        StatsAggregationBuilder aggBuilder = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryAggregateCountAllTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setAggregates(Arrays.asList(new AggregateClause("testAggName", "count", "*")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        SearchSourceBuilder source = createSourceBuilder();
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryAggregateCountFieldTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setAggregates(Arrays.asList(new AggregateClause("testAggName", "count", "testAggField")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.existsQuery("testAggField"));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryAggregateMaxTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setAggregates(Arrays.asList(new AggregateClause("testAggName", "max", "testAggField")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        StatsAggregationBuilder aggBuilder = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryAggregateMinTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setAggregates(Arrays.asList(new AggregateClause("testAggName", "min", "testAggField")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        StatsAggregationBuilder aggBuilder = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryAggregateSumTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setAggregates(Arrays.asList(new AggregateClause("testAggName", "sum", "testAggField")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        StatsAggregationBuilder aggBuilder = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryMultipleAggregateTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setAggregates(Arrays.asList(
+            new AggregateClause("testAggName1", "avg", "testAggField1"),
+            new AggregateClause("testAggName2", "sum", "testAggField2")
+        ));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        StatsAggregationBuilder aggBuilder1 = AggregationBuilders.stats("_statsFor_testAggField1").field("testAggField1");
+        StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testAggField2").field("testAggField2");
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1).aggregation(aggBuilder2);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryGroupByFieldTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        TermsAggregationBuilder aggBuilder = AggregationBuilders.terms("testGroupField").field("testGroupField").size(10000);
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryGroupByDateMinuteTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setGroupByClauses(Arrays.asList(new GroupByFunctionClause("testGroupName", "minute", "testGroupField")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupName").field("testGroupField")
+            .dateHistogramInterval(DateHistogramInterval.MINUTE).format("m");
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryGroupByDateHourTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setGroupByClauses(Arrays.asList(new GroupByFunctionClause("testGroupName", "hour", "testGroupField")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupName").field("testGroupField")
+            .dateHistogramInterval(DateHistogramInterval.HOUR).format("H");
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryGroupByDateDayTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setGroupByClauses(Arrays.asList(new GroupByFunctionClause("testGroupName", "dayOfMonth", "testGroupField")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupName").field("testGroupField")
+            .dateHistogramInterval(DateHistogramInterval.DAY).format("d");
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryGroupByDateMonthTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setGroupByClauses(Arrays.asList(new GroupByFunctionClause("testGroupName", "month", "testGroupField")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupName").field("testGroupField")
+            .dateHistogramInterval(DateHistogramInterval.MONTH).format("M");
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryGroupByDateYearTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setGroupByClauses(Arrays.asList(new GroupByFunctionClause("testGroupName", "year", "testGroupField")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupName").field("testGroupField")
+            .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy");
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryMultipleGroupByFieldTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setGroupByClauses(Arrays.asList(
+            new GroupByFieldClause("testGroupField1", "Test Group Field 1"),
+            new GroupByFieldClause("testGroupField2", "Test Group Field 2"),
+            new GroupByFieldClause("testGroupField3", "Test Group Field 3")
+        ));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        TermsAggregationBuilder aggBuilder3 = AggregationBuilders.terms("testGroupField3").field("testGroupField3").size(10000);
+        TermsAggregationBuilder aggBuilder2 = AggregationBuilders.terms("testGroupField2").field("testGroupField2").size(10000)
+            .subAggregation(aggBuilder3);
+        TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testGroupField1").field("testGroupField1").size(10000)
+            .subAggregation(aggBuilder2);
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryMultipleGroupByDateTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setGroupByClauses(Arrays.asList(
+            new GroupByFunctionClause("testGroupName1", "minute", "testGroupField1"),
+            new GroupByFunctionClause("testGroupName2", "hour", "testGroupField2"),
+            new GroupByFunctionClause("testGroupName3", "dayOfMonth", "testGroupField3"),
+            new GroupByFunctionClause("testGroupName4", "month", "testGroupField4"),
+            new GroupByFunctionClause("testGroupName5", "year", "testGroupField5")
+        ));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        DateHistogramAggregationBuilder aggBuilder5 = AggregationBuilders.dateHistogram("testGroupName5").field("testGroupField5")
+            .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy");
+        DateHistogramAggregationBuilder aggBuilder4 = AggregationBuilders.dateHistogram("testGroupName4").field("testGroupField4")
+            .dateHistogramInterval(DateHistogramInterval.MONTH).format("M").subAggregation(aggBuilder5);
+        DateHistogramAggregationBuilder aggBuilder3 = AggregationBuilders.dateHistogram("testGroupName3").field("testGroupField3")
+            .dateHistogramInterval(DateHistogramInterval.DAY).format("d").subAggregation(aggBuilder4);
+        DateHistogramAggregationBuilder aggBuilder2 = AggregationBuilders.dateHistogram("testGroupName2").field("testGroupField2")
+            .dateHistogramInterval(DateHistogramInterval.HOUR).format("H").subAggregation(aggBuilder3);
+        DateHistogramAggregationBuilder aggBuilder1 = AggregationBuilders.dateHistogram("testGroupName1").field("testGroupField1")
+            .dateHistogramInterval(DateHistogramInterval.MINUTE).format("m").subAggregation(aggBuilder2);
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryMultipleGroupByDateAndFieldTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setGroupByClauses(Arrays.asList(
+            new GroupByFieldClause("testGroupField1", "Test Group Field 1"),
+            new GroupByFunctionClause("testGroupName2", "year", "testGroupField2"),
+            new GroupByFieldClause("testGroupField3", "Test Group Field 3"),
+            new GroupByFunctionClause("testGroupName4", "month", "testGroupField4")
+        ));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        DateHistogramAggregationBuilder aggBuilder4 = AggregationBuilders.dateHistogram("testGroupName4").field("testGroupField4")
+            .dateHistogramInterval(DateHistogramInterval.MONTH).format("M");
+        TermsAggregationBuilder aggBuilder3 = AggregationBuilders.terms("testGroupField3").field("testGroupField3").size(10000)
+            .subAggregation(aggBuilder4);
+        DateHistogramAggregationBuilder aggBuilder2 = AggregationBuilders.dateHistogram("testGroupName2").field("testGroupField2")
+            .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy").subAggregation(aggBuilder3);
+        TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testGroupField1").field("testGroupField1").size(10000)
+            .subAggregation(aggBuilder2);
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryAggregateAndGroupTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setAggregates(Arrays.asList(new AggregateClause("testAggName", "sum", "testAggField")));
+        query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
+        TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testGroupField").field("testGroupField").size(10000)
+            .subAggregation(aggBuilder2);
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryMultipleAggregateAndGroupTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setAggregates(Arrays.asList(
+            new AggregateClause("testAggName1", "avg", "testAggField1"),
+            new AggregateClause("testAggName2", "sum", "testAggField2")
+        ));
+        query.setGroupByClauses(Arrays.asList(
+            new GroupByFieldClause("testGroupField1", "Test Group Field 1"),
+            new GroupByFieldClause("testGroupField2", "Test Group Field 2")
+        ));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        StatsAggregationBuilder aggBuilder4 = AggregationBuilders.stats("_statsFor_testAggField2").field("testAggField2");
+        StatsAggregationBuilder aggBuilder3 = AggregationBuilders.stats("_statsFor_testAggField1").field("testAggField1");
+        TermsAggregationBuilder aggBuilder2 = AggregationBuilders.terms("testGroupField2").field("testGroupField2").size(10000)
+            .subAggregation(aggBuilder3).subAggregation(aggBuilder4);
+        TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testGroupField1").field("testGroupField1").size(10000)
+            .subAggregation(aggBuilder2);
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQuerySortAscendingTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setSortClauses(Arrays.asList(new SortClause("testSortField", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        SearchSourceBuilder source = createSourceBuilder().sort(SortBuilders.fieldSort("testSortField").order(SortOrder.ASC));
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQuerySortDescendingTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setSortClauses(Arrays.asList(new SortClause("testSortField", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        SearchSourceBuilder source = createSourceBuilder().sort(SortBuilders.fieldSort("testSortField").order(SortOrder.DESC));
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryMultipleSortTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setSortClauses(Arrays.asList(
+            new SortClause("testSortField1", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING),
+            new SortClause("testSortField2", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING)
+        ));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        SearchSourceBuilder source = createSourceBuilder().sort(SortBuilders.fieldSort("testSortField1").order(SortOrder.ASC))
+            .sort(SortBuilders.fieldSort("testSortField2").order(SortOrder.DESC));
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryAggregateAndGroupAndSortTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setAggregates(Arrays.asList(
+            new AggregateClause("testAggName1", "avg", "testField1"),
+            new AggregateClause("testAggName2", "sum", "testField2")
+        ));
+        query.setGroupByClauses(Arrays.asList(
+            new GroupByFieldClause("testField1", "Test Field 1"),
+            new GroupByFieldClause("testField2", "Test Field 2")
+        ));
+        query.setSortClauses(Arrays.asList(
+            new SortClause("testField1", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING),
+            new SortClause("testField2", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING),
+            new SortClause("testField4", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)
+        ));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        StatsAggregationBuilder aggBuilder4 = AggregationBuilders.stats("_statsFor_testField2").field("testField2");
+        StatsAggregationBuilder aggBuilder3 = AggregationBuilders.stats("_statsFor_testField1").field("testField1");
+        TermsAggregationBuilder aggBuilder2 = AggregationBuilders.terms("testField2").field("testField2").size(10000)
+            .order(BucketOrder.key(false)).subAggregation(aggBuilder3).subAggregation(aggBuilder4);
+        TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testField1").field("testField1").size(10000)
+            .order(BucketOrder.key(true)).subAggregation(aggBuilder2);
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryAggregateAndSortTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setAggregates(Arrays.asList(
+            new AggregateClause("testAggName1", "avg", "testField1"),
+            new AggregateClause("testAggName2", "sum", "testField2")
+        ));
+        query.setSortClauses(Arrays.asList(
+            new SortClause("testField1", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING),
+            new SortClause("testField2", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING),
+            new SortClause("testField4", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)
+        ));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        StatsAggregationBuilder aggBuilder1 = AggregationBuilders.stats("_statsFor_testField1").field("testField1");
+        StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testField2").field("testField2");
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1).aggregation(aggBuilder2)
+            .sort(SortBuilders.fieldSort("testField1").order(SortOrder.ASC))
+            .sort(SortBuilders.fieldSort("testField2").order(SortOrder.DESC))
+            .sort(SortBuilders.fieldSort("testField4").order(SortOrder.ASC));
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryGroupAndSortTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setGroupByClauses(Arrays.asList(
+            new GroupByFieldClause("testField1", "Test Field 1"),
+            new GroupByFieldClause("testField2", "Test Field 2"),
+            new GroupByFieldClause("testField3", "Test Field 3")
+        ));
+        query.setSortClauses(Arrays.asList(
+            new SortClause("testField1", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING),
+            new SortClause("testField2", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING),
+            new SortClause("testField4", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)
+        ));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        TermsAggregationBuilder aggBuilder3 = AggregationBuilders.terms("testField3").field("testField3").size(10000);
+        TermsAggregationBuilder aggBuilder2 = AggregationBuilders.terms("testField2").field("testField2").size(10000)
+            .order(BucketOrder.key(false)).subAggregation(aggBuilder3);
+        TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testField1").field("testField1").size(10000)
+            .order(BucketOrder.key(true)).subAggregation(aggBuilder2);
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryLimitTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setLimitClause(new LimitClause(12));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        SearchSourceBuilder source = createSourceBuilder(0, 12);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryOffsetTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setOffsetClause(new OffsetClause(34));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        SearchSourceBuilder source = createSourceBuilder(34, 9966);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryCombinedTest() {
+        Query query = new Query();
+        query.setAggregates(Arrays.asList(new AggregateClause("testAggName", "sum", "testField1")));
+        query.setFields(Arrays.asList("testField1", "testField2"));
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromString("testField1", "=", "testValue")));
+        query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testField1", "Test Field 1")));
+        query.setLimitClause(new LimitClause(12));
+        query.setOffsetClause(new OffsetClause(34));
+        query.setSortClauses(Arrays.asList(new SortClause("testField1", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.termQuery("testField1", "testValue"));
+        StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testField1").field("testField1");
+        TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testField1").field("testField1").size(12)
+            .order(BucketOrder.key(true)).subAggregation(aggBuilder2);
+        SearchSourceBuilder source = createSourceBuilder(34, 12).fetchSource(new String[]{ "testField1", "testField2" }, null)
+            .query(queryBuilder).aggregation(aggBuilder1);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryLimitZeroTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setLimitClause(new LimitClause(0));
+        QueryOptions queryOptions = new QueryOptions();
+
+        // Elasticsearch-specific test:  do not set the query limit to zero!
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        SearchSourceBuilder source = createSourceBuilder();
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryLimitMaximumTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setLimitClause(new LimitClause(1000000));
+        QueryOptions queryOptions = new QueryOptions();
+
+        // Elasticsearch-specific test:  do not set the query limit to more than 10,000!
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        SearchSourceBuilder source = createSourceBuilder();
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        expected = expected.scroll(TimeValue.timeValueMinutes(1));
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterDateRangeTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, new AndWhereClause(Arrays.asList(
+            SingularWhereClause.fromDate("testFilterField", ">=", DateUtil.transformStringToDate("2018-01-01T00:00Z")),
+            SingularWhereClause.fromDate("testFilterField", "<=", DateUtil.transformStringToDate("2019-01-01T00:00Z"))
+        ))));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery()
+            .must(QueryBuilders.rangeQuery("testFilterField").gte("2018-01-01T00:00:00Z"))
+            .must(QueryBuilders.rangeQuery("testFilterField").lte("2019-01-01T00:00:00Z")));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterNumberRangeTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, new AndWhereClause(Arrays.asList(
+            SingularWhereClause.fromDouble("testFilterField", ">=", 12.34),
+            SingularWhereClause.fromDouble("testFilterField", "<=", 56.78)
+        ))));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery()
+            .must(QueryBuilders.rangeQuery("testFilterField").gte(12.34))
+            .must(QueryBuilders.rangeQuery("testFilterField").lte(56.78)));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterNestedAndTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, new AndWhereClause(Arrays.asList(
+            new OrWhereClause(Arrays.asList(
+                SingularWhereClause.fromString("testFilterField1", "=", "testFilterValue1"),
+                SingularWhereClause.fromString("testFilterField2", "=", "testFilterValue2")
+            )),
+            new OrWhereClause(Arrays.asList(
+                SingularWhereClause.fromString("testFilterField3", "=", "testFilterValue3"),
+                SingularWhereClause.fromString("testFilterField4", "=", "testFilterValue4")
+            ))
+        ))));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilderA = QueryBuilders.boolQuery()
+            .should(QueryBuilders.termQuery("testFilterField1", "testFilterValue1"))
+            .should(QueryBuilders.termQuery("testFilterField2", "testFilterValue2"));
+        BoolQueryBuilder queryBuilderB = QueryBuilders.boolQuery()
+            .should(QueryBuilders.termQuery("testFilterField3", "testFilterValue3"))
+            .should(QueryBuilders.termQuery("testFilterField4", "testFilterValue4"));
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery().must(queryBuilderA).must(queryBuilderB));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryFilterNestedOrTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, new OrWhereClause(Arrays.asList(
+            new AndWhereClause(Arrays.asList(
+                SingularWhereClause.fromString("testFilterField1", "=", "testFilterValue1"),
+                SingularWhereClause.fromString("testFilterField2", "=", "testFilterValue2")
+            )),
+            new AndWhereClause(Arrays.asList(
+                SingularWhereClause.fromString("testFilterField3", "=", "testFilterValue3"),
+                SingularWhereClause.fromString("testFilterField4", "=", "testFilterValue4")
+            ))
+        ))));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilderA = QueryBuilders.boolQuery()
+            .must(QueryBuilders.termQuery("testFilterField1", "testFilterValue1"))
+            .must(QueryBuilders.termQuery("testFilterField2", "testFilterValue2"));
+        BoolQueryBuilder queryBuilderB = QueryBuilders.boolQuery()
+            .must(QueryBuilders.termQuery("testFilterField3", "testFilterValue3"))
+            .must(QueryBuilders.termQuery("testFilterField4", "testFilterValue4"));
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery().should(queryBuilderA)
+            .should(queryBuilderB));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryAggregateCountFieldAndFilterTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromString("testFilterField", "=",
+            "testFilterValue")));
+        query.setAggregates(Arrays.asList(new AggregateClause("testAggName", "count", "testAggField")));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.termQuery("testFilterField", "testFilterValue"))
+            .must(QueryBuilders.existsQuery("testAggField"));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void transformQueryAggregateCountFieldAndMetricsTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setAggregates(Arrays.asList(
+            new AggregateClause("testAggName1", "count", "testAggField"),
+            new AggregateClause("testAggName2", "sum", "testAggField")
+        ));
+        QueryOptions queryOptions = new QueryOptions();
+
+        SearchRequest actual = ElasticsearchTransformer.transformQuery(query, queryOptions);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.existsQuery("testAggField"));
+        StatsAggregationBuilder aggBuilder = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder).aggregation(aggBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
 
     @Test
     public void transformResultsTest() {
@@ -668,7 +1717,7 @@ public class ElasticsearchTransformerTest {
         query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
-        query.setSortClauses(Arrays.asList(new SortClause("testCount", SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testCount", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
         QueryOptions options = new QueryOptions();
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
@@ -729,7 +1778,7 @@ public class ElasticsearchTransformerTest {
         query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
-        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
         QueryOptions options = new QueryOptions();
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
@@ -791,7 +1840,7 @@ public class ElasticsearchTransformerTest {
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
-        query.setSortClauses(Arrays.asList(new SortClause("testCount", SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testCount", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
         QueryOptions options = new QueryOptions();
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
@@ -853,7 +1902,7 @@ public class ElasticsearchTransformerTest {
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
-        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
         QueryOptions options = new QueryOptions();
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
@@ -978,7 +2027,7 @@ public class ElasticsearchTransformerTest {
         query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setOffsetClause(new OffsetClause(1));
-        query.setSortClauses(Arrays.asList(new SortClause("testCount", SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testCount", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
         QueryOptions options = new QueryOptions();
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
@@ -1043,7 +2092,7 @@ public class ElasticsearchTransformerTest {
         query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setOffsetClause(new OffsetClause(1));
-        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
         QueryOptions options = new QueryOptions();
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
@@ -1107,7 +2156,7 @@ public class ElasticsearchTransformerTest {
         query.setFilter(new Filter("testDatabase", "testTable"));
         query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
-        query.setSortClauses(Arrays.asList(new SortClause("testCount", SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testCount", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
         QueryOptions options = new QueryOptions();
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
@@ -1175,7 +2224,7 @@ public class ElasticsearchTransformerTest {
         query.setFilter(new Filter("testDatabase", "testTable"));
         query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
-        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
         QueryOptions options = new QueryOptions();
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
@@ -1341,7 +2390,7 @@ public class ElasticsearchTransformerTest {
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
-        query.setSortClauses(Arrays.asList(new SortClause("testSum", SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testSum", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
         QueryOptions options = new QueryOptions();
 
         Stats stats1 = mock(Stats.class);
@@ -1419,7 +2468,7 @@ public class ElasticsearchTransformerTest {
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
-        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
         QueryOptions options = new QueryOptions();
 
         Stats stats1 = mock(Stats.class);
@@ -2440,7 +3489,7 @@ public class ElasticsearchTransformerTest {
         query.setDistinct(true);
         query.setFields(Arrays.asList("testFieldA", "testFieldB"));
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setSortClauses(Arrays.asList(new SortClause("testFieldA", SortOrder.DESCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testFieldA", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING)));
         QueryOptions options = new QueryOptions();
 
         Terms.Bucket bucket1 = mock(Terms.Bucket.class);
@@ -2490,7 +3539,7 @@ public class ElasticsearchTransformerTest {
         query.setFilter(new Filter("testDatabase", "testTable"));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
-        query.setSortClauses(Arrays.asList(new SortClause("testFieldA", SortOrder.DESCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testFieldA", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING)));
         QueryOptions options = new QueryOptions();
 
         Terms.Bucket bucket1 = mock(Terms.Bucket.class);
@@ -2532,7 +3581,7 @@ public class ElasticsearchTransformerTest {
         query.setDistinct(true);
         query.setFields(Arrays.asList("testFieldA", "testFieldB"));
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setSortClauses(Arrays.asList(new SortClause("testFieldA", SortOrder.DESCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testFieldA", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING)));
         QueryOptions options = new QueryOptions();
 
         Terms.Bucket bucket1 = mock(Terms.Bucket.class);
