@@ -1,6 +1,6 @@
-package com.ncc.neon.server.models.query.filter;
+package com.ncc.neon.server.models.queries;
 
-import com.ncc.neon.server.models.query.clauses.WhereClause;
+import com.ncc.neon.server.models.queries.WhereClause;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,16 +1,16 @@
-package com.ncc.neon.server.models.query;
+package com.ncc.neon.server.models.queries;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.ncc.neon.server.models.query.clauses.AggregateClause;
-import com.ncc.neon.server.models.query.clauses.GroupByClause;
-import com.ncc.neon.server.models.query.clauses.LimitClause;
-import com.ncc.neon.server.models.query.clauses.OffsetClause;
-import com.ncc.neon.server.models.query.clauses.SelectClause;
-import com.ncc.neon.server.models.query.clauses.SortClause;
-import com.ncc.neon.server.models.query.filter.Filter;
+import com.ncc.neon.server.models.queries.AggregateClause;
+import com.ncc.neon.server.models.queries.Filter;
+import com.ncc.neon.server.models.queries.GroupByClause;
+import com.ncc.neon.server.models.queries.LimitClause;
+import com.ncc.neon.server.models.queries.OffsetClause;
+import com.ncc.neon.server.models.queries.SelectClause;
+import com.ncc.neon.server.models.queries.SortClause;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

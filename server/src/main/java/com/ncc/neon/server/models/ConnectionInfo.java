@@ -1,4 +1,4 @@
-package com.ncc.neon.server.models.connection;
+package com.ncc.neon.server.models;
 
 import lombok.Value;
 

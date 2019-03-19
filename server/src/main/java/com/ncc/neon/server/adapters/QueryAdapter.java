@@ -1,9 +1,9 @@
 package com.ncc.neon.server.adapters;
 
-import com.ncc.neon.server.models.query.Query;
-import com.ncc.neon.server.models.query.result.FieldTypePair;
-import com.ncc.neon.server.models.query.result.TabularQueryResult;
-import com.ncc.neon.server.models.query.result.TableWithFields;
+import com.ncc.neon.server.models.queries.Query;
+import com.ncc.neon.server.models.results.FieldTypePair;
+import com.ncc.neon.server.models.results.TabularQueryResult;
+import com.ncc.neon.server.models.results.TableWithFields;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

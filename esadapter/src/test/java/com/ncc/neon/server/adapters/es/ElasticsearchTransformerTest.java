@@ -8,18 +8,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.ncc.neon.server.models.query.Query;
-import com.ncc.neon.server.models.query.clauses.AggregateClause;
-import com.ncc.neon.server.models.query.clauses.AndWhereClause;
-import com.ncc.neon.server.models.query.clauses.GroupByFieldClause;
-import com.ncc.neon.server.models.query.clauses.GroupByFunctionClause;
-import com.ncc.neon.server.models.query.clauses.LimitClause;
-import com.ncc.neon.server.models.query.clauses.OffsetClause;
-import com.ncc.neon.server.models.query.clauses.OrWhereClause;
-import com.ncc.neon.server.models.query.clauses.SingularWhereClause;
-import com.ncc.neon.server.models.query.clauses.SortClause;
-import com.ncc.neon.server.models.query.filter.Filter;
-import com.ncc.neon.server.models.query.result.TabularQueryResult;
+import com.ncc.neon.server.models.queries.AggregateClause;
+import com.ncc.neon.server.models.queries.AndWhereClause;
+import com.ncc.neon.server.models.queries.Filter;
+import com.ncc.neon.server.models.queries.GroupByFieldClause;
+import com.ncc.neon.server.models.queries.GroupByFunctionClause;
+import com.ncc.neon.server.models.queries.LimitClause;
+import com.ncc.neon.server.models.queries.OffsetClause;
+import com.ncc.neon.server.models.queries.OrWhereClause;
+import com.ncc.neon.server.models.queries.Query;
+import com.ncc.neon.server.models.queries.SingularWhereClause;
+import com.ncc.neon.server.models.queries.SortClause;
+import com.ncc.neon.server.models.results.TabularQueryResult;
 import com.ncc.neon.util.DateUtil;
 
 import org.elasticsearch.action.search.SearchRequest;
@@ -711,7 +711,7 @@ public class ElasticsearchTransformerTest {
     public void transformQuerySortAscendingTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setSortClauses(Arrays.asList(new SortClause("testSortField", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testSortField", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)));
 
         SearchRequest actual = ElasticsearchTransformer.transformQuery(query);
         SearchSourceBuilder source = createSourceBuilder().sort(SortBuilders.fieldSort("testSortField").order(SortOrder.ASC));
@@ -723,7 +723,7 @@ public class ElasticsearchTransformerTest {
     public void transformQuerySortDescendingTest() {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setSortClauses(Arrays.asList(new SortClause("testSortField", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testSortField", com.ncc.neon.server.models.queries.SortOrder.DESCENDING)));
 
         SearchRequest actual = ElasticsearchTransformer.transformQuery(query);
         SearchSourceBuilder source = createSourceBuilder().sort(SortBuilders.fieldSort("testSortField").order(SortOrder.DESC));
@@ -736,8 +736,8 @@ public class ElasticsearchTransformerTest {
         Query query = new Query();
         query.setFilter(new Filter("testDatabase", "testTable"));
         query.setSortClauses(Arrays.asList(
-            new SortClause("testSortField1", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING),
-            new SortClause("testSortField2", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING)
+            new SortClause("testSortField1", com.ncc.neon.server.models.queries.SortOrder.ASCENDING),
+            new SortClause("testSortField2", com.ncc.neon.server.models.queries.SortOrder.DESCENDING)
         ));
 
         SearchRequest actual = ElasticsearchTransformer.transformQuery(query);
@@ -760,9 +760,9 @@ public class ElasticsearchTransformerTest {
             new GroupByFieldClause("testField2", "Test Field 2")
         ));
         query.setSortClauses(Arrays.asList(
-            new SortClause("testField1", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING),
-            new SortClause("testField2", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING),
-            new SortClause("testField4", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)
+            new SortClause("testField1", com.ncc.neon.server.models.queries.SortOrder.ASCENDING),
+            new SortClause("testField2", com.ncc.neon.server.models.queries.SortOrder.DESCENDING),
+            new SortClause("testField4", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)
         ));
 
         SearchRequest actual = ElasticsearchTransformer.transformQuery(query);
@@ -786,9 +786,9 @@ public class ElasticsearchTransformerTest {
             new AggregateClause("testAggName2", "sum", "testField2")
         ));
         query.setSortClauses(Arrays.asList(
-            new SortClause("testField1", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING),
-            new SortClause("testField2", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING),
-            new SortClause("testField4", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)
+            new SortClause("testField1", com.ncc.neon.server.models.queries.SortOrder.ASCENDING),
+            new SortClause("testField2", com.ncc.neon.server.models.queries.SortOrder.DESCENDING),
+            new SortClause("testField4", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)
         ));
 
         SearchRequest actual = ElasticsearchTransformer.transformQuery(query);
@@ -812,9 +812,9 @@ public class ElasticsearchTransformerTest {
             new GroupByFieldClause("testField3", "Test Field 3")
         ));
         query.setSortClauses(Arrays.asList(
-            new SortClause("testField1", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING),
-            new SortClause("testField2", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING),
-            new SortClause("testField4", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)
+            new SortClause("testField1", com.ncc.neon.server.models.queries.SortOrder.ASCENDING),
+            new SortClause("testField2", com.ncc.neon.server.models.queries.SortOrder.DESCENDING),
+            new SortClause("testField4", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)
         ));
 
         SearchRequest actual = ElasticsearchTransformer.transformQuery(query);
@@ -861,7 +861,7 @@ public class ElasticsearchTransformerTest {
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testField1", "Test Field 1")));
         query.setLimitClause(new LimitClause(12));
         query.setOffsetClause(new OffsetClause(34));
-        query.setSortClauses(Arrays.asList(new SortClause("testField1", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testField1", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)));
 
         SearchRequest actual = ElasticsearchTransformer.transformQuery(query);
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.termQuery("testField1", "testValue"));
@@ -1638,7 +1638,7 @@ public class ElasticsearchTransformerTest {
         query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
-        query.setSortClauses(Arrays.asList(new SortClause("testCount", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testCount", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)));
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries());
@@ -1698,7 +1698,7 @@ public class ElasticsearchTransformerTest {
         query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
-        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)));
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries());
@@ -1759,7 +1759,7 @@ public class ElasticsearchTransformerTest {
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
-        query.setSortClauses(Arrays.asList(new SortClause("testCount", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testCount", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)));
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries());
@@ -1820,7 +1820,7 @@ public class ElasticsearchTransformerTest {
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
-        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)));
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries());
@@ -1943,7 +1943,7 @@ public class ElasticsearchTransformerTest {
         query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setOffsetClause(new OffsetClause(1));
-        query.setSortClauses(Arrays.asList(new SortClause("testCount", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testCount", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)));
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries());
@@ -2007,7 +2007,7 @@ public class ElasticsearchTransformerTest {
         query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setOffsetClause(new OffsetClause(1));
-        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)));
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries());
@@ -2070,7 +2070,7 @@ public class ElasticsearchTransformerTest {
         query.setFilter(new Filter("testDatabase", "testTable"));
         query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
-        query.setSortClauses(Arrays.asList(new SortClause("testCount", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testCount", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)));
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries());
@@ -2137,7 +2137,7 @@ public class ElasticsearchTransformerTest {
         query.setFilter(new Filter("testDatabase", "testTable"));
         query.setAggregates(Arrays.asList(new AggregateClause("testCount", "count", "testGroupField")));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
-        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)));
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries());
@@ -2300,7 +2300,7 @@ public class ElasticsearchTransformerTest {
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
-        query.setSortClauses(Arrays.asList(new SortClause("testSum", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testSum", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)));
 
         Stats stats1 = mock(Stats.class);
         when(stats1.getSum()).thenReturn(12.0);
@@ -2377,7 +2377,7 @@ public class ElasticsearchTransformerTest {
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause("testGroupField", "Test Group Field")));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
-        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testGroupField", com.ncc.neon.server.models.queries.SortOrder.ASCENDING)));
 
         Stats stats1 = mock(Stats.class);
         when(stats1.getSum()).thenReturn(12.0);
@@ -3385,7 +3385,7 @@ public class ElasticsearchTransformerTest {
         query.setDistinct(true);
         query.setFields(Arrays.asList("testFieldA", "testFieldB"));
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setSortClauses(Arrays.asList(new SortClause("testFieldA", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testFieldA", com.ncc.neon.server.models.queries.SortOrder.DESCENDING)));
 
         Terms.Bucket bucket1 = mock(Terms.Bucket.class);
         when(bucket1.getKey()).thenReturn("testValue1");
@@ -3434,7 +3434,7 @@ public class ElasticsearchTransformerTest {
         query.setFilter(new Filter("testDatabase", "testTable"));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
-        query.setSortClauses(Arrays.asList(new SortClause("testFieldA", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testFieldA", com.ncc.neon.server.models.queries.SortOrder.DESCENDING)));
 
         Terms.Bucket bucket1 = mock(Terms.Bucket.class);
         when(bucket1.getKey()).thenReturn("testValue1");
@@ -3475,7 +3475,7 @@ public class ElasticsearchTransformerTest {
         query.setDistinct(true);
         query.setFields(Arrays.asList("testFieldA", "testFieldB"));
         query.setFilter(new Filter("testDatabase", "testTable"));
-        query.setSortClauses(Arrays.asList(new SortClause("testFieldA", com.ncc.neon.server.models.query.clauses.SortOrder.DESCENDING)));
+        query.setSortClauses(Arrays.asList(new SortClause("testFieldA", com.ncc.neon.server.models.queries.SortOrder.DESCENDING)));
 
         Terms.Bucket bucket1 = mock(Terms.Bucket.class);
         when(bucket1.getKey()).thenReturn(-1);

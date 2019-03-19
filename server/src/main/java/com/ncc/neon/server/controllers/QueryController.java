@@ -5,9 +5,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.ncc.neon.server.models.connection.ConnectionInfo;
-import com.ncc.neon.server.models.query.Query;
-import com.ncc.neon.server.models.query.result.TabularQueryResult;
+import com.ncc.neon.server.models.ConnectionInfo;
+import com.ncc.neon.server.models.queries.Query;
+import com.ncc.neon.server.models.results.TabularQueryResult;
 import com.ncc.neon.server.services.QueryService;
 
 import org.springframework.http.MediaType;

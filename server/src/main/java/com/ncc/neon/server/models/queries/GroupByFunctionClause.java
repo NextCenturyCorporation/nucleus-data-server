@@ -1,4 +1,4 @@
-package com.ncc.neon.server.models.query.clauses;
+package com.ncc.neon.server.models.queries;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

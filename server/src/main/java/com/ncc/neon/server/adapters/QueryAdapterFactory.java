@@ -1,6 +1,6 @@
 package com.ncc.neon.server.adapters;
 
-import com.ncc.neon.server.models.connection.ConnectionInfo;
+import com.ncc.neon.server.models.ConnectionInfo;
 
 public interface QueryAdapterFactory {
 

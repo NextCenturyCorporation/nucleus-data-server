@@ -1,4 +1,4 @@
-package com.ncc.neon.server.config;
+package com.ncc.neon.server;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,20 +12,17 @@ import org.springframework.http.server.reactive.ContextPathCompositeHandler;
 import org.springframework.http.server.reactive.HttpHandler;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
 
-/**
- * WebConfig
- */
 @Configuration
 public class WebConfig implements WebFluxConfigurer {
 
     @Bean
     public NettyReactiveWebServerFactory nettyReactiveWebServerFactory(
             @Value("${server.servlet.context-path:/}") String contextPath) {
+
         return new NettyReactiveWebServerFactory() {
 
             @Override
             public WebServer getWebServer(HttpHandler httpHandler) {
-
                 Map<String, HttpHandler> handlerMap = new HashMap<>();
                 handlerMap.put(contextPath, httpHandler);
                 return super.getWebServer(new ContextPathCompositeHandler(handlerMap));
@@ -33,5 +30,4 @@ public class WebConfig implements WebFluxConfigurer {
             }
         };
     }
-
 }

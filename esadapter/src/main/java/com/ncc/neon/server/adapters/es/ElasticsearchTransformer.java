@@ -10,18 +10,18 @@ import java.util.Map;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import com.ncc.neon.server.models.query.Query;
-import com.ncc.neon.server.models.query.clauses.AggregateClause;
-import com.ncc.neon.server.models.query.clauses.AndWhereClause;
-import com.ncc.neon.server.models.query.clauses.GroupByClause;
-import com.ncc.neon.server.models.query.clauses.GroupByFieldClause;
-import com.ncc.neon.server.models.query.clauses.GroupByFunctionClause;
-import com.ncc.neon.server.models.query.clauses.OrWhereClause;
-import com.ncc.neon.server.models.query.clauses.SelectClause;
-import com.ncc.neon.server.models.query.clauses.SingularWhereClause;
-import com.ncc.neon.server.models.query.clauses.SortClause;
-import com.ncc.neon.server.models.query.clauses.WhereClause;
-import com.ncc.neon.server.models.query.result.TabularQueryResult;
+import com.ncc.neon.server.models.queries.AggregateClause;
+import com.ncc.neon.server.models.queries.AndWhereClause;
+import com.ncc.neon.server.models.queries.GroupByClause;
+import com.ncc.neon.server.models.queries.GroupByFieldClause;
+import com.ncc.neon.server.models.queries.GroupByFunctionClause;
+import com.ncc.neon.server.models.queries.OrWhereClause;
+import com.ncc.neon.server.models.queries.Query;
+import com.ncc.neon.server.models.queries.SelectClause;
+import com.ncc.neon.server.models.queries.SingularWhereClause;
+import com.ncc.neon.server.models.queries.SortClause;
+import com.ncc.neon.server.models.queries.WhereClause;
+import com.ncc.neon.server.models.results.TabularQueryResult;
 import com.ncc.neon.util.DateUtil;
 
 import org.elasticsearch.action.search.SearchRequest;
@@ -368,7 +368,7 @@ public class ElasticsearchTransformer {
     }
 
     private static SortBuilder<FieldSortBuilder> convertSortClause(SortClause clause) {
-        SortOrder order = clause.getSortOrder() == com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING ?
+        SortOrder order = clause.getSortOrder() == com.ncc.neon.server.models.queries.SortOrder.ASCENDING ?
             SortOrder.ASC : SortOrder.DESC;
         return SortBuilders.fieldSort(clause.getFieldName()).order(order);
     }
@@ -466,7 +466,7 @@ public class ElasticsearchTransformer {
             SortClause sortClause = findMatchingSortClause(query, fieldClause);
 
             if(sortClause != null) {
-                boolean sortOrder = sortClause.getSortOrder().getDirection() == com.ncc.neon.server.models.query.clauses.SortOrder.ASCENDING.getDirection();
+                boolean sortOrder = sortClause.getSortOrder().getDirection() == com.ncc.neon.server.models.queries.SortOrder.ASCENDING.getDirection();
                 termsAggBuilder.order(BucketOrder.key(sortOrder));
             }
 
