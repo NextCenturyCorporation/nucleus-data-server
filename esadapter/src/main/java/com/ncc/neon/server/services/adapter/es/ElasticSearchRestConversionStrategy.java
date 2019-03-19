@@ -128,6 +128,7 @@ public class ElasticSearchRestConversionStrategy {
         List<SingularWhereClause> clauses = new ArrayList<>();
 
         if(query.getAggregates() != null) {
+            // Do not add an exists filter (!= null) on fields that are group function names since they are not real fields!
             Map<String, Boolean> groupNames = query.getGroupByClauses().stream().filter(clause -> clause instanceof GroupByFunctionClause)
                 .map(clause -> ((GroupByFunctionClause) clause).getName()).collect(Collectors.toMap(name -> name, name -> true));
             query.getAggregates().forEach(aggClause -> {
