@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 public class SortClause {
     String fieldName;
-    SortOrder sortOrder;
+    SortClauseOrder sortOrder;
 
     @JsonIgnore
     public int getSortDirection() {

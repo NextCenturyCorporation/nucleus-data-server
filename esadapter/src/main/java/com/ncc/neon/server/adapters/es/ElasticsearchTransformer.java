@@ -20,6 +20,7 @@ import com.ncc.neon.server.models.queries.Query;
 import com.ncc.neon.server.models.queries.SelectClause;
 import com.ncc.neon.server.models.queries.SingularWhereClause;
 import com.ncc.neon.server.models.queries.SortClause;
+import com.ncc.neon.server.models.queries.SortClauseOrder;
 import com.ncc.neon.server.models.queries.WhereClause;
 import com.ncc.neon.server.models.results.TabularQueryResult;
 import com.ncc.neon.util.DateUtil;
@@ -368,8 +369,7 @@ public class ElasticsearchTransformer {
     }
 
     private static SortBuilder<FieldSortBuilder> convertSortClause(SortClause clause) {
-        SortOrder order = clause.getSortOrder() == com.ncc.neon.server.models.queries.SortOrder.ASCENDING ?
-            SortOrder.ASC : SortOrder.DESC;
+        SortOrder order = clause.getSortOrder() == SortClauseOrder.ASCENDING ?  SortOrder.ASC : SortOrder.DESC;
         return SortBuilders.fieldSort(clause.getFieldName()).order(order);
     }
  
@@ -466,7 +466,7 @@ public class ElasticsearchTransformer {
             SortClause sortClause = findMatchingSortClause(query, fieldClause);
 
             if(sortClause != null) {
-                boolean sortOrder = sortClause.getSortOrder().getDirection() == com.ncc.neon.server.models.queries.SortOrder.ASCENDING.getDirection();
+                boolean sortOrder = sortClause.getSortOrder().getDirection() == SortClauseOrder.ASCENDING.getDirection();
                 termsAggBuilder.order(BucketOrder.key(sortOrder));
             }
 

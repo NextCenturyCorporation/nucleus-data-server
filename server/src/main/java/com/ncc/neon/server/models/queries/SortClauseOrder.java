@@ -9,8 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @AllArgsConstructor
-@JsonDeserialize(using = SortOrderDeserializer.class)
-public enum SortOrder {
+@JsonDeserialize(using = SortClauseOrderDeserializer.class)
+public enum SortClauseOrder {
     
     ASCENDING(1), DESCENDING(-1);
 
@@ -18,7 +18,7 @@ public enum SortOrder {
     @Getter
     private final int direction;
 
-    public static SortOrder fromDirection(int direction) {
-        return Arrays.stream(SortOrder.values()).filter(sortOrder -> sortOrder.direction == direction).findAny().get();
+    public static SortClauseOrder fromDirection(int direction) {
+        return Arrays.stream(SortClauseOrder.values()).filter(sortOrder -> sortOrder.direction == direction).findAny().get();
     }
 }

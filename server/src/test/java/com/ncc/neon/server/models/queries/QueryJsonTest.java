@@ -12,7 +12,7 @@ import com.ncc.neon.server.models.queries.LimitClause;
 import com.ncc.neon.server.models.queries.OffsetClause;
 import com.ncc.neon.server.models.queries.SingularWhereClause;
 import com.ncc.neon.server.models.queries.SortClause;
-import com.ncc.neon.server.models.queries.SortOrder;
+import com.ncc.neon.server.models.queries.SortClauseOrder;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,7 +46,7 @@ public class QueryJsonTest {
                 new GroupByFieldClause("topic", "topic"));
         boolean isDistinct = false;
         List<AggregateClause> aggregates = List.of(new AggregateClause("_aggregation", "count", "*"));
-        List<SortClause> sortClauses = List.of(new SortClause("_aggregation", SortOrder.DESCENDING));
+        List<SortClause> sortClauses = List.of(new SortClause("_aggregation", SortClauseOrder.DESCENDING));
         LimitClause limitClause = new LimitClause(11);
         OffsetClause offsetClause = new OffsetClause(10);
 
