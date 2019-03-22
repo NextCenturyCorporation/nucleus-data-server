@@ -52,7 +52,7 @@ public class ElasticsearchAdapter implements QueryAdapter {
     public Mono<TabularQueryResult> execute(Query query) {
         checkDatabaseAndTableExists(query);
 
-        SearchRequest request = ElasticsearchTransformer.transformQuery(query);
+        SearchRequest request = ElasticsearchQueryConverter.convertQuery(query);
         SearchResponse response = null;
         TabularQueryResult results = null;
 
@@ -63,7 +63,7 @@ public class ElasticsearchAdapter implements QueryAdapter {
         }
 
         if(response != null) {
-            results = ElasticsearchTransformer.transformResults(query, response);
+            results = ElasticsearchResultsConverter.convertResults(query, response);
         }
 
         return Mono.just(results);
