@@ -3,17 +3,17 @@ package com.ncc.neon.server.controllers;
 import java.util.List;
 import java.util.Map;
 
-import com.ncc.neon.server.models.query.Query;
-import com.ncc.neon.server.models.query.clauses.AggregateClause;
-import com.ncc.neon.server.models.query.clauses.GroupByClause;
-import com.ncc.neon.server.models.query.clauses.GroupByFieldClause;
-import com.ncc.neon.server.models.query.clauses.LimitClause;
-import com.ncc.neon.server.models.query.clauses.OffsetClause;
-import com.ncc.neon.server.models.query.clauses.SingularWhereClause;
-import com.ncc.neon.server.models.query.clauses.SortClause;
-import com.ncc.neon.server.models.query.clauses.SortOrder;
-import com.ncc.neon.server.models.query.filter.Filter;
-import com.ncc.neon.server.models.query.result.TabularQueryResult;
+import com.ncc.neon.server.models.queries.AggregateClause;
+import com.ncc.neon.server.models.queries.Filter;
+import com.ncc.neon.server.models.queries.GroupByClause;
+import com.ncc.neon.server.models.queries.GroupByFieldClause;
+import com.ncc.neon.server.models.queries.LimitClause;
+import com.ncc.neon.server.models.queries.OffsetClause;
+import com.ncc.neon.server.models.queries.Query;
+import com.ncc.neon.server.models.queries.SingularWhereClause;
+import com.ncc.neon.server.models.queries.SortClause;
+import com.ncc.neon.server.models.queries.SortClauseOrder;
+import com.ncc.neon.server.models.results.TabularQueryResult;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
@@ -86,7 +86,7 @@ public class QueryControllerTests {
                 new GroupByFieldClause("topic", "topic"));
         boolean isDistinct = false;
         List<AggregateClause> aggregates = List.of(new AggregateClause("_aggregation", "count", "*"));
-        List<SortClause> sortClauses = List.of(new SortClause("_aggregation", SortOrder.DESCENDING));
+        List<SortClause> sortClauses = List.of(new SortClause("_aggregation", SortClauseOrder.DESCENDING));
         LimitClause limitClause = new LimitClause(11);
         OffsetClause offsetClause = new OffsetClause(10);
 

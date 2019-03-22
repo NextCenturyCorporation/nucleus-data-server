@@ -5,10 +5,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.ncc.neon.server.models.connection.ConnectionInfo;
-import com.ncc.neon.server.models.query.Query;
-import com.ncc.neon.server.models.query.QueryOptions;
-import com.ncc.neon.server.models.query.result.TabularQueryResult;
+import com.ncc.neon.server.models.ConnectionInfo;
+import com.ncc.neon.server.models.queries.Query;
+import com.ncc.neon.server.models.results.TabularQueryResult;
 import com.ncc.neon.server.services.QueryService;
 
 import org.springframework.http.MediaType;
@@ -23,9 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Service for executing queries against an arbitrary data store.
- */
 @RestController
 @RequestMapping("queryservice")
 @Slf4j
@@ -35,6 +31,10 @@ public class QueryController {
 
     QueryController(QueryService queryService) {
         this.queryService = queryService;
+    }
+
+    private static void logObject(String name, Object object) {
+        log.debug(name + ":  " + object.toString());
     }
 
     /**
@@ -53,15 +53,14 @@ public class QueryController {
      * @return The result of the query
      */
     @PostMapping(path = "query/{host}/{databaseType}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-   // @ResponseBody
     Mono<TabularQueryResult> executeQuery(@PathVariable String host, @PathVariable String databaseType,
             @RequestParam(value = "ignoreFilters", defaultValue = "false") boolean ignoreFilters,
             @RequestParam(value = "selectionOnly", defaultValue = "false") boolean selectionOnly,
             @RequestParam(value = "ignoreFilterIds", defaultValue = "false") Set<String> ignoreFilterIds,
             @RequestBody Query query) {
+        // TODO THOR-1088 Remove unused request parameters!
         ConnectionInfo ci = new ConnectionInfo(databaseType, host);
-        QueryOptions options = new QueryOptions(ignoreFilters, selectionOnly, null, ignoreFilterIds);
-        return queryService.executeQuery(ci, query, options);
+        return queryService.executeQuery(ci, query);
     }
 
     /**
@@ -86,7 +85,6 @@ public class QueryController {
      * @param tableName    The table containing the data
      * @return The field names and their types.
      */
-
     @GetMapping(path = "tablenames/{host}/{databaseType}/{databaseName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     Mono<List<String>> getTableNames(@PathVariable String host, @PathVariable String databaseType,
             @PathVariable String databaseName) {
@@ -103,7 +101,6 @@ public class QueryController {
      * @param tableName    The table containing the data
      * @return The result of the query
      */
-
     @GetMapping(path = "fields/{host}/{databaseType}/{databaseName}/{tableName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     Mono<List<String>> getFields(@PathVariable String host, @PathVariable String databaseType,
             @PathVariable String databaseName, @PathVariable String tableName) {

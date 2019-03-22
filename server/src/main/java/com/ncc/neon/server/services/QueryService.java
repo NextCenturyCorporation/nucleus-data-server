@@ -1,21 +1,17 @@
 package com.ncc.neon.server.services;
 
-import com.ncc.neon.server.models.connection.ConnectionInfo;
-import com.ncc.neon.server.models.query.Query;
-import com.ncc.neon.server.models.query.QueryOptions;
-import com.ncc.neon.server.models.query.result.FieldTypePair;
-import com.ncc.neon.server.models.query.result.TabularQueryResult;
-import com.ncc.neon.server.models.query.result.TableWithFields;
-import com.ncc.neon.server.services.adapters.QueryAdapter;
+import com.ncc.neon.server.adapters.QueryAdapter;
+import com.ncc.neon.server.models.ConnectionInfo;
+import com.ncc.neon.server.models.queries.Query;
+import com.ncc.neon.server.models.results.FieldTypePair;
+import com.ncc.neon.server.models.results.TabularQueryResult;
+import com.ncc.neon.server.models.results.TableWithFields;
 
 import org.springframework.stereotype.Component;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-/**
- * QueryService
- */
 @Component
 public class QueryService {
 
@@ -25,9 +21,9 @@ public class QueryService {
         this.queryAdapterLocator = queryExecutorLocator;
     }
 
-    public Mono<TabularQueryResult> executeQuery(ConnectionInfo ci, Query query, QueryOptions options) {
+    public Mono<TabularQueryResult> executeQuery(ConnectionInfo ci, Query query) {
         QueryAdapter adapter = this.queryAdapterLocator.getAdapter(ci);
-        return adapter.execute(query, options);
+        return adapter.execute(query);
     }
 
     public Flux<String> getDatabaseNames(ConnectionInfo ci) {

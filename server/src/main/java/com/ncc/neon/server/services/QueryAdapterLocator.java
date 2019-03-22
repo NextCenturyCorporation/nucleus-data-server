@@ -4,17 +4,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.ncc.neon.server.models.connection.ConnectionInfo;
-import com.ncc.neon.server.services.adapters.QueryAdapter;
-import com.ncc.neon.server.services.adapters.QueryAdapterFactory;
+import com.ncc.neon.server.adapters.QueryAdapter;
+import com.ncc.neon.server.adapters.QueryAdapterFactory;
+import com.ncc.neon.server.models.ConnectionInfo;
 
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * QueryExecutorLocator
- */
 @Component
 @Slf4j
 public class QueryAdapterLocator {
