@@ -1,0 +1,967 @@
+{
+	"info": {
+		"_postman_id": "3388d795-91d6-401b-8a57-5272f3cf0393",
+		"name": "Neon",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/tablesandfields/localhost/elasticsearchrest/ldc_uyg_jul_18",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/tablesandfields/localhost/elasticsearchrest/ldc_uyg_jul_18",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"tablesandfields",
+						"localhost",
+						"elasticsearchrest",
+						"ldc_uyg_jul_18"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/infoservice/version",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "text/plain, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/infoservice/version",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"infoservice",
+						"version"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/fields/types/localhost/elasticsearchrest/ldc_uyg_jul_18/ui_out",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/fields/types/localhost/elasticsearchrest/ldc_uyg_jul_18/ui_out",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"fields",
+						"types",
+						"localhost",
+						"elasticsearchrest",
+						"ldc_uyg_jul_18",
+						"ui_out"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"where\",\"lhs\":\"createdDate\",\"operator\":\"!=\",\"rhs\":null}},\"fields\":[\"*\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[],\"isDistinct\":false,\"aggregates\":[],\"sortClauses\":[{\"fieldName\":\"createdDate\",\"sortOrder\":-1}],\"limitClause\":{\"limit\":\"100\"},\"offsetClause\":{\"offset\":0}}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"and\",\"whereClauses\":[{\"type\":\"where\",\"lhs\":\"geoLocation.lat\",\"operator\":\"!=\",\"rhs\":null},{\"type\":\"where\",\"lhs\":\"geoLocation.lon\",\"operator\":\"!=\",\"rhs\":null}]}},\"fields\":[\"_id\",\"geoLocation.lat\",\"geoLocation.lon\",\"topic\",\"createdDate\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[],\"isDistinct\":false,\"aggregates\":[],\"sortClauses\":[],\"limitClause\":{\"limit\":5000}}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"where\",\"lhs\":\"topic\",\"operator\":\"!=\",\"rhs\":null}},\"fields\":[\"*\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[{\"type\":\"single\",\"field\":\"topic\",\"prettyField\":\"topic\"},{\"type\":\"single\",\"field\":\"topic\",\"prettyField\":\"topic\"}],\"isDistinct\":false,\"aggregates\":[{\"operation\":\"count\",\"field\":\"*\",\"name\":\"_aggregation\"}],\"sortClauses\":[{\"fieldName\":\"_aggregation\",\"sortOrder\":-1}],\"limitClause\":{\"limit\":11}}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"where\",\"lhs\":\"createdDate\",\"operator\":\"!=\",\"rhs\":null}},\"fields\":[\"*\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[],\"isDistinct\":false,\"aggregates\":[],\"sortClauses\":[{\"fieldName\":\"createdDate\",\"sortOrder\":-1}],\"limitClause\":{\"limit\":\"100\"},\"offsetClause\":{\"offset\":0}}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"where\",\"lhs\":\"location\",\"operator\":\"!=\",\"rhs\":null}},\"fields\":[\"*\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[{\"type\":\"single\",\"field\":\"location\",\"prettyField\":\"location\"}],\"isDistinct\":false,\"aggregates\":[{\"operation\":\"count\",\"field\":\"*\",\"name\":\"value\"}],\"sortClauses\":[{\"fieldName\":\"value\",\"sortOrder\":-1}],\"limitClause\":{\"limit\":40}}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"and\",\"whereClauses\":[{\"type\":\"where\",\"lhs\":\"geoLocation.lat\",\"operator\":\"!=\",\"rhs\":null},{\"type\":\"where\",\"lhs\":\"geoLocation.lon\",\"operator\":\"!=\",\"rhs\":null}]}},\"fields\":[\"*\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[],\"isDistinct\":false,\"aggregates\":[{\"operation\":\"count\",\"field\":\"*\",\"name\":\"_docCount\"}],\"sortClauses\":[]}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"where\",\"lhs\":\"location\",\"operator\":\"!=\",\"rhs\":null}},\"fields\":[\"*\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[{\"type\":\"single\",\"field\":\"location\",\"prettyField\":\"location\"}],\"isDistinct\":false,\"aggregates\":[{\"operation\":\"count\",\"field\":\"*\",\"name\":\"_termsCount\"}],\"sortClauses\":[]}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"where\",\"lhs\":\"createdDate\",\"operator\":\"!=\",\"rhs\":null}},\"fields\":[\"*\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[],\"isDistinct\":false,\"aggregates\":[{\"operation\":\"count\",\"field\":\"*\",\"name\":\"_docCount\"}],\"sortClauses\":[]}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"where\",\"lhs\":\"createdDate\",\"operator\":\"!=\",\"rhs\":null}},\"fields\":[\"*\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[],\"isDistinct\":false,\"aggregates\":[{\"operation\":\"count\",\"field\":\"*\",\"name\":\"_docCount\"}],\"sortClauses\":[]}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/filterservice/addfilter",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"id\":\"ldc_uyg_jul_18-ui_out-de71ef84-4ee7-47ac-9fd8-9f5b2790a4ff\",\"filter\":{\"filterName\":\"Need Type - Uyghur LDC, July 2018 - UI out: Need Type is Shelter\",\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"where\",\"lhs\":\"topic\",\"operator\":\"=\",\"rhs\":\"shelter\"}}}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/filterservice/addfilter",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"filterservice",
+						"addfilter"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"where\",\"lhs\":\"topic\",\"operator\":\"!=\",\"rhs\":null}},\"fields\":[\"*\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[{\"type\":\"single\",\"field\":\"topic\",\"prettyField\":\"topic\"},{\"type\":\"single\",\"field\":\"topic\",\"prettyField\":\"topic\"}],\"isDistinct\":false,\"aggregates\":[{\"operation\":\"count\",\"field\":\"*\",\"name\":\"_aggregation\"}],\"sortClauses\":[{\"fieldName\":\"_aggregation\",\"sortOrder\":-1}],\"limitClause\":{\"limit\":11}}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"where\",\"lhs\":\"createdDate\",\"operator\":\"!=\",\"rhs\":null}},\"fields\":[\"*\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[],\"isDistinct\":false,\"aggregates\":[],\"sortClauses\":[{\"fieldName\":\"createdDate\",\"sortOrder\":-1}],\"limitClause\":{\"limit\":\"100\"},\"offsetClause\":{\"offset\":0}}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"and\",\"whereClauses\":[{\"type\":\"where\",\"lhs\":\"geoLocation.lat\",\"operator\":\"!=\",\"rhs\":null},{\"type\":\"where\",\"lhs\":\"geoLocation.lon\",\"operator\":\"!=\",\"rhs\":null}]}},\"fields\":[\"_id\",\"geoLocation.lat\",\"geoLocation.lon\",\"topic\",\"createdDate\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[],\"isDistinct\":false,\"aggregates\":[],\"sortClauses\":[],\"limitClause\":{\"limit\":5000}}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"filter\": {\n    \t\"tableName\" : \"table\",\n    \t\"databaseName\" : \"data_base\"\n    },\n    \"aggregateArraysByElement\": false,\n    \"isDistinct\": false,\n    \"fields\": [\n        \"*\"\n    ],\n    \"aggregates\": [\n        {\n            \"operation\": \"count\",\n            \"field\": \"*\",\n            \"name\": \"_aggregation\"\n        }\n    ],\n    \"offsetClause\": {\n        \"offset\": 10\n    },\n    \"limitClause\": {\n        \"limit\": 11\n    }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"where\",\"lhs\":\"location\",\"operator\":\"!=\",\"rhs\":null}},\"fields\":[\"*\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[{\"type\":\"single\",\"field\":\"location\",\"prettyField\":\"location\"}],\"isDistinct\":false,\"aggregates\":[{\"operation\":\"count\",\"field\":\"*\",\"name\":\"_termsCount\"}],\"sortClauses\":[]}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"where\",\"lhs\":\"location\",\"operator\":\"!=\",\"rhs\":null}},\"fields\":[\"*\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[{\"type\":\"single\",\"field\":\"location\",\"prettyField\":\"location\"}],\"isDistinct\":false,\"aggregates\":[{\"operation\":\"count\",\"field\":\"*\",\"name\":\"value\"}],\"sortClauses\":[{\"fieldName\":\"value\",\"sortOrder\":-1}],\"limitClause\":{\"limit\":40}}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"where\",\"lhs\":\"createdDate\",\"operator\":\"!=\",\"rhs\":null}},\"fields\":[\"*\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[],\"isDistinct\":false,\"aggregates\":[{\"operation\":\"count\",\"field\":\"*\",\"name\":\"_docCount\"}],\"sortClauses\":[]}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/javascript, */*; q=0.01"
+					},
+					{
+						"key": "accept-encoding",
+						"value": "gzip, deflate, br"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"filter\":{\"databaseName\":\"ldc_uyg_jul_18\",\"tableName\":\"ui_out\",\"whereClause\":{\"type\":\"where\",\"lhs\":\"createdDate\",\"operator\":\"!=\",\"rhs\":null}},\"fields\":[\"*\"],\"aggregateArraysByElement\":false,\"ignoreFilters_\":false,\"selectionOnly_\":false,\"ignoredFilterIds_\":[],\"groupByClauses\":[],\"isDistinct\":false,\"aggregates\":[{\"operation\":\"count\",\"field\":\"*\",\"name\":\"_docCount\"}],\"sortClauses\":[]}"
+				},
+				"url": {
+					"raw": "http://localhost:4200/neon/services/queryservice/query/localhost/elasticsearchrest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4200",
+					"path": [
+						"neon",
+						"services",
+						"queryservice",
+						"query",
+						"localhost",
+						"elasticsearchrest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8080/queryservice/databasenames/localhost/elasticsearchrest/",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:8080/queryservice/databasenames/localhost/elasticsearchrest/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"queryservice",
+						"databasenames",
+						"localhost",
+						"elasticsearchrest",
+						""
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

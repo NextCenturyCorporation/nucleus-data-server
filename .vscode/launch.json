@@ -1,0 +1,34 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-EsNeonServerApplication<elasticsearchadapter>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/esadapter",
+            "console": "internalConsole",
+            "mainClass": "com.ncc.neon.server.NeonServerApplication",
+            "projectName": "esadapter",
+            "args": ""
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-NeonServerApplication<server>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/server",
+            "console": "internalConsole",
+            "mainClass": "com.ncc.neon.server.NeonServerApplication",
+            "projectName": "server",
+            "args": ""
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-EsNeonServerApplication<esadapter>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "mainClass": "com.ncc.neon.server.EsNeonServerApplication",
+            "projectName": "esadapter",
+            "args": ""
+        }
+    ]
+}

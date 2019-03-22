@@ -1,0 +1,36 @@
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+group = 'com.ncc.neon'
+sourceCompatibility = 1.9
+
+repositories {
+    mavenCentral()
+}
+
+springBoot {
+    mainClassName = 'com.ncc.neon.server.NeonServerApplication'
+}
+
+//Build traditional jar which is what we want as the library
+jar {
+    enabled = true
+    //Excluding this as its a only use if for VScode see class for more info
+    exclude '**/server/EsNeonServerApplication*'
+}
+
+bootJar {
+    enabled=false
+    classifier = 'boot'
+}
+
+dependencies {
+    compile project(':server')
+    compile 'org.elasticsearch.client:elasticsearch-rest-high-level-client:6.4.0'
+    //TODO: figure this out. How do you take the version from the server project and keep them in sync
+    compileOnly 'io.projectreactor:reactor-core:3.2.4.RELEASE'
+    compileOnly('org.projectlombok:lombok')
+    compileOnly('org.springframework.boot:spring-boot-starter:2.1.1.RELEASE')
+    testCompile('org.springframework.boot:spring-boot-starter-test:2.1.1.RELEASE')
+}
