@@ -16,8 +16,7 @@ import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -90,15 +89,44 @@ public class DataSetService {
             ConnectionInfo connectionInfo = new ConnectionInfo(dataSet.getDatastore(), dataSet.getHostname());
             for (Database database : dataSet.getDatabases()) {
                 for (Table table : database.getTables()) {
+                    Map<String, Field> fieldMap = new HashMap<>();
+
+                    // Build a map of columnName to field object to merge config fields with the fields pulled from the DB
+                    for (Field field : table.getFields()) {
+                        fieldMap.put(field.getColumnName(), field);
+                    }
+
                     List<FieldTypePair> fieldTypePairs = queryService.getFieldTypes(connectionInfo, database.getName(), table.getName()).collectList().block();
+                    // Make sure there are fields
+                    if (fieldTypePairs == null || fieldTypePairs.size() == 0) {
+                        log.debug("No fields found for table " + table.getName());
+                        continue;
+                    }
+
                     log.debug("Fields for table " + table.getName());
 
-                    List<Field> fields = new ArrayList<>();
                     for (FieldTypePair field : fieldTypePairs) {
                         log.debug(field.getField() + " - " + field.getType());
-                        fields.add(new Field(field.getField(), field.getField(), field.getType()));
+                        Field newField = fieldMap.get(field.getField());
+                        if (newField == null) {
+                            newField = new Field(field.getField(), field.getField(), field.getType());
+                        } else {
+                            // Set possibly null data
+                            if (newField.getType() == null) {
+                                newField.setType(field.getType());
+                            }
+                            if (newField.getPrettyName() == null) {
+                                newField.setPrettyName(field.getField());
+                            }
+                        }
+
+                        fieldMap.put(newField.getColumnName(), newField);
                     }
-                    table.setFields(fields.toArray(new Field[fields.size()]));
+                    table.setFields(fieldMap.values().toArray(new Field[0]));
+
+                    // Sort the fields
+                    Arrays.sort(table.getFields(), (Field a, Field b) ->
+                            a.getColumnName().compareTo(b.getColumnName()));
                 }
             }
         }
