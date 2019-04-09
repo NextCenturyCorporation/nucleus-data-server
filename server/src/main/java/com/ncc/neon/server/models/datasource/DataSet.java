@@ -9,5 +9,6 @@ public class DataSet {
     String name;
     String datastore;
     String hostname;
+    boolean connectOnLoad;
     Database[] databases;
 }

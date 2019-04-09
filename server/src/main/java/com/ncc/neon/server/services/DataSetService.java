@@ -1,7 +1,12 @@
 package com.ncc.neon.server.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ncc.neon.server.models.ConnectionInfo;
 import com.ncc.neon.server.models.datasource.DataSet;
+import com.ncc.neon.server.models.datasource.Database;
+import com.ncc.neon.server.models.datasource.Field;
+import com.ncc.neon.server.models.datasource.Table;
+import com.ncc.neon.server.models.results.FieldTypePair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -18,6 +23,11 @@ import java.util.List;
 @Component
 public class DataSetService {
     private List<DataSet> dataSets;
+    private QueryService queryService;
+
+    DataSetService(QueryService queryService) {
+        this.queryService = queryService;
+    }
 
     // The default value is prefixed with ../ for now so it is in the root directory when running with Gradle
     @Value("${dataStoreConfigDir:../dataStore}")
@@ -61,11 +71,36 @@ public class DataSetService {
             }
 
             log.debug("Loaded " + dataSets.size() + " config files");
-
         } catch (FileNotFoundException e) {
             log.error("Error opening dataStoreConfigDir", e);
         } catch (Exception e) {
             log.error("Exception loading data store configs", e);
+        }
+
+        fetchFieldInfo();
+    }
+
+    /**
+     * Fetch the field names and data types
+     */
+    private void fetchFieldInfo() {
+        log.debug("Starting to fetch field names");
+
+        for (DataSet dataSet : dataSets) {
+            ConnectionInfo connectionInfo = new ConnectionInfo(dataSet.getDatastore(), dataSet.getHostname());
+            for (Database database : dataSet.getDatabases()) {
+                for (Table table : database.getTables()) {
+                    List<FieldTypePair> fieldTypePairs = queryService.getFieldTypes(connectionInfo, database.getName(), table.getName()).collectList().block();
+                    log.debug("Fields for table " + table.getName());
+
+                    List<Field> fields = new ArrayList<>();
+                    for (FieldTypePair field : fieldTypePairs) {
+                        log.debug(field.getField() + " - " + field.getType());
+                        fields.add(new Field(field.getField(), field.getField(), field.getType()));
+                    }
+                    table.setFields(fields.toArray(new Field[fields.size()]));
+                }
+            }
         }
     }
 }
