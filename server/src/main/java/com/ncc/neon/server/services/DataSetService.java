@@ -11,10 +11,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ResourceUtils;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
@@ -51,18 +54,26 @@ public class DataSetService {
                 throw new IllegalArgumentException("dataStoreConfigDir is not a directory");
             }
             // Get possible config files
-            File[] configFiles = configDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".json"));
+            File[] configFiles = configDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".json") ||
+                    name.toLowerCase().endsWith(".yml") || name.toLowerCase().endsWith(".yaml"));
 
             if (configFiles == null) {
                 throw new Exception("No data store config files found");
             }
 
             ObjectMapper mapper = new ObjectMapper();
+            Yaml yamlReader = new Yaml(new Constructor(DataSet.class));
 
             for (File configFile : configFiles) {
                 try {
                     log.debug("Loading data store config file: " + configFile.getName());
-                    DataSet dataSet = mapper.readValue(configFile, DataSet.class);
+                    DataSet dataSet;
+                    if (configFile.getName().toLowerCase().endsWith(".json")) {
+                        dataSet = mapper.readValue(configFile, DataSet.class);
+                    } else {
+                        dataSet = yamlReader.load(new FileReader(configFile));
+                    }
+
                     dataSets.add(dataSet);
                 } catch (IOException e) {
                     log.error("Exception reading config file", e);
