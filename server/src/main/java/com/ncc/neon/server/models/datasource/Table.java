@@ -13,5 +13,4 @@ public class Table {
     String name;
     String prettyName;
     Field[] fields;
-    HashMap<String, String> mappings;
 }

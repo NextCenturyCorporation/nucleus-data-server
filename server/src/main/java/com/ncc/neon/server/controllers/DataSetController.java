@@ -1,8 +1,8 @@
 package com.ncc.neon.server.controllers;
 
 
-import com.ncc.neon.server.models.datasource.DataSet;
-import com.ncc.neon.server.services.DataSetService;
+import com.ncc.neon.server.models.datasource.DataConfig;
+import com.ncc.neon.server.services.DataConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,15 +14,15 @@ import reactor.core.publisher.Flux;
 @RequestMapping("dataset")
 @Slf4j
 public class DataSetController {
-    private DataSetService dataSetService;
+    private DataConfigService dataSetService;
 
-    DataSetController(DataSetService dataSetService) {
+    DataSetController(DataConfigService dataSetService) {
         this.dataSetService = dataSetService;
     }
 
     @GetMapping(path = "all", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    Flux<DataSet> getAll() {
-        return Flux.fromIterable(dataSetService.getDataSets());
+    Flux<DataConfig> getAll() {
+        return Flux.fromIterable(dataSetService.getDataConfigs());
     }
 
 }

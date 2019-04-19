@@ -7,10 +7,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class DataSet {
+public class DataStore {
     String name;
-    String datastore;
     String hostname;
-    boolean connectOnLoad;
+    String type;
     Database[] databases;
 }

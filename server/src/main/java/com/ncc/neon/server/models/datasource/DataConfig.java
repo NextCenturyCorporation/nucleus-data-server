@@ -4,11 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
+import java.util.Map;
+
 @AllArgsConstructor
+@NoArgsConstructor
 @Data
-public class Database {
-    String name;
-    String prettyName;
-    Table[] tables;
+public class DataConfig {
+    DataStore[] dataStores;
+
+    Map<String, Map<String, String[]>> dataSets;
 }
