@@ -21,7 +21,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = StateService.class)
-public class StateServiceTests {
+public class StateServiceTest {
 
     private static Map DATA_NEON_STRUCTURE;
     private static Map DATA_NULL_STRUCTURE;

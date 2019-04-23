@@ -27,7 +27,7 @@ import reactor.core.publisher.Mono;
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureWebTestClient
-public class StateControllerTests {
+public class StateControllerTest {
 
     private static String STATE_DIRECTORY = "src/test/resources/states";
 
