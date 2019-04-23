@@ -6,26 +6,13 @@ import static org.assertj.core.api.Assertions.fail;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.ncc.neon.server.models.queries.AggregateClause;
-import com.ncc.neon.server.models.queries.Filter;
-import com.ncc.neon.server.models.queries.GroupByClause;
-import com.ncc.neon.server.models.queries.GroupByFieldClause;
-import com.ncc.neon.server.models.queries.LimitClause;
-import com.ncc.neon.server.models.queries.OffsetClause;
-import com.ncc.neon.server.models.queries.Query;
-import com.ncc.neon.server.models.queries.SingularWhereClause;
-import com.ncc.neon.server.models.queries.SortClause;
-import com.ncc.neon.server.models.queries.SortClauseOrder;
-import com.ncc.neon.server.models.results.TabularQueryResult;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
