@@ -22,6 +22,7 @@ import java.util.*;
 @Component
 public class DataConfigService {
     private List<DataConfig> dataConfigs;
+    private DataConfig dataConfig;
     private QueryService queryService;
 
     DataConfigService(QueryService queryService) {
@@ -34,6 +35,10 @@ public class DataConfigService {
 
     public List<DataConfig> getDataConfigs() {
         return this.dataConfigs;
+    }
+
+    public DataConfig getDataConfig() {
+        return this.dataConfig;
     }
 
     @PostConstruct
@@ -84,8 +89,13 @@ public class DataConfigService {
             log.error("Exception loading data store configs", e);
         }
 
+        // TODO - Merge configs
+
         // Fetch missing field data
         fetchFieldInfo();
+
+        dataConfig = dataConfigs.get(0);
+        dataConfig.build();
     }
 
     /**
@@ -119,7 +129,7 @@ public class DataConfigService {
                             log.debug(field.getField() + " - " + field.getType());
                             Field newField = fieldMap.get(field.getField());
                             if (newField == null) {
-                                newField = new Field(field.getField(), field.getField(), field.getType());
+                                newField = new Field(field.getField(), field.getField(), field.getType(), table);
                             } else {
                                 // Set possibly null data
                                 if (newField.getType() == null) {

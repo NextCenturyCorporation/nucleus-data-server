@@ -1,8 +1,9 @@
 package com.ncc.neon.server.models.datasource;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -12,4 +13,36 @@ public class DataStore {
     String hostname;
     String type;
     Database[] databases;
+
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private Map<String, Database> databaseMap;
+
+    public Database getDatabase(String name) {
+        if (databaseMap == null) {
+            databaseMap = new HashMap<>();
+            for (Database database : databases) {
+                databaseMap.put(database.getName(), database);
+            }
+        }
+
+        return databaseMap.get(name);
+    }
+
+    public void build() {
+        for (Database database : databases) {
+            database.setDataStore(this);
+            for (Table table : database.getTables()) {
+                table.setDatabase(database);
+                for (Field field : table.getFields()) {
+                    field.setTable(table);
+                }
+            }
+        }
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }
