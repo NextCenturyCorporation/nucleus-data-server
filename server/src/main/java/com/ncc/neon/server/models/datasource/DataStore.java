@@ -18,7 +18,7 @@ public class DataStore {
     @Setter(AccessLevel.NONE)
     private Map<String, Database> databaseMap;
 
-    public Database getDatabase(String name) {
+    public Database getDatabase(@NonNull String name) {
         if (databaseMap == null) {
             databaseMap = new HashMap<>();
             for (Database database : databases) {

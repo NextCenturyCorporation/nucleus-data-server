@@ -83,6 +83,7 @@ public class DataConfigService {
         // Fetch missing field data
         fetchFieldInfo();
 
+        // Make sure everything is populated
         dataConfig.build();
     }
 

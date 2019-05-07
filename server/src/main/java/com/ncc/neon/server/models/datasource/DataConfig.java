@@ -14,19 +14,67 @@ public class DataConfig {
 
     Map<String, Map<String, String[]>> dataSets;
 
-    //@Getter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private Map<String, List<Table>> dataSetMap;
 
-    //@Getter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private Map<String, DataStore> dataStoreMap;
 
     public DataStore getDataStore(String name) {
         if (dataStoreMap == null) {
-            buildDataStoreMap();
+            build();
         }
         return this.dataStoreMap.get(name);
+    }
+
+    /**
+     * Get the database from the &lt;DataStore&gt;.&lt;Database&gt; path string
+     * @param path the "path" to the database in the above format
+     */
+    public Database getDatabase(@NonNull String path) {
+        String[] parts = path.split("\\.");
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("The path should be in <DataStore>.<Database> format");
+        }
+        DataStore dataStore = getDataStore(parts[0]);
+        if (dataStore == null) {
+            return null;
+        }
+        return dataStore.getDatabase(parts[1]);
+    }
+
+    /**
+     * Get the table from the &lt;DataStore&gt;.&lt;Database&gt;.&lt;Table&gt; path string
+     * @param path the "path" to the table in the above format
+     */
+    public Table getTable(@NonNull  String path) {
+        String[] parts = path.split("\\.");
+        if (parts.length != 3) {
+            throw new IllegalArgumentException("The path should be in <DataStore>.<Database>.<Table> format");
+        }
+        Database database = getDatabase(String.join(".", parts[0], parts[1]));
+        if (database == null) {
+            return null;
+        }
+        return database.getTable(parts[2]);
+    }
+
+    /**
+     * Get the table from the &lt;DataStore&gt;.&lt;Database&gt;.&lt;Table&gt;.&lt;Field&gt; path string
+     * @param path the "path" to the field in the above format
+     */
+    public Field getField(@NonNull String path) {
+        String[] parts = path.split("\\.");
+        if (parts.length != 4) {
+            throw new IllegalArgumentException("The path should be in <DataStore>.<Database>.<Table>.<Field> format");
+        }
+        Table table = getTable(String.join(".", parts[0], parts[1], parts[2]));
+        if (table == null) {
+            return null;
+        }
+        return table.getField(parts[3]);
     }
 
     public List<String> getDatabaseNames(String dataSetName) {
@@ -60,7 +108,7 @@ public class DataConfig {
 
     public List<Table> getTables(String dataSetName) {
         if (dataSetMap == null) {
-            buildDataSetMap();
+            build();
         }
 
         return dataSetMap.get(dataSetName);

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,7 +21,7 @@ public class Database {
         return dataStore;
     }
 
-    public Table getTable(String tableName) {
+    public Table getTable(@NonNull String tableName) {
         for (Table table : tables) {
             if (tableName.equals(table.getName())) {
                 return table;
