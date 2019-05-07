@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -28,8 +27,8 @@ public class DataSetController {
     }
 
     @GetMapping(path = "all", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    Flux<DataConfig> getAll() {
-        return Flux.fromIterable(dataSetService.getDataConfigs());
+    Mono<DataConfig> getAll() {
+        return Mono.just(dataSetService.getDataConfig());
     }
 
 
