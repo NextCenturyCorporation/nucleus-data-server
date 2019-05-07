@@ -1,0 +1,57 @@
+{
+  "dataStores": [
+    {
+      "name": "eslocal",
+      "type": "elasticsearchrest",
+      "hostname": "neon-demo.hq.nextcentury.com",
+      "databases": [
+        {
+          "name": "user-index",
+          "prettyName": "User Data",
+          "tables": [
+            {
+              "name": "data",
+              "prettyName": "User Data",
+              "fields": [
+                {
+                  "columnName": "firstname",
+                  "prettyName": "First Name"
+                },
+                {
+                  "columnName": "lastname",
+                  "prettyName": "Last Name"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "large-index",
+          "prettyName": "Lots Data",
+          "tables": [
+            {
+              "name": "data",
+              "prettyName": "Lots Data",
+              "fields": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "dataSets": {
+    "allTestData": {
+      "eslocal.user-index": [
+        "data"
+      ],
+      "eslocal.large-index": [
+        "data"
+      ]
+    },
+    "userTestData": {
+      "eslocal.user-data": [
+        "data"
+      ]
+    }
+  }
+}
