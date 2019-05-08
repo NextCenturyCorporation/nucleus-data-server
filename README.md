@@ -1,27 +1,32 @@
-# Neon Overview
-
-Neon is a software platform designed to help you, as a developer, to integrate your disparate visualization widgets with your data stores. 
-
 # Neon Server
-Provides the Data Access API makes it easy for widgets to query NoSQL databases directly from JavaScript or RESTful endpoints, while still letting the server do the heavy lifting. Aslo providing, the Interaction API provides capabilities for inter-widget communication, which easily links your widgets together. Neon Server does not provide any user interface components. Instead, Neon Server shines under-the-hood by removing the pressure from developers to figure out how to make different components work together and allowing them to focus more on the fun stuff, like creating valuable data exploration applications and workflows.
+
+The Neon Server is a REST server that is used with the [Neon Middleware](https://github.com/NextCenturyCorporation/neon-framework) to provide datastore adapters, run datastore queries, transform query results, and perform data processing.  The [Neon Dashboard](https://github.com/NextCenturyCorporation/neon-dash-internal) is a UI that interacts with the Neon Server.
 
 ## Prerequisites
+
 * Java 9+
 * ES 6.4+
 
-## Running Application with Gradle
+## Modules
 
-```
-./gradlew bootRun`
-```
+* The **server** module contains the core Neon Server code.
+* The **esadapter** module contains the Elasticsearch REST datastore adapter.
 
-### Passing arguments to your application
+Change the modules used in your build with the [settings.gradle](./settings.gradle) file.
 
-Arguments can be passed into bootRun from the command line using `--args='<arguments>'`. For example, to run your application with a different port:
+## Properties
 
-```
-$ ./gradlew bootRun --args='--server.port=8090'
-```
+Update the properties of your Neon Server in the [server/src/main/resources/application.properties](./server/src/main/resources/application.properties) file.
+
+## Build and Test the Neon Server
+
+To build and test the Neon Server:  `./gradlew build`
+
+## Run the Neon Server
+
+To run the Neon Server:  `./gradlew bootRun`
+
+To pass arguments into `bootRun` from the command line, use `--args='<arguments>'`.  For example, to run the Neon Server on a specific port:  `./gradlew bootRun --args='--server.port=1234'`
 
 ## VSCode Settings
 
@@ -34,14 +39,21 @@ Recommended:
 }
 ```
 
-## License
+## Spring Documentation
 
-This project is licensed under the  Apache License Version 2.0 - see the [LICENSE](LICENSE) file for details
+* [Spring Boot Reference Guide](https://docs.spring.io/spring-boot/docs/current/reference/html/)
+* [Spring Boot Java Docs](https://docs.spring.io/spring-boot/docs/current/api/)
+* [Building a Reactive RESTful Web Service](https://spring.io/guides/gs/reactive-rest-service/)
+* [Web on Reactive Stack](https://docs.spring.io/spring/docs/current/spring-framework-reference/web-reactive.html)
 
-## Additional Information
+## Apache 2 Open Source License
+
+Neon and  are made available by [Next Century](http://www.nextcentury.com) under the [Apache 2 Open Source License](http://www.apache.org/licenses/LICENSE-2.0.txt). You may freely download, use, and modify, in whole or in part, the source code or release packages. Any restrictions or attribution requirements are spelled out in the license file. Neon and  attribution information can be found in the [LICENSE](./LICENSE) and [NOTICE](./NOTICE.md) files. For more information about the Apache license, please visit the [The Apache Software Foundation’s License FAQ](http://www.apache.org/foundation/license-faq.html).
+
+## Contact Us
 
 Email: neon-support@nextcentury.com
 
-Website: [http://neonframework.org]
+Website: http://neonframework.org
 
-Copyright 2018 Next Century Corporation
+Copyright 2019 Next Century Corporation
