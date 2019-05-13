@@ -94,6 +94,23 @@ public class StateServiceTest {
     }
 
     @Test
+    public void deleteStateWithInvalidNameTest() {
+        try {
+            File testFile = new File(STATE_DIRECTORY + "/folder.my.test-state_name1234.yaml");
+            testFile.createNewFile();
+            assertThat(testFile.exists()).isEqualTo(true);
+
+            boolean successful = STATE_SERVICE.deleteState("folder/my.test-state_name!@#$%^&*?\\1234");
+            assertThat(successful).isEqualTo(true);
+
+            assertThat(testFile.exists()).isEqualTo(false);
+        }
+        catch (IOException e) {
+            fail(e.toString());
+        }
+    }
+
+    @Test
     public void findStateNamesTest() {
         assertThat(STATE_SERVICE.findStateNames()).isEqualTo(new String[] { JSON_STATE_NAME_1, JSON_STATE_NAME_2, JSON_STATE_NAME_3,
             JSON_STATE_NAME_4, JSON_STATE_NAME_5, JSON_STATE_NAME_6, JSON_STATE_NAME_7, YAML_STATE_NAME_1, YAML_STATE_NAME_2,
@@ -135,6 +152,26 @@ public class StateServiceTest {
             assertThat(successful).isEqualTo(true);
 
             File testFile = new File(STATE_DIRECTORY + "/testStateName.yaml");
+            assertThat(testFile.exists()).isEqualTo(true);
+            Map actual = YAML_MAPPER.readValue(testFile, LinkedHashMap.class);
+            assertThat(actual).isEqualTo(testStateData);
+
+            testFile.delete();
+            assertThat(testFile.exists()).isEqualTo(false);
+        }
+        catch (IOException e) {
+            fail(e.toString());
+        }
+    }
+
+    @Test
+    public void saveStateWithInvalidNameTest() {
+        try {
+            Map testStateData = JSON_MAPPER.readValue("{ \"a\": \"test\", \"b\": 1234, \"c\": [], \"d\": {} }", LinkedHashMap.class);
+            boolean successful = STATE_SERVICE.saveState("folder/my.test-state_name!@#$%^&*?\\1234", testStateData);
+            assertThat(successful).isEqualTo(true);
+
+            File testFile = new File(STATE_DIRECTORY + "/folder.my.test-state_name1234.yaml");
             assertThat(testFile.exists()).isEqualTo(true);
             Map actual = YAML_MAPPER.readValue(testFile, LinkedHashMap.class);
             assertThat(actual).isEqualTo(testStateData);

@@ -56,7 +56,7 @@ public class StateService {
      */
     public boolean deleteState(String stateName) {
         File stateDirectory = findStateDirectory();
-        File stateFile = findStateFile(stateDirectory, stateName);
+        File stateFile = findStateFile(stateDirectory, this.validateName(stateName));
         if (stateFile == null) {
             return true;
         }
@@ -95,10 +95,11 @@ public class StateService {
      * @return File
      */
     private File findStateFile(File stateDirectory, String stateName) {
-        File[] stateFiles = stateDirectory.listFiles((directory, name) -> name.equals(stateName) ||
-            name.equals(stateName + ".json") || name.equals(stateName + ".JSON") || name.equals(stateName + ".yaml") ||
-            name.equals(stateName + ".YAML") || name.equals(stateName + ".yml") || name.equals(stateName + ".YML") ||
-            name.equals(stateName + ".txt") || name.equals(stateName + ".TXT"));
+        String validName = this.validateName(stateName);
+        File[] stateFiles = stateDirectory.listFiles((directory, name) -> name.equals(validName) ||
+            name.equals(validName + ".json") || name.equals(validName + ".JSON") || name.equals(validName + ".yaml") ||
+            name.equals(validName + ".YAML") || name.equals(validName + ".yml") || name.equals(validName + ".YML") ||
+            name.equals(validName + ".txt") || name.equals(validName + ".TXT"));
         return stateFiles.length > 0 ? stateFiles[0] : null;
     }
 
@@ -127,7 +128,7 @@ public class StateService {
      */
     public Map loadState(String stateName) {
         File stateDirectory = findStateDirectory();
-        File stateFile = findStateFile(stateDirectory, stateName);
+        File stateFile = findStateFile(stateDirectory, this.validateName(stateName));
         if (stateFile == null) {
             return new LinkedHashMap();
         }
@@ -154,8 +155,8 @@ public class StateService {
      */
     public boolean saveState(String stateName, Map stateData) {
         File stateDirectory = findStateDirectory();
-        log.debug("Save State " + stateName + " : \n" + stateData.toString());
-        File stateFile = new File(stateDirectory, stateName + ".yaml");
+        log.debug("Save State " + this.validateName(stateName) + " : \n" + stateData.toString());
+        File stateFile = new File(stateDirectory, this.validateName(stateName) + ".yaml");
         try {
             YAML_MAPPER.writeValue(stateFile, stateData);
             return true;
@@ -170,5 +171,10 @@ public class StateService {
             e.printStackTrace();
         }
         return false;
+    }
+
+    private String validateName(String stateName) {
+        // Replace ../ with . and remove all non-alphanumeric characters except (._-+=,) (but not the parentheses).
+        return stateName.replaceAll("(\\.\\.)?/", ".").replaceAll("[^A-Za-z0-9\\.\\_\\-\\+\\=\\,]", "");
     }
 }
