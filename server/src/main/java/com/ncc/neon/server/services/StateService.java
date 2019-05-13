@@ -174,7 +174,7 @@ public class StateService {
     }
 
     private String validateName(String stateName) {
-        // Replace ../ with . and remove all non-alphanumeric characters except (._-+=,) (but not the parentheses).
-        return stateName.replaceAll("(\\.\\.)?/", ".").replaceAll("[^A-Za-z0-9\\.\\_\\-\\+\\=\\,]", "");
+        // Replace / with . and remove ../ and non-alphanumeric characters except ._-+=,
+        return stateName.replaceAll("\\.\\./", "").replaceAll("/", ".").replaceAll("[^A-Za-z0-9\\.\\_\\-\\+\\=\\,]", "");
     }
 }

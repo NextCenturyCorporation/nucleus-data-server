@@ -96,11 +96,11 @@ public class StateServiceTest {
     @Test
     public void deleteStateWithInvalidNameTest() {
         try {
-            File testFile = new File(STATE_DIRECTORY + "/folder.my.test-state_name1234.yaml");
+            File testFile = new File(STATE_DIRECTORY + "/folder.my-test.state_name1234.yaml");
             testFile.createNewFile();
             assertThat(testFile.exists()).isEqualTo(true);
 
-            boolean successful = STATE_SERVICE.deleteState("folder/my.test-state_name!@#$%^&*?\\1234");
+            boolean successful = STATE_SERVICE.deleteState("../folder/my-test.!@#$%^&*state_name~`?\\1234");
             assertThat(successful).isEqualTo(true);
 
             assertThat(testFile.exists()).isEqualTo(false);
@@ -168,10 +168,10 @@ public class StateServiceTest {
     public void saveStateWithInvalidNameTest() {
         try {
             Map testStateData = JSON_MAPPER.readValue("{ \"a\": \"test\", \"b\": 1234, \"c\": [], \"d\": {} }", LinkedHashMap.class);
-            boolean successful = STATE_SERVICE.saveState("folder/my.test-state_name!@#$%^&*?\\1234", testStateData);
+            boolean successful = STATE_SERVICE.saveState("../folder/my-test.!@#$%^&*state_name~`?\\1234", testStateData);
             assertThat(successful).isEqualTo(true);
 
-            File testFile = new File(STATE_DIRECTORY + "/folder.my.test-state_name1234.yaml");
+            File testFile = new File(STATE_DIRECTORY + "/folder.my-test.state_name1234.yaml");
             assertThat(testFile.exists()).isEqualTo(true);
             Map actual = YAML_MAPPER.readValue(testFile, LinkedHashMap.class);
             assertThat(actual).isEqualTo(testStateData);
