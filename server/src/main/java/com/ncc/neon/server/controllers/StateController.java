@@ -88,7 +88,7 @@ public class StateController {
      *
      * @param stateName
      * @param stateData
-     * @return ServerResponse
+     * @return Boolean
      */
     @PostMapping(path = "savestate", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     ResponseEntity<Mono<Boolean>> saveState(@RequestParam(value = "stateName") String stateName, @RequestBody Map stateData) {
