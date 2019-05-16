@@ -18,6 +18,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -41,7 +42,7 @@ public class StateControllerTest {
             testFile.createNewFile();
             assertThat(testFile.exists()).isEqualTo(true);
 
-            this.webClient.get()
+            this.webClient.delete()
                 .uri("/stateservice/deletestate/testStateName")
                 .accept(MediaType.APPLICATION_JSON_UTF8)
                 .exchange()
@@ -76,8 +77,25 @@ public class StateControllerTest {
             .consumeWith(result -> {
                 List<String> actual = result.getResponseBody();
                 assertThat(actual.toArray()).isEqualTo(new String[] {
-                    "jsonState1", "jsonState2", "jsonState3", "jsonState4", "jsonState5", "jsonState6", "jsonState7",
-                    "yamlState1", "yamlState2", "yamlState3", "yamlState4", "yamlState5", "yamlState6", "yamlState7"
+                    "jsonCapitalizedExtension",
+                    "jsonCapitalizedTextExtension",
+                    "jsonEmptyObject",
+                    "jsonError",
+                    "jsonNeonConfig",
+                    "jsonNoExtension",
+                    "jsonNormalExtension",
+                    "jsonTextExtension",
+                    "jsonYamlExtension",
+                    "yamlAbbreviatedExtension",
+                    "yamlCapitalizedAbbreviatedExtension",
+                    "yamlCapitalizedExtension",
+                    "yamlCapitalizedTextExtension",
+                    "yamlEmpty",
+                    "yamlJsonExtension",
+                    "yamlNeonConfig",
+                    "yamlNoExtension",
+                    "yamlNormalExtension",
+                    "yamlTextExtension"
                 });
             });
     }
@@ -85,7 +103,7 @@ public class StateControllerTest {
     @Test
     public void testLoadState() {
         this.webClient.get()
-            .uri("/stateservice/loadstate?stateName=jsonState3")
+            .uri("/stateservice/loadstate?stateName=jsonNormalExtension")
             .accept(MediaType.APPLICATION_JSON_UTF8)
             .exchange()
             .expectStatus()
@@ -101,6 +119,33 @@ public class StateControllerTest {
                     Map.entry("object", Map.ofEntries(Map.entry("key", "value"))),
                     Map.entry("string", "test")
                 )));
+            });
+    }
+
+    @Test
+    public void testLoadStateWithErrorFile() {
+        this.webClient.get()
+            .uri("/stateservice/loadstate?stateName=jsonError")
+            .accept(MediaType.APPLICATION_JSON_UTF8)
+            .exchange()
+            .expectStatus()
+            .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Test
+    public void testLoadStateWithMissingFile() {
+        this.webClient.get()
+            .uri("/stateservice/loadstate?stateName=jsonMissing")
+            .accept(MediaType.APPLICATION_JSON_UTF8)
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectHeader()
+            .contentType(MediaType.APPLICATION_JSON_UTF8)
+            .expectBody(Map.class)
+            .consumeWith(result -> {
+                Map actual = result.getResponseBody();
+                assertThat(actual).isEqualTo(new LinkedHashMap());
             });
     }
 

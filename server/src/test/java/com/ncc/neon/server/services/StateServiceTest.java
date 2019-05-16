@@ -5,11 +5,15 @@ import static org.assertj.core.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.ncc.neon.server.services.StateService.StateServiceFailureException;
+import com.ncc.neon.server.services.StateService.StateServiceMissingFileException;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -23,25 +27,30 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest(classes = StateService.class)
 public class StateServiceTest {
 
-    private static Map DATA_NEON_STRUCTURE;
-    private static Map DATA_NULL_STRUCTURE;
-    private static Map DATA_TEST_STRUCTURE;
+    private static Map DATA_NEON;
+    private static Map DATA_NONE;
+    private static Map DATA_NULL;
+    private static Map DATA_TEST;
 
-    private static String JSON_STATE_NAME_1 = "jsonState1";
-    private static String JSON_STATE_NAME_2 = "jsonState2";
-    private static String JSON_STATE_NAME_3 = "jsonState3";
-    private static String JSON_STATE_NAME_4 = "jsonState4";
-    private static String JSON_STATE_NAME_5 = "jsonState5";
-    private static String JSON_STATE_NAME_6 = "jsonState6";
-    private static String JSON_STATE_NAME_7 = "jsonState7";
+    private static String JSON_NEON_CONFIG = "jsonNeonConfig";
+    private static String JSON_NORMAL_EXTENSION = "jsonNormalExtension";
+    private static String JSON_CAPITALIZED_EXTENSION = "jsonCapitalizedExtension";
+    private static String JSON_TEXT_EXTENSION = "jsonTextExtension";
+    private static String JSON_CAPITALIZED_TEXT_EXTENSION = "jsonCapitalizedTextExtension";
+    private static String JSON_NO_EXTENSION = "jsonNoExtension";
+    private static String JSON_YAML_EXTENSION = "jsonYamlExtension";
+    private static String JSON_EMPTY_OBJECT = "jsonEmptyObject";
 
-    private static String YAML_STATE_NAME_1 = "yamlState1";
-    private static String YAML_STATE_NAME_2 = "yamlState2";
-    private static String YAML_STATE_NAME_3 = "yamlState3";
-    private static String YAML_STATE_NAME_4 = "yamlState4";
-    private static String YAML_STATE_NAME_5 = "yamlState5";
-    private static String YAML_STATE_NAME_6 = "yamlState6";
-    private static String YAML_STATE_NAME_7 = "yamlState7";
+    private static String YAML_NEON_CONFIG = "yamlNeonConfig";
+    private static String YAML_NORMAL_EXTENSION = "yamlNormalExtension";
+    private static String YAML_CAPITALIZED_EXTENSION = "yamlCapitalizedExtension";
+    private static String YAML_ABBREVIATED_EXTENSION = "yamlAbbreviatedExtension";
+    private static String YAML_CAPITALIZED_ABBREVIATED_EXTENSION = "yamlCapitalizedAbbreviatedExtension";
+    private static String YAML_TEXT_EXTENSION = "yamlTextExtension";
+    private static String YAML_CAPITALIZED_TEXT_EXTENSION = "yamlCapitalizedTextExtension";
+    private static String YAML_NO_EXTENSION = "yamlNoExtension";
+    private static String YAML_JSON_EXTENSION = "yamlJsonExtension";
+    private static String YAML_EMPTY = "yamlEmpty";
 
     private static ObjectMapper JSON_MAPPER = new ObjectMapper();
     private static ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
@@ -64,10 +73,12 @@ public class StateServiceTest {
 
         STATE_SERVICE = new StateService(STATE_DIRECTORY);
         try {
-            DATA_NULL_STRUCTURE = JSON_MAPPER.readValue("{}", LinkedHashMap.class);
-            DATA_NEON_STRUCTURE = JSON_MAPPER.readValue("{ \"dashboards\": {}, \"datastores\": {}, \"layouts\": [], \"options\": {} }",
+            DATA_NULL = JSON_MAPPER.readValue("null", LinkedHashMap.class);
+            DATA_NONE = JSON_MAPPER.readValue("{}", LinkedHashMap.class);
+            DATA_NEON = JSON_MAPPER.readValue("{ \"dashboards\": { \"name\": \"dashboard1\" }," +
+                "\"datastores\": { \"datastore1\": {} }, \"layouts\": { \"layout1\": [] }, \"options\": {} }",
                 LinkedHashMap.class);
-            DATA_TEST_STRUCTURE = JSON_MAPPER.readValue(
+            DATA_TEST = JSON_MAPPER.readValue(
                 "{ \"list\": [\"a\", \"b\", \"c\"], \"number\": 123, \"object\": { \"key\": \"value\" }, \"string\": \"test\" }",
                 LinkedHashMap.class);
         }
@@ -83,12 +94,11 @@ public class StateServiceTest {
             testFile.createNewFile();
             assertThat(testFile.exists()).isEqualTo(true);
 
-            boolean successful = STATE_SERVICE.deleteState("testStateName");
-            assertThat(successful).isEqualTo(true);
+            STATE_SERVICE.deleteState("testStateName");
 
             assertThat(testFile.exists()).isEqualTo(false);
         }
-        catch (IOException e) {
+        catch (IOException | StateServiceFailureException | StateServiceMissingFileException e) {
             fail(e.toString());
         }
     }
@@ -100,56 +110,84 @@ public class StateServiceTest {
             testFile.createNewFile();
             assertThat(testFile.exists()).isEqualTo(true);
 
-            boolean successful = STATE_SERVICE.deleteState("../folder/my-test.!@#$%^&*state_name~`?\\1234");
-            assertThat(successful).isEqualTo(true);
+            STATE_SERVICE.deleteState("../folder/my-test.!@#$%^&*state_name~`?\\1234");
 
             assertThat(testFile.exists()).isEqualTo(false);
         }
-        catch (IOException e) {
+        catch (IOException | StateServiceFailureException | StateServiceMissingFileException e) {
             fail(e.toString());
         }
     }
 
     @Test
     public void findStateNamesTest() {
-        assertThat(STATE_SERVICE.findStateNames()).isEqualTo(new String[] { JSON_STATE_NAME_1, JSON_STATE_NAME_2, JSON_STATE_NAME_3,
-            JSON_STATE_NAME_4, JSON_STATE_NAME_5, JSON_STATE_NAME_6, JSON_STATE_NAME_7, YAML_STATE_NAME_1, YAML_STATE_NAME_2,
-            YAML_STATE_NAME_3, YAML_STATE_NAME_4, YAML_STATE_NAME_5, YAML_STATE_NAME_6, YAML_STATE_NAME_7 });
+        HashSet<String> actual = new HashSet<String>(Arrays.asList(STATE_SERVICE.listStateNames()));
+        assertThat(actual.contains(JSON_NEON_CONFIG)).isEqualTo(true);
+        assertThat(actual.contains(JSON_NORMAL_EXTENSION)).isEqualTo(true);
+        assertThat(actual.contains(JSON_CAPITALIZED_EXTENSION)).isEqualTo(true);
+        assertThat(actual.contains(JSON_TEXT_EXTENSION)).isEqualTo(true);
+        assertThat(actual.contains(JSON_CAPITALIZED_TEXT_EXTENSION)).isEqualTo(true);
+        assertThat(actual.contains(JSON_NO_EXTENSION)).isEqualTo(true);
+        assertThat(actual.contains(JSON_YAML_EXTENSION)).isEqualTo(true);
+        assertThat(actual.contains(JSON_EMPTY_OBJECT)).isEqualTo(true);
+        assertThat(actual.contains(YAML_NEON_CONFIG)).isEqualTo(true);
+        assertThat(actual.contains(YAML_NORMAL_EXTENSION)).isEqualTo(true);
+        assertThat(actual.contains(YAML_CAPITALIZED_EXTENSION)).isEqualTo(true);
+        assertThat(actual.contains(YAML_ABBREVIATED_EXTENSION)).isEqualTo(true);
+        assertThat(actual.contains(YAML_CAPITALIZED_ABBREVIATED_EXTENSION)).isEqualTo(true);
+        assertThat(actual.contains(YAML_TEXT_EXTENSION)).isEqualTo(true);
+        assertThat(actual.contains(YAML_CAPITALIZED_TEXT_EXTENSION)).isEqualTo(true);
+        assertThat(actual.contains(YAML_NO_EXTENSION)).isEqualTo(true);
+        assertThat(actual.contains(YAML_JSON_EXTENSION)).isEqualTo(true);
+        assertThat(actual.contains(YAML_EMPTY)).isEqualTo(true);
     }
 
     @Test
     public void findStateNamesWithNoPreviousStatesTest() {
-        assertThat(EMPTY_STATE_SERVICE.findStateNames()).isEqualTo(new String[0]);
+        assertThat(EMPTY_STATE_SERVICE.listStateNames()).isEqualTo(new String[0]);
     }
 
     @Test
     public void loadStateWithJsonFormatTest() {
-        assertThat(STATE_SERVICE.loadState(JSON_STATE_NAME_1)).isEqualTo(DATA_NEON_STRUCTURE);
-        assertThat(STATE_SERVICE.loadState(JSON_STATE_NAME_2)).isEqualTo(DATA_NULL_STRUCTURE);
-        assertThat(STATE_SERVICE.loadState(JSON_STATE_NAME_3)).isEqualTo(DATA_TEST_STRUCTURE);
-        assertThat(STATE_SERVICE.loadState(JSON_STATE_NAME_4)).isEqualTo(DATA_TEST_STRUCTURE);
-        assertThat(STATE_SERVICE.loadState(JSON_STATE_NAME_5)).isEqualTo(DATA_TEST_STRUCTURE);
-        assertThat(STATE_SERVICE.loadState(JSON_STATE_NAME_6)).isEqualTo(DATA_TEST_STRUCTURE);
-        assertThat(STATE_SERVICE.loadState(JSON_STATE_NAME_7)).isEqualTo(DATA_TEST_STRUCTURE);
+        try {
+            assertThat(STATE_SERVICE.loadState(JSON_NEON_CONFIG)).isEqualTo(DATA_NEON);
+            assertThat(STATE_SERVICE.loadState(JSON_NORMAL_EXTENSION)).isEqualTo(DATA_TEST);
+            assertThat(STATE_SERVICE.loadState(JSON_CAPITALIZED_EXTENSION)).isEqualTo(DATA_TEST);
+            assertThat(STATE_SERVICE.loadState(JSON_TEXT_EXTENSION)).isEqualTo(DATA_TEST);
+            assertThat(STATE_SERVICE.loadState(JSON_CAPITALIZED_TEXT_EXTENSION)).isEqualTo(DATA_TEST);
+            assertThat(STATE_SERVICE.loadState(JSON_NO_EXTENSION)).isEqualTo(DATA_TEST);
+            assertThat(STATE_SERVICE.loadState(JSON_YAML_EXTENSION)).isEqualTo(DATA_TEST);
+            assertThat(STATE_SERVICE.loadState(JSON_EMPTY_OBJECT)).isEqualTo(DATA_NONE);
+        }
+        catch (StateServiceFailureException | StateServiceMissingFileException e) {
+            fail(e.toString());
+        }
     }
 
     @Test
     public void loadStateWithYamlFormatTest() {
-        assertThat(STATE_SERVICE.loadState(YAML_STATE_NAME_1)).isEqualTo(DATA_TEST_STRUCTURE);
-        assertThat(STATE_SERVICE.loadState(YAML_STATE_NAME_2)).isEqualTo(DATA_TEST_STRUCTURE);
-        assertThat(STATE_SERVICE.loadState(YAML_STATE_NAME_3)).isEqualTo(DATA_TEST_STRUCTURE);
-        assertThat(STATE_SERVICE.loadState(YAML_STATE_NAME_4)).isEqualTo(DATA_TEST_STRUCTURE);
-        assertThat(STATE_SERVICE.loadState(YAML_STATE_NAME_5)).isEqualTo(DATA_TEST_STRUCTURE);
-        assertThat(STATE_SERVICE.loadState(YAML_STATE_NAME_6)).isEqualTo(DATA_TEST_STRUCTURE);
-        assertThat(STATE_SERVICE.loadState(YAML_STATE_NAME_7)).isEqualTo(DATA_TEST_STRUCTURE);
+        try {
+            assertThat(STATE_SERVICE.loadState(YAML_NEON_CONFIG)).isEqualTo(DATA_NEON);
+            assertThat(STATE_SERVICE.loadState(YAML_NORMAL_EXTENSION)).isEqualTo(DATA_TEST);
+            assertThat(STATE_SERVICE.loadState(YAML_CAPITALIZED_EXTENSION)).isEqualTo(DATA_TEST);
+            assertThat(STATE_SERVICE.loadState(YAML_ABBREVIATED_EXTENSION)).isEqualTo(DATA_TEST);
+            assertThat(STATE_SERVICE.loadState(YAML_CAPITALIZED_ABBREVIATED_EXTENSION)).isEqualTo(DATA_TEST);
+            assertThat(STATE_SERVICE.loadState(YAML_TEXT_EXTENSION)).isEqualTo(DATA_TEST);
+            assertThat(STATE_SERVICE.loadState(YAML_CAPITALIZED_TEXT_EXTENSION)).isEqualTo(DATA_TEST);
+            assertThat(STATE_SERVICE.loadState(YAML_NO_EXTENSION)).isEqualTo(DATA_TEST);
+            assertThat(STATE_SERVICE.loadState(YAML_JSON_EXTENSION)).isEqualTo(DATA_TEST);
+            assertThat(STATE_SERVICE.loadState(YAML_EMPTY)).isEqualTo(DATA_NULL);
+        }
+        catch (StateServiceFailureException | StateServiceMissingFileException e) {
+            fail(e.toString());
+        }
     }
 
     @Test
     public void saveStateTest() {
         try {
             Map testStateData = JSON_MAPPER.readValue("{ \"a\": \"test\", \"b\": 1234, \"c\": [], \"d\": {} }", LinkedHashMap.class);
-            boolean successful = STATE_SERVICE.saveState("testStateName", testStateData);
-            assertThat(successful).isEqualTo(true);
+            STATE_SERVICE.saveState("testStateName", testStateData);
 
             File testFile = new File(STATE_DIRECTORY + "/testStateName.yaml");
             assertThat(testFile.exists()).isEqualTo(true);
@@ -159,7 +197,7 @@ public class StateServiceTest {
             testFile.delete();
             assertThat(testFile.exists()).isEqualTo(false);
         }
-        catch (IOException e) {
+        catch (IOException | StateServiceFailureException e) {
             fail(e.toString());
         }
     }
@@ -168,8 +206,7 @@ public class StateServiceTest {
     public void saveStateWithInvalidNameTest() {
         try {
             Map testStateData = JSON_MAPPER.readValue("{ \"a\": \"test\", \"b\": 1234, \"c\": [], \"d\": {} }", LinkedHashMap.class);
-            boolean successful = STATE_SERVICE.saveState("../folder/my-test.!@#$%^&*state_name~`?\\1234", testStateData);
-            assertThat(successful).isEqualTo(true);
+            STATE_SERVICE.saveState("../folder/my-test.!@#$%^&*state_name~`?\\1234", testStateData);
 
             File testFile = new File(STATE_DIRECTORY + "/folder.my-test.state_name1234.yaml");
             assertThat(testFile.exists()).isEqualTo(true);
@@ -179,7 +216,7 @@ public class StateServiceTest {
             testFile.delete();
             assertThat(testFile.exists()).isEqualTo(false);
         }
-        catch (IOException e) {
+        catch (IOException | StateServiceFailureException e) {
             fail(e.toString());
         }
     }
@@ -188,8 +225,7 @@ public class StateServiceTest {
     public void saveStateWithNoPreviousStatesTest() {
         try {
             Map testStateData = JSON_MAPPER.readValue("{ \"a\": \"test\", \"b\": 1234, \"c\": [], \"d\": {} }", LinkedHashMap.class);
-            boolean successful = EMPTY_STATE_SERVICE.saveState("testStateName", testStateData);
-            assertThat(successful).isEqualTo(true);
+            EMPTY_STATE_SERVICE.saveState("testStateName", testStateData);
 
             File testFile = new File(EMPTY_STATE_DIRECTORY.toFile(), "testStateName.yaml");
             assertThat(testFile.exists()).isEqualTo(true);
@@ -199,7 +235,7 @@ public class StateServiceTest {
             testFile.delete();
             assertThat(testFile.exists()).isEqualTo(false);
         }
-        catch (IOException e) {
+        catch (IOException | StateServiceFailureException e) {
             fail(e.toString());
         }
     }
@@ -212,8 +248,7 @@ public class StateServiceTest {
             JSON_MAPPER.writeValue(testFile, prevStateData);
 
             Map testStateData = JSON_MAPPER.readValue("{ \"a\": \"test\", \"b\": 1234, \"c\": [], \"d\": {} }", LinkedHashMap.class);
-            boolean successful = STATE_SERVICE.saveState("testStateName", testStateData);
-            assertThat(successful).isEqualTo(true);
+            STATE_SERVICE.saveState("testStateName", testStateData);
 
             assertThat(testFile.exists()).isEqualTo(true);
             Map actual = YAML_MAPPER.readValue(testFile, LinkedHashMap.class);
@@ -222,7 +257,7 @@ public class StateServiceTest {
             testFile.delete();
             assertThat(testFile.exists()).isEqualTo(false);
         }
-        catch (IOException e) {
+        catch (IOException | StateServiceFailureException e) {
             fail(e.toString());
         }
     }

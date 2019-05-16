@@ -1,10 +1,16 @@
 package com.ncc.neon.server.controllers;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.ncc.neon.server.services.StateService;
+import com.ncc.neon.server.services.StateService.StateServiceFailureException;
+import com.ncc.neon.server.services.StateService.StateServiceMissingFileException;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,12 +35,21 @@ public class StateController {
      * Deletes the state with the given name.
      *
      * @param stateName
-     * @return Boolean of whether the action was successful.
+     * @return Boolean
      */
-    @GetMapping(path = "deletestate/{stateName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    Mono<Boolean> deleteState(@PathVariable String stateName) {
-        boolean successful = stateService.deleteState(stateName);
-        return Mono.just(successful);
+    @DeleteMapping(path = "deletestate/{stateName}")
+    ResponseEntity<Mono<Boolean>> deleteState(@PathVariable String stateName) {
+        try {
+            stateService.deleteState(stateName);
+        }
+        catch(StateServiceFailureException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Mono.just(false));
+        }
+        catch(StateServiceMissingFileException e) {
+            return ResponseEntity.ok().body(Mono.just(false));
+        }
+        System.out.println("State deleted successfully!");
+        return ResponseEntity.ok().body(Mono.just(true));
     }
 
     /**
@@ -42,9 +57,9 @@ public class StateController {
      *
      * @return Array
      */
-    @GetMapping(path = "allstatesnames", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    Mono<String[]> findStateNames() {
-        String[] stateNames = stateService.findStateNames();
+    @GetMapping(path = "allstatesnames")
+    Mono<String[]> listStateNames() {
+        String[] stateNames = stateService.listStateNames();
         return Mono.just(stateNames);
     }
 
@@ -54,10 +69,18 @@ public class StateController {
      * @param stateName
      * @return Map
      */
-    @GetMapping(path = "loadstate", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    Mono<Map> loadState(@RequestParam(value = "stateName") String stateName) {
-        Map stateData = stateService.loadState(stateName);
-        return Mono.just(stateData);
+    @GetMapping(path = "loadstate")
+    ResponseEntity<Mono<Map>> loadState(@RequestParam(value = "stateName") String stateName) {
+        try {
+            Map stateData = stateService.loadState(stateName);
+            return ResponseEntity.ok().body(Mono.just(stateData));
+        }
+        catch(StateServiceFailureException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Mono.just(null));
+        }
+        catch(StateServiceMissingFileException e) {
+            return ResponseEntity.ok().body(Mono.just(new LinkedHashMap<String, String>()));
+        }
     }
 
     /**
@@ -65,11 +88,16 @@ public class StateController {
      *
      * @param stateName
      * @param stateData
-     * @return Boolean of whether the action was successful.
+     * @return ServerResponse
      */
-    @PostMapping(path = "savestate", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    Mono<Boolean> saveState(@RequestParam(value = "stateName") String stateName, @RequestBody Map stateData) {
-        boolean successful = stateService.saveState(stateName, stateData);
-        return Mono.just(successful);
+    @PostMapping(path = "savestate", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    ResponseEntity<Mono<Boolean>> saveState(@RequestParam(value = "stateName") String stateName, @RequestBody Map stateData) {
+        try {
+            stateService.saveState(stateName, stateData);
+        }
+        catch(StateServiceFailureException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Mono.just(false));
+        }
+        return ResponseEntity.ok().body(Mono.just(true));
     }
 }

@@ -11,8 +11,6 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -33,6 +31,22 @@ public class StateService {
     private static ObjectMapper JSON_MAPPER = new ObjectMapper();
     private static ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
 
+    public class StateServiceFailureException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        StateServiceFailureException(String s) {
+            super(s);
+        }
+    }
+
+    public class StateServiceMissingFileException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        StateServiceMissingFileException(String s) {
+            super(s);
+        }
+    }
+
     StateService() {
         this(null);
     }
@@ -52,16 +66,20 @@ public class StateService {
      * Deletes the state with the given name.
      *
      * @param stateName
-     * @return Boolean of whether the action was successful.
+     * @throws StateServiceFailureException
+     * @throws StateServiceMissingFileException
      */
-    public boolean deleteState(String stateName) {
+    public void deleteState(String stateName) throws StateServiceFailureException, StateServiceMissingFileException {
         File stateDirectory = findStateDirectory();
-        File stateFile = findStateFile(stateDirectory, this.validateName(stateName));
-        if (stateFile == null) {
-            return true;
+        File stateFile = retrieveStateFile(stateDirectory, this.validateName(stateName));
+        if(stateFile == null) {
+            throw new StateServiceMissingFileException("State " + stateName + " does not exist");
         }
         stateFile.delete();
-        return !stateFile.exists();
+        if(stateFile.exists()) {
+            log.error("Cannot delete state from " + stateFile.getAbsolutePath());
+            throw new StateServiceFailureException("State " + stateName + " was not deleted");
+        }
     }
 
     /**
@@ -88,27 +106,11 @@ public class StateService {
     }
 
     /**
-     * Returns the state file object of the state with the given name in the given directory, or null if no file exists.
-     *
-     * @param stateDirectory
-     * @param stateName
-     * @return File
-     */
-    private File findStateFile(File stateDirectory, String stateName) {
-        String validName = this.validateName(stateName);
-        File[] stateFiles = stateDirectory.listFiles((directory, name) -> name.equals(validName) ||
-            name.equals(validName + ".json") || name.equals(validName + ".JSON") || name.equals(validName + ".yaml") ||
-            name.equals(validName + ".YAML") || name.equals(validName + ".yml") || name.equals(validName + ".YML") ||
-            name.equals(validName + ".txt") || name.equals(validName + ".TXT"));
-        return stateFiles.length > 0 ? stateFiles[0] : null;
-    }
-
-    /**
      * Returns the array of saved state names.
      *
      * @return Array
      */
-    public String[] findStateNames() {
+    public String[] listStateNames() {
         File stateDirectory = findStateDirectory();
         File[] files = stateDirectory.listFiles();
         Arrays.sort(files != null ? files : new File[0]);
@@ -121,16 +123,18 @@ public class StateService {
     }
 
     /**
-     * Returns the data in the state with the given name, or an empty map if no state exists.
+     * Returns the data (with no specific format) in the state with the given name, or an empty map if no state exists.
      *
      * @param stateName
      * @return Map
+     * @throws StateServiceFailureException
+     * @throws StateServiceMissingFileException
      */
-    public Map loadState(String stateName) {
+    public Map loadState(String stateName) throws StateServiceFailureException, StateServiceMissingFileException {
         File stateDirectory = findStateDirectory();
-        File stateFile = findStateFile(stateDirectory, this.validateName(stateName));
+        File stateFile = retrieveStateFile(stateDirectory, this.validateName(stateName));
         if (stateFile == null) {
-            return new LinkedHashMap();
+            throw new StateServiceMissingFileException("State " + stateName + " does not exist");
         }
         try {
             return JSON_MAPPER.readValue(stateFile, LinkedHashMap.class);
@@ -141,36 +145,46 @@ public class StateService {
             }
             catch (IOException yamlException) {
                 log.error("Cannot load state from " + stateFile.getAbsolutePath());
-                return new LinkedHashMap();
+                throw new StateServiceFailureException("State " + stateName + " is not JSON or YAML");
             }
         }
     }
 
     /**
-     * Saves the given data as a state with the given name.
+     * Returns the state file object of the state with the given name in the given directory, or null if no file exists.
+     *
+     * @param stateDirectory
+     * @param stateName
+     * @return File
+     */
+    private File retrieveStateFile(File stateDirectory, String stateName) {
+        String validName = this.validateName(stateName);
+        File[] stateFiles = stateDirectory.listFiles((directory, name) -> name.equals(validName) ||
+            name.equals(validName + ".json") || name.equals(validName + ".JSON") || name.equals(validName + ".yaml") ||
+            name.equals(validName + ".YAML") || name.equals(validName + ".yml") || name.equals(validName + ".YML") ||
+            name.equals(validName + ".txt") || name.equals(validName + ".TXT"));
+        return stateFiles.length > 0 ? stateFiles[0] : null;
+    }
+
+    /**
+     * Saves the given data (with no specific format) as a state with the given name.
      *
      * @param stateName
      * @param stateData
-     * @return Boolean of whether the action was successful.
+     * @throws StateServiceFailureException
      */
-    public boolean saveState(String stateName, Map stateData) {
+    public void saveState(String stateName, Map stateData) throws StateServiceFailureException {
         File stateDirectory = findStateDirectory();
         log.debug("Save State " + this.validateName(stateName) + " : \n" + stateData.toString());
         File stateFile = new File(stateDirectory, this.validateName(stateName) + ".yaml");
         try {
             YAML_MAPPER.writeValue(stateFile, stateData);
-            return true;
-        }
-        catch (JsonGenerationException e) {
-            e.printStackTrace();
-        }
-        catch (JsonMappingException e) {
-            e.printStackTrace();
         }
         catch (IOException e) {
             e.printStackTrace();
+            log.error("Cannot save state to " + stateFile.getAbsolutePath());
+            throw new StateServiceFailureException("State " + stateName + " was not saved");
         }
-        return false;
     }
 
     private String validateName(String stateName) {
