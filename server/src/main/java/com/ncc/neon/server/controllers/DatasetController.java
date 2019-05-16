@@ -39,6 +39,9 @@ public class DatasetController {
         return;
     }
 
+    /**
+     * Subscribe to data set change notifications
+     */
     @GetMapping(path = "listen", produces = "text/event-stream")
     public Flux<Long> listen() {
         return this.stream;
