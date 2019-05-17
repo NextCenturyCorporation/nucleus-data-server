@@ -1,7 +1,7 @@
 {
   "dataStores": [
     {
-      "name": "eslocal",
+      "name": "estest",
       "type": "elasticsearchrest",
       "hostname": "neon-demo.hq.nextcentury.com",
       "databases": [
@@ -41,15 +41,15 @@
   ],
   "dataSets": {
     "allTestData": {
-      "eslocal.user-index": [
+      "estest.user-index": [
         "data"
       ],
-      "eslocal.large-index": [
+      "estest.large-index": [
         "data"
       ]
     },
     "userTestData": {
-      "eslocal.user-data": [
+      "estest.user-data": [
         "data"
       ]
     }
