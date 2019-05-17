@@ -22,9 +22,17 @@ public class DataConfig {
     @Setter(AccessLevel.NONE)
     private Map<String, DataStore> dataStoreMap;
 
-    public DataStore getDataStore(String name) {
+    /**
+     * Get the datastore by name or by the "path" string, IE &lt;DataStore&gt;.&lt;Database&gt;...
+     * @param name datastore name or "path"
+     * @return
+     */
+    public DataStore getDataStore(@NonNull String name) {
         if (dataStoreMap == null) {
             build();
+        }
+        if (name.indexOf('.') > 0) {
+            name = name.substring(0, name.indexOf('.'));
         }
         return this.dataStoreMap.get(name);
     }
@@ -35,7 +43,7 @@ public class DataConfig {
      */
     public Database getDatabase(@NonNull String path) {
         String[] parts = path.split("\\.");
-        if (parts.length != 2) {
+        if (parts.length < 2) {
             throw new IllegalArgumentException("The path should be in <DataStore>.<Database> format");
         }
         DataStore dataStore = getDataStore(parts[0]);
@@ -51,7 +59,7 @@ public class DataConfig {
      */
     public Table getTable(@NonNull  String path) {
         String[] parts = path.split("\\.");
-        if (parts.length != 3) {
+        if (parts.length < 3) {
             throw new IllegalArgumentException("The path should be in <DataStore>.<Database>.<Table> format");
         }
         Database database = getDatabase(String.join(".", parts[0], parts[1]));
@@ -67,7 +75,7 @@ public class DataConfig {
      */
     public Field getField(@NonNull String path) {
         String[] parts = path.split("\\.");
-        if (parts.length != 4) {
+        if (parts.length < 4) {
             throw new IllegalArgumentException("The path should be in <DataStore>.<Database>.<Table>.<Field> format");
         }
         Table table = getTable(String.join(".", parts[0], parts[1], parts[2]));

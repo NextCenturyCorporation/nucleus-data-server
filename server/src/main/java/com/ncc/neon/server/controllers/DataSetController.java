@@ -37,6 +37,11 @@ public class DataSetController {
         return Mono.just(dataSetService.getDataConfig().getDatabaseNames(dataSetName));
     }
 
+    @GetMapping(path="tablenames/{dataSetName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    Mono<List<String>> getTableNames(@PathVariable String dataSetName) {
+        return Mono.just(dataSetService.getDataConfig().getDatabaseNames(dataSetName));
+    }
+
     @GetMapping(path="tablesandfields/{dataSetName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     Mono<List<String>> getTablesAndFields(@PathVariable String dataSetName) {
         List<String> tablesAndFields = new ArrayList<>();
