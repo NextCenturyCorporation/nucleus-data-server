@@ -57,10 +57,13 @@ public class StateController {
      *
      * @return Array
      */
-    @GetMapping(path = "allstatesnames")
-    Mono<String[]> listStateNames() {
-        String[] stateNames = stateService.listStateNames();
-        return Mono.just(stateNames);
+    @GetMapping(path = "liststates")
+    ResponseEntity<Mono<Map[]>> listStates(
+        @RequestParam(value = "limit", defaultValue = "10") int limit, 
+        @RequestParam(value = "offset", defaultValue = "0") int offset
+    ) {
+        Map[] states = stateService.listStates(limit, offset);
+        return ResponseEntity.ok().body(Mono.just(states));
     }
 
     /**

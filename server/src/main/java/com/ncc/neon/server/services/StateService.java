@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,20 +107,43 @@ public class StateService {
     }
 
     /**
-     * Returns the array of saved state names.
+     * Returns the array of saved states given a limit and an offset
      *
      * @return Array
      */
-    public String[] listStateNames() {
+    public Map[] listStates(int limit, int offset) {
         File stateDirectory = findStateDirectory();
-        File[] files = stateDirectory.listFiles();
-        Arrays.sort(files != null ? files : new File[0]);
-        List<String> names = Arrays.stream(files).map(file -> {
-            String name = file.getName();
-            int extensionIndex = name.lastIndexOf('.');
-            return extensionIndex < 0 ? name : name.substring(0, extensionIndex);
-        }).collect(Collectors.toList());
-        return names.toArray(new String[names.size()]);
+        List<File> files = Arrays.asList(stateDirectory.listFiles());
+
+        if (files == null) {
+            return new Map[0];
+        }
+
+        Collections.sort(files, (File a, File b) -> {
+            return Long.compare(b.lastModified(), a.lastModified());
+        });
+
+        if (offset > files.size()) {
+            return new Map[0];
+        } else if (offset + limit > files.size()) {
+            limit = files.size() - offset;
+        }
+
+        List<File> finalList = files.subList(offset, offset + limit);
+        
+        return finalList
+            .stream()
+            .map(File::getName)
+            .map((f) -> {
+                try {
+                    return this.loadState(f);
+                } catch (StateServiceFailureException | StateServiceMissingFileException e) {
+                    log("Unable to load config " + f + " due to " + e.getMessage());
+                    return null;
+                }
+            })
+            .filter(v -> v!= null)
+            .toArray(sz -> new Map[sz]);
     }
 
     /**
