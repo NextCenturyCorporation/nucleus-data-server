@@ -70,4 +70,22 @@ public class DataSetController {
         return Mono.just(fieldsAndTypes);
     }
 
+    @GetMapping(path="fields/types/{dataSetName}/{databaseName}/{tableName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    Mono<Map<String, String>> getFieldsAndTypes(@PathVariable String dataSetName, @PathVariable String databaseName,
+                                                @PathVariable String tableName) {
+        Map<String, String> fieldsAndTypes = new HashMap<>();
+
+        List<Table> tables = dataSetService.getDataConfig().getTables(dataSetName);
+
+        for (Table table : tables) {
+            if (tableName.equals(table.getName()) && databaseName.equals(table.getDatabase().getName())) {
+                for (Field field : table.getFields()) {
+                    fieldsAndTypes.put(field.toString(), field.getType());
+                }
+            }
+        }
+
+        return Mono.just(fieldsAndTypes);
+    }
+
 }
