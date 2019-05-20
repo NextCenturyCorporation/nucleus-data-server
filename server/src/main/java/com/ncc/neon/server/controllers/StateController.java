@@ -3,6 +3,7 @@ package com.ncc.neon.server.controllers;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.ncc.neon.server.models.results.PagedList;
 import com.ncc.neon.server.services.StateService;
 import com.ncc.neon.server.services.StateService.StateServiceFailureException;
 import com.ncc.neon.server.services.StateService.StateServiceMissingFileException;
@@ -58,11 +59,11 @@ public class StateController {
      * @return Array
      */
     @GetMapping(path = "liststates")
-    ResponseEntity<Mono<Map[]>> listStates(
+    ResponseEntity<Mono<PagedList<Map>>> listStates(
         @RequestParam(value = "limit", defaultValue = "10") int limit, 
         @RequestParam(value = "offset", defaultValue = "0") int offset
     ) {
-        Map[] states = stateService.listStates(limit, offset);
+        PagedList<Map> states = stateService.listStates(limit, offset);
         return ResponseEntity.ok().body(Mono.just(states));
     }
 

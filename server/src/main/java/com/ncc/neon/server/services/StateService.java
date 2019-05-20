@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.ncc.neon.server.models.results.PagedList;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -111,39 +112,46 @@ public class StateService {
      *
      * @return Array
      */
-    public Map[] listStates(int limit, int offset) {
+    public PagedList<Map> listStates(int limit, int offset) {
         File stateDirectory = findStateDirectory();
         List<File> files = Arrays.asList(stateDirectory.listFiles());
 
         if (files == null) {
-            return new Map[0];
+            return new PagedList<>(new Map[0], 0);
         }
+
+        int total = files.size();
 
         Collections.sort(files, (File a, File b) -> {
             return Long.compare(b.lastModified(), a.lastModified());
         });
 
         if (offset > files.size()) {
-            return new Map[0];
+            return new PagedList<>(new Map[0], 0);
         } else if (offset + limit > files.size()) {
             limit = files.size() - offset;
         }
 
         List<File> finalList = files.subList(offset, offset + limit);
         
-        return finalList
-            .stream()
-            .map(File::getName)
+        Map[] results = finalList
+            .stream()            
             .map((f) -> {
                 try {
-                    return this.loadState(f);
+                    String fileName = f.getName();
+                    Map loaded = this.loadState(fileName);
+                    loaded.put("fileName", fileName);
+                    loaded.put("lastModified", f.lastModified());
+                    return loaded;
                 } catch (StateServiceFailureException | StateServiceMissingFileException e) {
-                    log("Unable to load config " + f + " due to " + e.getMessage());
+                    log.error("Unable to load config " + f + " due to " + e.getMessage());
                     return null;
                 }
             })
             .filter(v -> v!= null)
             .toArray(sz -> new Map[sz]);
+
+        return new PagedList<>(results, total);
     }
 
     /**
