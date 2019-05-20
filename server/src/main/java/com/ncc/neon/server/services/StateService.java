@@ -168,18 +168,23 @@ public class StateService {
         if (stateFile == null) {
             throw new StateServiceMissingFileException("State " + stateName + " does not exist");
         }
+
+        Map config;
         try {
-            return JSON_MAPPER.readValue(stateFile, LinkedHashMap.class);
+            config = JSON_MAPPER.readValue(stateFile, LinkedHashMap.class);
         }
         catch (IOException jsonException) {
             try {
-                return YAML_MAPPER.readValue(stateFile, LinkedHashMap.class);
+                config = YAML_MAPPER.readValue(stateFile, LinkedHashMap.class);
             }
             catch (IOException yamlException) {
                 log.error("Cannot load state from " + stateFile.getAbsolutePath());
                 throw new StateServiceFailureException("State " + stateName + " is not JSON or YAML");
             }
         }
+        config.put("fileName", stateName);
+        config.put("lastModified", stateFile.lastModified());
+        return config;
     }
 
     /**
