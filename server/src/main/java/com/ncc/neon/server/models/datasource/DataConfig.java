@@ -62,7 +62,7 @@ public class DataConfig {
         if (parts.length < 3) {
             throw new IllegalArgumentException("The path should be in <DataStore>.<Database>.<Table> format");
         }
-        Database database = getDatabase(String.join(".", parts[0], parts[1]));
+        Database database = getDatabase(path);
         if (database == null) {
             return null;
         }
@@ -78,7 +78,7 @@ public class DataConfig {
         if (parts.length < 4) {
             throw new IllegalArgumentException("The path should be in <DataStore>.<Database>.<Table>.<Field> format");
         }
-        Table table = getTable(String.join(".", parts[0], parts[1], parts[2]));
+        Table table = getTable(path);
         if (table == null) {
             return null;
         }
