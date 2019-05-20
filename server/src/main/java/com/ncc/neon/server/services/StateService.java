@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -139,10 +140,7 @@ public class StateService {
             .map((f) -> {
                 try {
                     String fileName = f.getName();
-                    Map loaded = this.loadState(fileName);
-                    loaded.put("fileName", fileName);
-                    loaded.put("lastModified", f.lastModified());
-                    return loaded;
+                    return this.loadState(fileName, true);
                 } catch (StateServiceFailureException | StateServiceMissingFileException e) {
                     log.error("Unable to load config " + f + " due to " + e.getMessage());
                     return null;
@@ -162,7 +160,7 @@ public class StateService {
      * @throws StateServiceFailureException
      * @throws StateServiceMissingFileException
      */
-    public Map loadState(String stateName) throws StateServiceFailureException, StateServiceMissingFileException {
+    public Map loadState(String stateName, boolean annotate) throws StateServiceFailureException, StateServiceMissingFileException {
         File stateDirectory = findStateDirectory();
         File stateFile = retrieveStateFile(stateDirectory, this.validateName(stateName));
         if (stateFile == null) {
@@ -182,8 +180,10 @@ public class StateService {
                 throw new StateServiceFailureException("State " + stateName + " is not JSON or YAML");
             }
         }
-        config.put("fileName", stateName);
-        config.put("lastModified", stateFile.lastModified());
+        if (config != null && annotate) {
+            config.put("fileName", stateName);
+            config.put("lastModified", stateFile.lastModified());
+        }
         return config;
     }
 

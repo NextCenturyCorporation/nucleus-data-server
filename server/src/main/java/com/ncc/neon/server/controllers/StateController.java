@@ -76,7 +76,7 @@ public class StateController {
     @GetMapping(path = "loadstate")
     ResponseEntity<Mono<Map>> loadState(@RequestParam(value = "stateName") String stateName) {
         try {
-            Map stateData = stateService.loadState(stateName);
+            Map stateData = stateService.loadState(stateName, true);
             return ResponseEntity.ok().body(Mono.just(stateData));
         }
         catch(StateServiceFailureException e) {
