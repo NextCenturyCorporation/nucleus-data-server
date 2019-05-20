@@ -2,9 +2,11 @@ package com.ncc.neon.server.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.junit.Assert.assertEquals;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.ncc.neon.server.models.results.PagedList;
 import com.ncc.neon.server.services.StateService.StateServiceFailureException;
 import com.ncc.neon.server.services.StateService.StateServiceMissingFileException;
 
@@ -131,7 +133,7 @@ public class StateServiceTest {
                 .toArray(n -> new String[n])
             )
         );
-        System.err.println(actual.stream().reduce("", (acc, v) -> acc + "," + v));
+        
         assertThat(actual.contains(JSON_NEON_CONFIG)).isEqualTo(true);
         assertThat(actual.contains(JSON_NORMAL_EXTENSION)).isEqualTo(true);
         assertThat(actual.contains(JSON_CAPITALIZED_EXTENSION)).isEqualTo(true);
@@ -156,6 +158,25 @@ public class StateServiceTest {
     public void findStateNamesWithNoPreviousStatesTest() {
         assertThat(EMPTY_STATE_SERVICE.listStates(0, 0).getResults()).isEqualTo(new Map[0]);
     }
+
+
+    @Test
+    public void pagingThroughListOfStates() {
+        PagedList list1 = STATE_SERVICE.listStates(5, 0);
+        
+        assertEquals(list1.getTotal(), 19);
+
+
+        PagedList list2 = STATE_SERVICE.listStates(5, 5);
+        PagedList list3 = STATE_SERVICE.listStates(5, 10);
+        PagedList list4 = STATE_SERVICE.listStates(5, 15);
+        PagedList list5 = STATE_SERVICE.listStates(5, 20);
+
+        assertEquals(list1.getResults().length, 5);
+        assertEquals(list4.getResults().length, 4);
+        assertEquals(list5.getResults().length, 0);
+    }
+
 
     @Test
     public void loadStateWithJsonFormatTest() {

@@ -123,17 +123,23 @@ public class StateService {
 
         int total = files.size();
 
+        if (total == 0) {
+            return new PagedList<>(new Map[0], 0);
+        }
+
         Collections.sort(files, (File a, File b) -> {
             return Long.compare(b.lastModified(), a.lastModified());
         });
 
-        if (offset > files.size()) {
+        int maxEnd = total - 1;
+
+        if (offset > maxEnd) {
             return new PagedList<>(new Map[0], 0);
-        } else if (offset + limit > files.size()) {
-            limit = files.size() - offset;
+        } else if (offset + limit >= maxEnd) {
+            limit = maxEnd - offset;
         }
 
-        List<File> finalList = files.subList(offset, offset + limit);
+        List<File> finalList = files.subList(offset, offset + limit + 1);
         
         Map[] results = finalList
             .stream()            
