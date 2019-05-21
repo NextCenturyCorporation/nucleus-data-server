@@ -28,6 +28,12 @@ To run the Neon Server:  `./gradlew bootRun`
 
 To pass arguments into `bootRun` from the command line, use `--args='<arguments>'`.  For example, to run the Neon Server on a specific port:  `./gradlew bootRun --args='--server.port=1234'`
 
+## Build and Run Docker
+
+To build the docker image: `./gradlew build docker`
+
+To run docker image: `docker run -it --network=host --rm com.ncc.neon/server:latest`
+
 ## VSCode Settings
 
 Recommended:

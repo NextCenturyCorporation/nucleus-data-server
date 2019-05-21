@@ -6,8 +6,24 @@ apply plugin: 'application'
 group = 'com.ncc.neon'
 sourceCompatibility = 1.9
 
+buildscript {
+  repositories {
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+  dependencies {
+    classpath('gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.13.0')
+  }
+}
+
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'com.palantir.docker'
+
 repositories {
     mavenCentral()
+    gradlePluginPortal()
 }
 
 springBoot {
@@ -34,3 +50,18 @@ dependencies {
     testImplementation('org.springframework.boot:spring-boot-starter-test')
     testImplementation('io.projectreactor:reactor-test')
 }
+
+task unpack(type: Copy) {
+    dependsOn bootJar
+    from(zipTree(tasks.bootJar.outputs.files.singleFile))
+    into("build/dependency")
+}
+
+docker {
+    name "${project.group}/${bootJar.baseName}"
+    copySpec.from(tasks.unpack.outputs).into("dependency")
+    buildArgs(['DEPENDENCY': "dependency"])
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
