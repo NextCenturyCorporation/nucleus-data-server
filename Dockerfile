@@ -1,4 +1,4 @@
-FROM openjdk:8-jdk-alpine
+FROM adoptopenjdk/openjdk10:alpine
 VOLUME /tmp
 EXPOSE 8090
 COPY classes /app 
