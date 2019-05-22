@@ -22,8 +22,15 @@ jar {
 }
 
 bootJar {
-    enabled=false
+    enabled=true
     classifier = 'boot'
+}
+
+task unpack(type: Copy) {
+    dependsOn bootJar
+    from(zipTree(tasks.bootJar.outputs.files.singleFile))
+    exclude '**/server/EsNeonServerApplication*'
+    into("build/dependency")
 }
 
 dependencies {
