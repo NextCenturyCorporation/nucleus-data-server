@@ -1,0 +1,12 @@
+{
+    "dashboards": {
+        "name": "dashboard1"
+    },
+    "datastores": {
+        "datastore1": {}
+    },
+    "layouts": {
+        "layout1": []
+    },
+    "options": {}
+}
