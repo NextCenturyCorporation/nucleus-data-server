@@ -94,7 +94,9 @@ public class ElasticsearchQueryConverter {
         // Convert the WhereClauses into a single ElasticSearch QueryBuilder object
         if(whereClauses.size() > 0) {
             QueryBuilder qbWithWhereClauses = convertWhereClauses(whereClauses);
-            ssb = ssb.query(qbWithWhereClauses);
+            if(qbWithWhereClauses != null) {
+                ssb = ssb.query(qbWithWhereClauses);
+            }
         }
 
         return ssb;
@@ -147,14 +149,17 @@ public class ElasticsearchQueryConverter {
         // Build the elasticsearch filters for the where clauses
         List<QueryBuilder> inners = new ArrayList<QueryBuilder>();
         whereClauses.forEach(whereClause -> {
-            inners.add(convertWhereClause(whereClause));
+            QueryBuilder convertedWhereClause = convertWhereClause(whereClause);
+            if (convertedWhereClause != null) {
+                inners.add(convertedWhereClause);
+            }
         });
 
         inners.forEach(inner -> {
             queryBuilder.must(inner);
         });
 
-        return queryBuilder;
+        return inners.size() > 0 ? queryBuilder : null;
     }
 
     private static QueryBuilder convertWhereClause(WhereClause clause) {
@@ -175,14 +180,18 @@ public class ElasticsearchQueryConverter {
             andClause.getWhereClauses().stream().map(innerWhere -> {
                 return convertWhereClause(innerWhere);
             }).forEach(inner -> {
-                qb.must(inner);
+                if (inner != null) {
+                    qb.must(inner);
+                }
             });
         } else if (clause instanceof OrWhereClause) {
             OrWhereClause orClause = (OrWhereClause) clause;
             orClause.getWhereClauses().stream().map(innerWhere -> {
                 return convertWhereClause(innerWhere);
             }).forEach(inner -> {
-                qb.should(inner);
+                if (inner != null) {
+                    qb.should(inner);
+                }
             });
         } else {
             throw new RuntimeException("Unknown where clause: " + clause.getClass());
@@ -215,6 +224,11 @@ public class ElasticsearchQueryConverter {
 
         if(Arrays.asList("=", "!=").contains(clause.getOperator())) {
             boolean hasValue = !(clause.isNull());
+
+            // Do not create a NOT EQUALS filter on the _id field and an empty string or else ES will throw an error.
+            if(clause.getLhs().equals("_id") && clause.isString() && clause.getRhsString().equals("")) {
+                return null;
+            }
 
             QueryBuilder filter = hasValue ? QueryBuilders.termQuery(clause.getLhs(),
                 clause.isDate() ? DateUtil.transformDateToString(clause.getRhsDate()) : clause.getRhs()) :
