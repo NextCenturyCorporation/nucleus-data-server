@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,7 +58,8 @@ public class StateServiceTest {
     private static ObjectMapper JSON_MAPPER = new ObjectMapper();
     private static ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
 
-    private static String STATE_DIRECTORY = "src/test/resources/states";
+    private static String RESOURCE_DIRECTORY = "src/test/resources";
+    private static String STATE_DIRECTORY = RESOURCE_DIRECTORY + "/states";
     private static StateService STATE_SERVICE;
 
     private static Path EMPTY_STATE_DIRECTORY;
@@ -162,17 +164,19 @@ public class StateServiceTest {
 
     @Test
     public void pagingThroughListOfStates() {
-        PagedList list1 = STATE_SERVICE.listStates(5, 0);
+        StateService service = new StateService(RESOURCE_DIRECTORY + "/states-ordered");
+        PagedList list1 = service.listStates(5, 0);
         
         assertEquals(list1.getTotal(), 19);
 
-
-        PagedList list2 = STATE_SERVICE.listStates(5, 5);
-        PagedList list3 = STATE_SERVICE.listStates(5, 10);
-        PagedList list4 = STATE_SERVICE.listStates(5, 15);
-        PagedList list5 = STATE_SERVICE.listStates(5, 20);
-
+        PagedList list2 = service.listStates(5, 5);
+        PagedList list3 = service.listStates(5, 10);
+        PagedList list4 = service.listStates(5, 15);
+        PagedList list5 = service.listStates(5, 20);
+       
         assertEquals(list1.getResults().length, 5);
+        assertEquals(list2.getResults().length, 5);
+        assertEquals(list3.getResults().length, 5);
         assertEquals(list4.getResults().length, 4);
         assertEquals(list5.getResults().length, 0);
     }

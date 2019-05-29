@@ -128,19 +128,20 @@ public class StateService {
         }
 
         Collections.sort(files, (File a, File b) -> {
-            return Long.compare(b.lastModified(), a.lastModified());
+            int ret = Long.compare(b.lastModified(), a.lastModified());
+            return ret != 0 ? ret : a.getName().compareTo(b.getName());
         });
 
         int maxEnd = total - 1;
 
         if (offset > maxEnd) {
             return new PagedList<>(new Map[0], 0);
-        } else if (offset + limit >= maxEnd) {
-            limit = maxEnd - offset;
+        } else if (offset + limit > maxEnd) {
+            limit = total - offset;
         }
 
-        List<File> finalList = files.subList(offset, offset + limit + 1);
-        
+        List<File> finalList = files.subList(offset, offset + limit);
+
         Map[] results = finalList
             .stream()            
             .map((f) -> {
@@ -152,7 +153,7 @@ public class StateService {
                     return null;
                 }
             })
-            .filter(v -> v!= null)
+            .filter(v -> v != null)
             .toArray(sz -> new Map[sz]);
 
         return new PagedList<>(results, total);
