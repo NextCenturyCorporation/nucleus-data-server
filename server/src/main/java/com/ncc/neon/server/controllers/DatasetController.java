@@ -1,8 +1,11 @@
 package com.ncc.neon.server.controllers;
 
+import com.ncc.neon.server.models.bodies.DataNotification;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,11 +21,11 @@ public class DatasetController {
 
     private long lastUpdated = 0l;
 
-    private Flux<Long> stream;
-    private FluxSink<Long> sink;
+    private Flux<DataNotification> stream;
+    private FluxSink<DataNotification> sink;
 
     DatasetController() {
-        this.stream = Flux.create((FluxSink<Long> sink) -> {
+        this.stream = Flux.create((FluxSink<DataNotification> sink) -> {
             this.sink = sink;
         });
     }
@@ -33,9 +36,12 @@ public class DatasetController {
      */
     @PostMapping(path = "notify")
     @ResponseStatus(code = HttpStatus.ACCEPTED)
-    void notifyChange() {
-        this.lastUpdated = System.currentTimeMillis();
-        this.sink.next(this.lastUpdated);
+    void notifyChange(@RequestBody() DataNotification notification) {
+        if (notification.getTimestamp() == 0)  {
+            notification.setTimestamp(System.currentTimeMillis());
+        }
+        notification.setPublishDate(this.lastUpdated = System.currentTimeMillis()); 
+        this.sink.next(notification);
         return;
     }
 
@@ -43,7 +49,7 @@ public class DatasetController {
      * Subscribe to data set change notifications
      */
     @GetMapping(path = "listen", produces = "text/event-stream")
-    public Flux<Long> listen() {
+    public Flux<DataNotification> listen() {
         return this.stream;
     }
 }

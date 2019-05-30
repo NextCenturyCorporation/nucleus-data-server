@@ -3,7 +3,11 @@ package com.ncc.neon.server.controllers;
 import static org.junit.Assert.*;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import com.ncc.neon.server.models.bodies.DataNotification;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,24 +40,27 @@ public class DatasetControllerTests {
         final TestRestTemplate tpl = this.restTemplate;
 
         Flux.interval(Duration.ofMillis(100), Duration.ofMillis(20)).take(3).subscribe(it -> {
-            tpl.execute("/dataset/notify", HttpMethod.POST, null, null);            
+            Map data = new HashMap();
+            data.put("count", 10);
+            tpl.postForObject("/dataset/notify", data, Map.class);
         });
 
 
-        List<Long> timestamps = this.webClient.get()
+        List<DataNotification> notifications = this.webClient.get()
             .uri("/dataset/listen")
             .accept(MediaType.TEXT_EVENT_STREAM)
             .exchange()
             .expectStatus().isOk()
-            .returnResult(Long.class)
+            .returnResult(DataNotification.class)
             .getResponseBody()
             .take(3)
             .collectList()
-            .block(Duration.ofSeconds(1));
+            .block(Duration.ofSeconds(2));
 
 
-        assertEquals(timestamps.size(), 3);
-        assertTrue(timestamps.get(0) < timestamps.get(1));
-        assertTrue(timestamps.get(1) < timestamps.get(2));
+        assertEquals(notifications.size(), 3);
+        assertEquals(notifications.get(0).getCount(), 10l);
+        assertTrue(notifications.get(0).getPublishDate()< notifications.get(1).getPublishDate());
+        assertTrue(notifications.get(1).getPublishDate()< notifications.get(2).getPublishDate());
     }
 }
