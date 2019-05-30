@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.ncc.neon.server.models.results.PagedList;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -106,20 +109,54 @@ public class StateService {
     }
 
     /**
-     * Returns the array of saved state names.
+     * Returns the array of saved states given a limit and an offset
      *
      * @return Array
      */
-    public String[] listStateNames() {
+    public PagedList<Map> listStates(int limit, int offset) {
         File stateDirectory = findStateDirectory();
-        File[] files = stateDirectory.listFiles();
-        Arrays.sort(files != null ? files : new File[0]);
-        List<String> names = Arrays.stream(files).map(file -> {
-            String name = file.getName();
-            int extensionIndex = name.lastIndexOf('.');
-            return extensionIndex < 0 ? name : name.substring(0, extensionIndex);
-        }).collect(Collectors.toList());
-        return names.toArray(new String[names.size()]);
+        List<File> files = Arrays.asList(stateDirectory.listFiles());
+
+        if (files == null) {
+            return new PagedList<>(new Map[0], 0);
+        }
+
+        int total = files.size();
+
+        if (total == 0) {
+            return new PagedList<>(new Map[0], 0);
+        }
+
+        Collections.sort(files, (File a, File b) -> {
+            int ret = Long.compare(b.lastModified(), a.lastModified());
+            return ret != 0 ? ret : a.getName().compareTo(b.getName());
+        });
+
+        int maxEnd = total - 1;
+
+        if (offset > maxEnd) {
+            return new PagedList<>(new Map[0], 0);
+        } else if (offset + limit > maxEnd) {
+            limit = total - offset;
+        }
+
+        List<File> finalList = files.subList(offset, offset + limit);
+
+        Map[] results = finalList
+            .stream()            
+            .map((f) -> {
+                try {
+                    String fileName = f.getName();
+                    return this.loadState(fileName, true);
+                } catch (StateServiceFailureException | StateServiceMissingFileException e) {
+                    log.error("Unable to load config " + f + " due to " + e.getMessage());
+                    return null;
+                }
+            })
+            .filter(v -> v != null)
+            .toArray(sz -> new Map[sz]);
+
+        return new PagedList<>(results, total);
     }
 
     /**
@@ -130,24 +167,31 @@ public class StateService {
      * @throws StateServiceFailureException
      * @throws StateServiceMissingFileException
      */
-    public Map loadState(String stateName) throws StateServiceFailureException, StateServiceMissingFileException {
+    public Map loadState(String stateName, boolean annotate) throws StateServiceFailureException, StateServiceMissingFileException {
         File stateDirectory = findStateDirectory();
         File stateFile = retrieveStateFile(stateDirectory, this.validateName(stateName));
         if (stateFile == null) {
             throw new StateServiceMissingFileException("State " + stateName + " does not exist");
         }
+
+        Map config;
         try {
-            return JSON_MAPPER.readValue(stateFile, LinkedHashMap.class);
+            config = JSON_MAPPER.readValue(stateFile, LinkedHashMap.class);
         }
         catch (IOException jsonException) {
             try {
-                return YAML_MAPPER.readValue(stateFile, LinkedHashMap.class);
+                config = YAML_MAPPER.readValue(stateFile, LinkedHashMap.class);
             }
             catch (IOException yamlException) {
                 log.error("Cannot load state from " + stateFile.getAbsolutePath());
                 throw new StateServiceFailureException("State " + stateName + " is not JSON or YAML");
             }
         }
+        if (config != null && annotate) {
+            config.put("fileName", stateName);
+            config.put("lastModified", stateFile.lastModified());
+        }
+        return config;
     }
 
     /**

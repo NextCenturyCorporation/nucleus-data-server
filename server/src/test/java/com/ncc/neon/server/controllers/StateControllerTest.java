@@ -6,12 +6,14 @@ import static org.assertj.core.api.Assertions.fail;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.ncc.neon.server.models.results.PagedList;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -66,37 +68,50 @@ public class StateControllerTest {
     @Test
     public void testFindStateNames() {
         this.webClient.get()
-            .uri("/stateservice/allstatesnames")
+            .uri("/stateservice/liststates?limit=100")
             .accept(MediaType.APPLICATION_JSON_UTF8)
             .exchange()
             .expectStatus()
             .isOk()
             .expectHeader()
             .contentType(MediaType.APPLICATION_JSON_UTF8)
-            .expectBody(List.class)
+            .expectBody(PagedList.class)
             .consumeWith(result -> {
-                List<String> actual = result.getResponseBody();
-                assertThat(actual.toArray()).isEqualTo(new String[] {
-                    "jsonCapitalizedExtension",
-                    "jsonCapitalizedTextExtension",
-                    "jsonEmptyObject",
-                    "jsonError",
-                    "jsonNeonConfig",
-                    "jsonNoExtension",
-                    "jsonNormalExtension",
-                    "jsonTextExtension",
-                    "jsonYamlExtension",
-                    "yamlAbbreviatedExtension",
-                    "yamlCapitalizedAbbreviatedExtension",
-                    "yamlCapitalizedExtension",
-                    "yamlCapitalizedTextExtension",
-                    "yamlEmpty",
-                    "yamlJsonExtension",
-                    "yamlNeonConfig",
-                    "yamlNoExtension",
-                    "yamlNormalExtension",
-                    "yamlTextExtension"
-                });
+                PagedList<Map> actual = result.getResponseBody();
+
+                String[] names = Arrays.asList(actual.getResults())
+                    .stream()
+                    .map(x -> ((String) x.get("fileName")).replaceFirst("[.][^.]*$", ""))
+                    .toArray(n -> new String[n]);
+
+                String[] compareTo = new String[] {
+                        "jsonCapitalizedExtension",
+                        "jsonCapitalizedTextExtension",
+                        "jsonEmptyObject",
+                        // "jsonError",
+                        "jsonNeonConfig",
+                        "jsonNoExtension",
+                        "jsonNormalExtension",
+                        "jsonTextExtension",
+                        "jsonYamlExtension",
+                        "yamlAbbreviatedExtension",
+                        "yamlCapitalizedAbbreviatedExtension",
+                        "yamlCapitalizedExtension",
+                        "yamlCapitalizedTextExtension",
+                        // "yamlEmpty",
+                        "yamlJsonExtension",
+                        "yamlNeonConfig",
+                        "yamlNoExtension",
+                        "yamlNormalExtension",
+                        "yamlTextExtension"
+                    };
+
+                Arrays.sort(names);
+                Arrays.sort(compareTo);
+
+                assertThat(new HashSet(Arrays.asList(names))).isEqualTo(
+                    new HashSet<>(Arrays.asList(compareTo))
+                );
             });
     }
 
@@ -113,7 +128,9 @@ public class StateControllerTest {
             .expectBody(Map.class)
             .consumeWith(result -> {
                 Map actual = result.getResponseBody();
+                actual.remove("lastModified");
                 assertThat(actual).isEqualTo(new LinkedHashMap(Map.ofEntries(
+                    Map.entry("fileName", "jsonNormalExtension"),
                     Map.entry("list", Arrays.asList("a", "b", "c" )),
                     Map.entry("number", 123),
                     Map.entry("object", Map.ofEntries(Map.entry("key", "value"))),

@@ -1,0 +1,8 @@
+list:
+    - a
+    - b
+    - c
+number: 123
+object:
+    key: value
+string: test
