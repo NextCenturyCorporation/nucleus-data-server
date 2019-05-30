@@ -42,7 +42,7 @@ public class DatasetControllerTests {
         Flux.interval(Duration.ofMillis(100), Duration.ofMillis(20)).take(3).subscribe(it -> {
             Map data = new HashMap();
             data.put("count", 10);
-            tpl.postForObject("/dataset/notify", data, null);
+            tpl.postForObject("/dataset/notify", data, Map.class);
         });
 
 
@@ -55,7 +55,7 @@ public class DatasetControllerTests {
             .getResponseBody()
             .take(3)
             .collectList()
-            .block(Duration.ofSeconds(1));
+            .block(Duration.ofSeconds(2));
 
 
         assertEquals(notifications.size(), 3);
