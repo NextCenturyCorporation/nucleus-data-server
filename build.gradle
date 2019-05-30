@@ -1,15 +1,53 @@
+group = 'com.ncc.neon'
+
 buildscript {
     ext {
         springBootVersion = '2.1.0.RELEASE'
     }
     repositories {
         mavenCentral()
+        maven {
+          url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath('gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.13.0')
     }
+}
+
+apply plugin: 'com.palantir.docker'
+
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
 }
 
 subprojects {
     version = '0.0.1-SNAPSHOT'
 }
+
+task dockerCopy(dependsOn: ['dockerPrepare', 'esadapter:unpack', 'server:unpack']) << {
+    copy {
+        from fileTree(".").include("*/build/dependency/BOOT-INF/lib/*").files
+        into "build/docker/libs"
+    }
+    copy {
+        from "server/build/dependency/META-INF"
+        into "build/docker/meta"
+    }
+    copy {
+        from "server/build/dependency/BOOT-INF/classes"
+        into "build/docker/classes"
+    }
+    copy {
+        from "esadapter/build/dependency/BOOT-INF/classes"
+        into "build/docker/classes"
+    }
+}
+
+docker {
+    name "${project.group}/server"
+}
+
+docker.dependsOn(dockerCopy)

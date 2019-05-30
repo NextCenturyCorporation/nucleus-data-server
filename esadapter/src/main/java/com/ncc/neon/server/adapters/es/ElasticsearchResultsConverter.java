@@ -72,7 +72,7 @@ public class ElasticsearchResultsConverter {
         if (aggregateClauses.size() > 0 && groupByClauses.size() == 0) {
             Map<String, Object> metrics = extractMetrics(aggregateClauses, aggregationResults != null ? aggregationResults.asMap() : null,
                 response.getHits().getTotalHits());
-            results = new TabularQueryResult(List.of(metrics));
+            results = new TabularQueryResult(Arrays.<Map<String, Object>>asList(metrics));
         } else if (aggregateClauses.size() > 0 && groupByClauses.size() > 0) {
             List<TransformedAggregationBucket> buckets = extractBuckets(groupByClauses,
                 (MultiBucketsAggregation) aggregationResults.asList().get(0));
