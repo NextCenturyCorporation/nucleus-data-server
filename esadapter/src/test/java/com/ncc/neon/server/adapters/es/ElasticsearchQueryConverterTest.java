@@ -1010,4 +1010,33 @@ public class ElasticsearchQueryConverterTest {
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
+
+    @Test
+    public void convertQueryWithIdNotEqualsEmptyStringTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromString("_id", "!=", "")));
+
+        SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
+        SearchSourceBuilder source = createSourceBuilder();
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQueryWithCompoundIdNotEqualsEmptyStringTest() {
+        Query query = new Query();
+        query.setFilter(new Filter("testDatabase", "testTable", null, new AndWhereClause(Arrays.asList(
+            SingularWhereClause.fromString("testFilterField", "!=", "testFilterValue"),
+            SingularWhereClause.fromNull("_id", "!="),
+            SingularWhereClause.fromString("_id", "!=", "")
+        ))));
+
+        SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery()
+            .must(QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery("testFilterField", "testFilterValue")))
+            .must(QueryBuilders.existsQuery("_id")));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
 }
