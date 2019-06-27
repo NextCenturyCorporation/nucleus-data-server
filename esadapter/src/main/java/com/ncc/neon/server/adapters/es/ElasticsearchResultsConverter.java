@@ -93,8 +93,9 @@ public class ElasticsearchResultsConverter {
     private static List<Map<String, Object>> extractHitsFromResults(SearchResponse response) {
         return Arrays.stream(response.getHits().getHits()).map(searchHit -> {
             // Copy the map since it may be immutable.
-            Map<String, Object> map = searchHit.getSourceAsMap().entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey, Map.Entry::getValue));
+            // Do not use Collectors.toMap because it does not work with null values.
+            Map<String, Object> map = new LinkedHashMap<String, Object>();
+            map.putAll(searchHit.getSourceAsMap());
             map.put("_id", searchHit.getId());
             return map;
         }).collect(Collectors.toList());
