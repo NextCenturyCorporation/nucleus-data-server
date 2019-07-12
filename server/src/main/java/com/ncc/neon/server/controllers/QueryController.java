@@ -11,6 +11,7 @@ import com.ncc.neon.server.models.results.TabularQueryResult;
 import com.ncc.neon.server.services.QueryService;
 
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import lombok.extern.slf4j.Slf4j;
 
+@CrossOrigin(origins="*")
 @RestController
 @RequestMapping("queryservice")
 @Slf4j
