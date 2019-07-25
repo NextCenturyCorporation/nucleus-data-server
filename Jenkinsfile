@@ -12,12 +12,14 @@ pipeline {
 
   stages {
     stage('Build') {
+      agent any
       steps {
         sh './gradlew -x test clean build'
       }
     }
 
     stage('Unit Test') {
+      agent any
       steps {
         sh './gradlew test'
         junit testResults: '**/build/test-results/**/*.xml',  keepLongStdio: true, allowEmptyResults: false
