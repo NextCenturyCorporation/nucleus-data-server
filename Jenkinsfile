@@ -35,30 +35,39 @@ pipeline {
         junit testResults: '**/build/test-results/**/*.xml',  keepLongStdio: true, allowEmptyResults: false
       }
     }
-    
-    stage('Deploy Container') {
+
+    stage('Build Container') {
       agent {
         docker {
-          image 'openjdk:10'
+          image 'adoptopenjdk/openjdk10:alpine'
           args '--network=host'
         }
       }
+      steps {
+        sh './gradlew -x test clean dockerCopy'
+        stash includes: 'build/docker', name: 'docker' 
+      }
+    }
+
+
+    stage('Publish Container') {
+      agent any
       when {
           anyOf { branch 'master'; branch 'THOR-jenkins-pipeline'; }
       }
       steps {
-        sh './gradlew -x test clean dockerCopy'
-
         withCredentials([usernamePassword(
           credentialsId: 'aws_jenkins',
           usernameVariable: 'AWS_ACCESS_KEY_ID',
           passwordVariable: 'AWS_SECRET_ACCESS_KEY'                              
         )]) {
+          sh 'mkdir -p build/docker'
+          sh 'chmod -R u+w build/docker'
+          unstash 'docker';
+
           sh 'rm  ~/.dockercfg || true'
           sh 'rm ~/.docker/config.json || true'
-          sh 'curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py'
-          sh 'python get-pip.py'
-          sh 'pip install awscli --user'
+          sh 'pip3 install awscli --user'
 
           dir('build/docker') {
             script {
