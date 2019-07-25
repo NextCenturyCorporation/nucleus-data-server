@@ -45,7 +45,7 @@ pipeline {
       }
       steps {
         sh './gradlew -x test clean dockerCopy'
-        stash includes: 'build/docker', name: 'docker' 
+        stash includes: 'build/docker/**/*', name: 'docker' 
       }
     }
 
