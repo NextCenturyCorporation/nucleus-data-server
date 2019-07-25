@@ -12,14 +12,24 @@ pipeline {
 
   stages {
     stage('Build') {
-      agent any
+      agent {
+        docker {
+          image 'adoptopenjdk/openjdk10:alpine'
+          args '--network=host'
+        }
+      }
       steps {
         sh './gradlew -x test clean build'
       }
     }
 
     stage('Unit Test') {
-      agent any
+      agent {
+        docker {
+          image 'adoptopenjdk/openjdk10:alpine'
+          args '--network=host'
+        }
+      }
       steps {
         sh './gradlew test'
         junit testResults: '**/build/test-results/**/*.xml',  keepLongStdio: true, allowEmptyResults: false
@@ -27,7 +37,12 @@ pipeline {
     }
     
     stage('Deploy Container') {
-      agent any
+      agent {
+        docker {
+          image 'adoptopenjdk/openjdk10:alpine'
+          args '--network=host'
+        }
+      }
       when {
           anyOf { branch 'master'; branch 'THOR-jenkins-pipeline'; }
       }
