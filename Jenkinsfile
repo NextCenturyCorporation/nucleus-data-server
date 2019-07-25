@@ -39,7 +39,7 @@ pipeline {
     stage('Deploy Container') {
       agent {
         docker {
-          image 'adoptopenjdk/openjdk10:alpine'
+          image 'openjdk:10'
           args '--network=host'
         }
       }
