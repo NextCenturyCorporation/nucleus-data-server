@@ -56,7 +56,9 @@ pipeline {
         )]) {
           sh 'rm  ~/.dockercfg || true'
           sh 'rm ~/.docker/config.json || true'
-          sh 'pip3 install awscli --user'
+          sh 'curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py'
+          sh 'python get-pip.py'
+          sh 'pip install awscli --user'
 
           dir('build/docker') {
             script {
