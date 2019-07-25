@@ -36,7 +36,7 @@ pipeline {
       }
     }
 
-    stage('Build Container') {
+    stage('Prepare Container') {
       agent {
         docker {
           image 'adoptopenjdk/openjdk10:alpine'
