@@ -1,0 +1,23 @@
+{
+  "filter": {
+    "databaseName": "testDatabase",
+    "tableName": "testTable",
+    "whereClause": {
+      "type": "where",
+      "lhs": "testField",
+      "operator": "!=",
+      "rhs": -1234
+    }
+  },
+  "fields": ["*"],
+  "aggregateArraysByElement": false,
+  "ignoreFilters_": false,
+  "selectionOnly_": false,
+  "ignoredFilterIds_": [],
+  "groupByClauses": [],
+  "isDistinct": false,
+  "aggregates": [],
+  "sortClauses": [],
+  "limitClause": { "limit": 10 },
+  "offsetClause": { "offset": 0 }
+}
