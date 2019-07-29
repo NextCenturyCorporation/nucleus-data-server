@@ -80,6 +80,7 @@ pipeline {
                    
                   //push image
                   customImage.push()
+                  customImage.push('latest')
               }        
             } 
           }
