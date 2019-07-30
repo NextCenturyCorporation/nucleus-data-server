@@ -27,6 +27,15 @@ Date fields should have the `format` `"yyyy-MM-dd||dateOptionalTime||E MMM d HH:
 }
 ```
 
+Note that you may need to add an additional date format to the end of the `format` string (separated by two pipe characters `||`).  For example, if the dates in your data look like `12/25/2018 01:23:45`, you would use the following `format` string:
+
+```json
+"date_field": {
+    "type": "date",
+    "format": "yyyy-MM-dd||dateOptionalTime||E MMM d HH:mm:ss zzz yyyy||MM/dd/yyyy HH:mm:ss"
+}
+```
+
 #### Keyword Fields
 
 We recommend that any string field not containing document text (including news articles, social media posts, or any multi-sentence text field) should have the `type` `keyword`.  For example, fields of names, links, categories, and alphanumeric IDs should all have the `type` `keyword`.
