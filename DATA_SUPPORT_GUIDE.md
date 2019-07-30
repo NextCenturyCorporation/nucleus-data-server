@@ -36,6 +36,8 @@ Note that you may need to add an additional date format to the end of the `forma
 }
 ```
 
+For more information on date format mappings, please see the [Elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html).
+
 #### Keyword Fields
 
 We recommend that any string field not containing document text (including news articles, social media posts, or any multi-sentence text field) should have the `type` `keyword`.  For example, fields of names, links, categories, and alphanumeric IDs should all have the `type` `keyword`.
