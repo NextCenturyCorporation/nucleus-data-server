@@ -1,20 +1,18 @@
 apply plugin: 'java'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
-apply plugin: 'application'
 
 group = 'com.ncc.neon'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
 }
 
 springBoot {
-    buildInfo()
-}
-
-application {
-    mainClassName = "com.ncc.neon.NeonServerApplication"
+    mainClassName = 'com.ncc.neon.NeonServerApplication'
 }
 
 jar {
@@ -27,10 +25,6 @@ bootJar {
 }
 
 dependencies {
-    compile project(':common')
-    serverAdapters.split(',').each {
-        compile project(':' + it)
-    }
     implementation('org.springframework.boot:spring-boot-starter-actuator')
     implementation('org.springframework.boot:spring-boot-starter-webflux')
     implementation('com.fasterxml.jackson.dataformat:jackson-dataformat-yaml')
@@ -45,6 +39,3 @@ task unpack(type: Copy) {
     from(zipTree(tasks.bootJar.outputs.files.singleFile))
     into("build/dependency")
 }
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8

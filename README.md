@@ -12,7 +12,7 @@ The Neon Server is a REST server that is used with the [Neon Middleware](https:/
 * The **server** module contains the core Neon Server code.
 * The **esadapter** module contains the Elasticsearch REST datastore adapter.
 
-Change the modules used in your build with the [settings.gradle](./settings.gradle) file.
+Change the modules used in your build with the [gradle.properties](./gradle.properties) and [settings.gradle](./settings.gradle) files.
 
 ## Properties
 
@@ -24,9 +24,9 @@ To build and test the Neon Server:  `./gradlew build`
 
 ## Run the Neon Server
 
-To run the Neon Server:  `./gradlew bootRun`
+To run the Neon Server:  `./runLocal.sh`
 
-To pass arguments into `bootRun` from the command line, use `--args='<arguments>'`.  For example, to run the Neon Server on a specific port:  `./gradlew bootRun --args='--server.port=1234'`
+To pass arguments into `bootRun` from the command line, use `--args='<arguments>'`.  For example, to run the Neon Server on a specific port:  `./runLocal.sh --args='--server.port=1234'`
 
 ## Build and Run Docker
 

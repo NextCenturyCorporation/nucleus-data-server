@@ -27,7 +27,7 @@ subprojects {
     version = '0.0.1-SNAPSHOT'
 }
 
-task dockerCopy(dependsOn: ['dockerPrepare', 'esadapter:unpack', 'server:unpack']) << {
+task dockerCopy(dependsOn: ['dockerPrepare', 'esadapter:unpack', 'server:unpack', 'common:unpack']) << {
     copy {
         from fileTree(".").include("*/build/dependency/BOOT-INF/lib/*").files
         into "build/docker/libs"
@@ -35,6 +35,10 @@ task dockerCopy(dependsOn: ['dockerPrepare', 'esadapter:unpack', 'server:unpack'
     copy {
         from "server/build/dependency/META-INF"
         into "build/docker/meta"
+    }
+    copy {
+        from "common/build/dependency/BOOT-INF/classes"
+        into "build/docker/classes"
     }
     copy {
         from "server/build/dependency/BOOT-INF/classes"
