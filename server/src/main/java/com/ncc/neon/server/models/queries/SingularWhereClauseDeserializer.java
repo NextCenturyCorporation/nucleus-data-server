@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.DoubleNode;
+import com.fasterxml.jackson.databind.node.IntNode;
 import com.ncc.neon.util.DateUtil;
 
 public class SingularWhereClauseDeserializer extends StdDeserializer<SingularWhereClause> {
@@ -31,9 +32,13 @@ public class SingularWhereClauseDeserializer extends StdDeserializer<SingularWhe
             return SingularWhereClause.fromBoolean(node.get("lhs").asText(), node.get("operator").asText(),
                 ((BooleanNode) rhs).booleanValue());
         }
-        if(rhs.isNumber()) {
+        if(rhs.isDouble()) {
             return SingularWhereClause.fromDouble(node.get("lhs").asText(), node.get("operator").asText(),
                 ((DoubleNode) rhs).doubleValue());
+        }
+        if(rhs.isInt()) {
+            return SingularWhereClause.fromDouble(node.get("lhs").asText(), node.get("operator").asText(),
+                ((IntNode) rhs).doubleValue());
         }
         if(rhs.isTextual()) {
             ZonedDateTime date = DateUtil.transformStringToDate(rhs.asText());

@@ -38,6 +38,42 @@ public class QueryJsonTest {
         assertThat(this.json.read("/json/queryPost.json")).isEqualTo(getQuery());
     }
 
+    @Test
+    public void testDeserializeNegativeDoubleQuery() throws Exception {
+        Filter filter = new Filter("testDatabase", "testTable", null, SingularWhereClause.fromDouble("testField", "!=", -1234.5678));
+        List<String> fields = List.of("*");
+        boolean aggregateArraysByElement = false;
+        List<GroupByClause> groupByClauses = List.of();
+        boolean isDistinct = false;
+        List<AggregateClause> aggregates = List.of();
+        List<SortClause> sortClauses = List.of();
+        LimitClause limitClause = new LimitClause(10);
+        OffsetClause offsetClause = new OffsetClause(0);
+
+        Query query = new Query(filter, aggregateArraysByElement, isDistinct, fields, aggregates, groupByClauses,
+                sortClauses, limitClause, offsetClause);
+
+        assertThat(this.json.read("/json/queryWithNegativeDouble.json")).isEqualTo(query);
+    }
+
+    @Test
+    public void testDeserializeNegativeIntQuery() throws Exception {
+        Filter filter = new Filter("testDatabase", "testTable", null, SingularWhereClause.fromDouble("testField", "!=", -1234));
+        List<String> fields = List.of("*");
+        boolean aggregateArraysByElement = false;
+        List<GroupByClause> groupByClauses = List.of();
+        boolean isDistinct = false;
+        List<AggregateClause> aggregates = List.of();
+        List<SortClause> sortClauses = List.of();
+        LimitClause limitClause = new LimitClause(10);
+        OffsetClause offsetClause = new OffsetClause(0);
+
+        Query query = new Query(filter, aggregateArraysByElement, isDistinct, fields, aggregates, groupByClauses,
+                sortClauses, limitClause, offsetClause);
+
+        assertThat(this.json.read("/json/queryWithNegativeInt.json")).isEqualTo(query);
+    }
+
     private Query getQuery() {
         Filter filter = new Filter("ldc_uyg_jul_18", "ui_out", null, SingularWhereClause.fromNull("topic", "!="));
         List<String> fields = List.of("*");
