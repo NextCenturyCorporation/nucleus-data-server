@@ -34,17 +34,11 @@ public class DatasetControllerTests {
     @Autowired
     private TestRestTemplate restTemplate;
 
-
     @Test
-    public void getSubscriptions() {
-        final TestRestTemplate tpl = this.restTemplate;
-
+    public void testListener() {
         Flux.interval(Duration.ofMillis(100), Duration.ofMillis(20)).take(3).subscribe(it -> {
-            Map data = new HashMap();
-            data.put("count", 10);
-            tpl.postForObject("/dataset/notify", data, Map.class);
+            this.restTemplate.postForObject("/dataset/notify", Map.ofEntries(Map.entry("count", 10)), Map.class);
         });
-
 
         List<DataNotification> notifications = this.webClient.get()
             .uri("/dataset/listen")
@@ -57,10 +51,11 @@ public class DatasetControllerTests {
             .collectList()
             .block(Duration.ofSeconds(2));
 
-
         assertEquals(notifications.size(), 3);
         assertEquals(notifications.get(0).getCount(), 10l);
-        assertTrue(notifications.get(0).getPublishDate()< notifications.get(1).getPublishDate());
-        assertTrue(notifications.get(1).getPublishDate()< notifications.get(2).getPublishDate());
+        assertEquals(notifications.get(1).getCount(), 10l);
+        assertEquals(notifications.get(2).getCount(), 10l);
+        assertTrue(notifications.get(0).getPublishDate() < notifications.get(1).getPublishDate());
+        assertTrue(notifications.get(1).getPublishDate() < notifications.get(2).getPublishDate());
     }
 }

@@ -1,8 +1,12 @@
 package com.ncc.neon.controllers;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.ncc.neon.models.DataNotification;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,13 +27,10 @@ public class DatasetController {
 
     private long lastUpdated = 0l;
 
-    private Flux<DataNotification> stream;
-    private FluxSink<DataNotification> sink;
+    private List<FluxSink<DataNotification>> listeners;
 
     DatasetController() {
-        this.stream = Flux.create((FluxSink<DataNotification> sink) -> {
-            this.sink = sink;
-        });
+        listeners = new ArrayList<FluxSink<DataNotification>>();
     }
 
     /**
@@ -43,15 +44,17 @@ public class DatasetController {
             notification.setTimestamp(System.currentTimeMillis());
         }
         notification.setPublishDate(this.lastUpdated = System.currentTimeMillis()); 
-        this.sink.next(notification);
+        listeners.forEach(sink -> sink.next(notification));
         return;
     }
 
     /**
      * Subscribe to data set change notifications
      */
-    @GetMapping(path = "listen", produces = "text/event-stream")
+    @GetMapping(path = "listen", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<DataNotification> listen() {
-        return this.stream;
+        return Flux.create((FluxSink<DataNotification> sink) -> {
+            listeners.add(sink);
+        });
     }
 }
