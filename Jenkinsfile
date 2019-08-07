@@ -53,7 +53,7 @@ pipeline {
     stage('Publish Container') {
       agent any
       when {
-          anyOf { branch 'master'; branch 'THOR-jenkins-pipeline'; }
+          anyOf { branch 'master'; }
       }
       steps {
         withCredentials([usernamePassword(
