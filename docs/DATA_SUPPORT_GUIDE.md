@@ -2,7 +2,7 @@
 
 ## Supported Datastores
 
-- Elasticsearch 6.4+
+- [Elasticsearch 6.4+](https://www.elastic.co/downloads/past-releases/elasticsearch-6-8-1)
 
 *Want us to support other datastores?  Let us know!  Send us an email at [neon-support@nextcentury.com](mailto:neon-support@nextcentury.com)*
 
