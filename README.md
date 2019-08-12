@@ -72,7 +72,7 @@ The Neon Server currently supports the following datastores:
 
 - [Elasticsearch 6.4+](https://www.elastic.co/downloads/past-releases/elasticsearch-6-8-1)
 
-*Want us to support other datastores?  Let us know!  Send us an email at [neon-support@nextcentury.com](mailto:neon-support@nextcentury.com)*
+*Want us to support other datastores?  [Please let us know!](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#contact-us)*
 
 ## Datastore Configuration
 
@@ -88,7 +88,7 @@ If you HAVE loaded data before loading your mapping file, you'll either need to 
 
 More information about mapping files can be found on the [Elasticsearch website](https://www.elastic.co/guide/en/elasticsearch/reference/6.4/mapping.html).
 
-##### Elasticsearch 6 Date Fields
+#### Elasticsearch 6 Date Fields
 
 Date fields should have the `format` `"yyyy-MM-dd||dateOptionalTime||E MMM d HH:mm:ss zzz yyyy"`.  For example:
 
@@ -110,7 +110,7 @@ Note that you may need to add an additional date format to the end of the `forma
 
 For more information on date format mappings, please see the [Elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html).
 
-##### Elasticsearch 6 Keyword Fields
+#### Elasticsearch 6 Keyword Fields
 
 We recommend that any string field not containing document text (including news articles, social media posts, or any multi-sentence text field) should have the `type` `keyword`.  For example, fields of names, links, categories, and alphanumeric IDs should all have the `type` `keyword`.
 
@@ -120,7 +120,7 @@ We recommend that any string field not containing document text (including news 
 }
 ```
 
-##### Elasticsearch 6 Text Fields
+#### Elasticsearch 6 Text Fields
 
 Text fields should have the `fielddata` property set to `true`.  For example:
 
@@ -133,7 +133,7 @@ Text fields should have the `fielddata` property set to `true`.  For example:
 
 ## Technical Stack
 
-The Neon Server is a Spring Boot WebFlux Java application built using Gradle plugins.
+The Neon Server is a [Spring Boot](https://spring.io/projects/spring-boot) WebFlux Java application built using Gradle plugins.
 
 ### Modules
 
@@ -158,7 +158,6 @@ Neon and  are made available by [Next Century](http://www.nextcentury.com) under
 
 ## Contact Us
 
-Email: neon-support@nextcentury.com
+Email: [neon-support@nextcentury.com](mailto:neon-support@nextcentury.com)
 
 Copyright 2019 Next Century Corporation
-
