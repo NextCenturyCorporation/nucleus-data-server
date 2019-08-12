@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import com.ncc.neon.adapters.QueryAdapter;
 import com.ncc.neon.models.queries.Query;
@@ -112,36 +113,34 @@ public class ElasticsearchAdapter implements QueryAdapter {
     }
 
     @Override
-    public Flux<String> showTables(String dbName) {
+    public Flux<String> showTables(String databaseName) {
         GetMappingsRequest request = new GetMappingsRequest();
-        request.indices(dbName);
+        request.indices(databaseName);
 
         return getMappingRequestToFlux(request, (sink, response) -> {
-            response.getMappings().get(dbName).keysIt().forEachRemaining(type -> sink.next(type));
+            response.getMappings().get(databaseName).keysIt().forEachRemaining(type -> sink.next(type));
         });
 
     }
 
     @Override
-    public Flux<String> getFieldNames(String dbName, String tableName) {
+    public Flux<String> getFieldNames(String databaseName, String tableName) {
         BiConsumer<FluxSink<String>, Map<String, Map>> mappingConsumer = (sink, mappingProperties) -> {
-            getMappingProperties(mappingProperties, null).forEach(pair -> sink.next(pair.getField()));
+            getFieldsFromMapping(mappingProperties, null).forEach(pair -> sink.next(pair.getField()));
         };
-        return getMappings(dbName, tableName, mappingConsumer);
+        return getMappings(databaseName, tableName, mappingConsumer);
     }
 
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public Flux<TableWithFields> getTableAndFieldNames(String dbName) {
+    public Flux<TableWithFields> getTableAndFieldNames(String databaseName) {
         GetMappingsRequest request = new GetMappingsRequest();
-        request.indices(dbName);
+        request.indices(databaseName);
 
         return getMappingRequestToFlux(request, (sink, response) -> {
-            response.getMappings().get(dbName).keysIt().forEachRemaining(tableName -> {
-
-                Map<String, Map> mappingProperties = (Map<String, Map>) response.mappings().get(dbName).get(tableName).sourceAsMap().get("properties");
-
-                List<String> fieldNames = getMappingPropertiesFieldNamesOnly(mappingProperties, null);
+            response.getMappings().get(databaseName).keysIt().forEachRemaining(tableName -> {
+                Map<String, Map> mappingProperties = getPropertiesFromMapping(response, databaseName, tableName);
+                List<String> fieldNames = getFieldNamesFromMapping(mappingProperties, null);
                 if(!fieldNames.contains("_id")) {
                     fieldNames.add("_id");
                 }
@@ -150,35 +149,44 @@ public class ElasticsearchAdapter implements QueryAdapter {
         });
     }
 
+    private Map<String, Map> getPropertiesFromMapping(GetMappingsResponse response, String databaseName, String tableName) {
+        Map<String, Object> mappingTable = response.mappings().get(databaseName).get(tableName).sourceAsMap();
+
+        // ES6 indexes have databaseName->tableName->"properties" but ES7 indexes have databaseName->"properties"
+        // This won't work on an ES6 index with a tableName="properties"
+        if (tableName.equals("properties")) {
+            return (Map<String, Map>) mappingTable.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+                entry -> (Map) entry.getValue()));
+        }
+        return (Map<String, Map>) mappingTable.get("properties");
+    }
+
     @Override
-    public Flux<FieldTypePair> getFieldTypes(String dbName, String tableName) {
+    public Flux<FieldTypePair> getFieldTypes(String databaseName, String tableName) {
         BiConsumer<FluxSink<FieldTypePair>, Map<String, Map>> mappingConsumer = (sink, mappingProperties) -> {
-            getMappingProperties(mappingProperties, null).forEach(pair -> sink.next(pair));
+            getFieldsFromMapping(mappingProperties, null).forEach(pair -> sink.next(pair));
         };
-        return getMappings(dbName, tableName, mappingConsumer);
+        return getMappings(databaseName, tableName, mappingConsumer);
     }
 
     /*
      * Helper function for getfieldname and getfieldtypes as they are the same
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private <T> Flux<T> getMappings(String dbName, String tableName,
+    private <T> Flux<T> getMappings(String databaseName, String tableName,
             BiConsumer<FluxSink<T>, Map<String, Map>> mappingConsumer) {
         GetMappingsRequest request = new GetMappingsRequest();
-        request.indices(dbName);
-        request.types(tableName);
+        request.indices(databaseName);
 
         return getMappingRequestToFlux(request, (sink, response) -> {
-            Map<String, Map> mappingProperties = (Map<String, Map>) response.mappings().get(dbName).get(tableName)
-                    .sourceAsMap().get("properties");
-
+            Map<String, Map> mappingProperties = getPropertiesFromMapping(response, databaseName, tableName);
             mappingConsumer.accept(sink, mappingProperties);
         });
     }
 
     /* Recursive function to get all the properties */
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private List<FieldTypePair> getMappingProperties(Map<String, Map> mappingProperties, String parentFieldName) {
+    private List<FieldTypePair> getFieldsFromMapping(Map<String, Map> mappingProperties, String parentFieldName) {
         List<FieldTypePair> fieldTypePairs = new ArrayList<>();
         mappingProperties.forEach((fieldName, value) -> {
             String type = null;
@@ -189,8 +197,8 @@ public class ElasticsearchAdapter implements QueryAdapter {
                 }
                 fieldTypePairs.add(new FieldTypePair(fieldName, type));
             } else if (value.get("properties") != null) {
-                Map<String, Map> subMapping = (Map<String, Map>) value.get("properties");
-                fieldTypePairs.addAll(getMappingProperties(subMapping, fieldName));
+                Map<String, Map> nestedFields = (Map<String, Map>) value.get("properties");
+                fieldTypePairs.addAll(getFieldsFromMapping(nestedFields, fieldName));
             }
         });
         return fieldTypePairs;
@@ -198,7 +206,7 @@ public class ElasticsearchAdapter implements QueryAdapter {
 
     /* Recursive function to get all the field names */
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private List<String> getMappingPropertiesFieldNamesOnly(Map<String, Map> mappingProperties, String parentFieldName) {
+    private List<String> getFieldNamesFromMapping(Map<String, Map> mappingProperties, String parentFieldName) {
         List<String> fields = new ArrayList<>();
         mappingProperties.forEach((fieldName, value) -> {
             /* If we want to include parents of nested fields in list:
@@ -207,8 +215,8 @@ public class ElasticsearchAdapter implements QueryAdapter {
             }
             fields.add(fieldName);
             if (value.get("properties") != null) {
-                Map<String, Map> subMapping = (Map<String, Map>) value.get("properties");
-                fields.addAll(getMappingPropertiesFieldNamesOnly(subMapping, fieldName));
+                Map<String, Map> nestedFields = (Map<String, Map>) value.get("properties");
+                fields.addAll(getFieldNamesFromMapping(nestedFields, fieldName));
             }*/
             if (value.get("type") != null) {
                 if (parentFieldName != null) {
@@ -216,8 +224,8 @@ public class ElasticsearchAdapter implements QueryAdapter {
                 }
                 fields.add(fieldName);
             } else if (value.get("properties") != null) {
-                Map<String, Map> subMapping = (Map<String, Map>) value.get("properties");
-                fields.addAll(getMappingPropertiesFieldNamesOnly(subMapping, fieldName));
+                Map<String, Map> nestedFields = (Map<String, Map>) value.get("properties");
+                fields.addAll(getFieldNamesFromMapping(nestedFields, fieldName));
             }
         });
         return fields;

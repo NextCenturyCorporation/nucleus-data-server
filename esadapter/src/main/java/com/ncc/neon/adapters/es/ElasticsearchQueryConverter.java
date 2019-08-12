@@ -332,8 +332,13 @@ public class ElasticsearchQueryConverter {
         SearchRequest request = createSearchRequest(source, query);
 
         if (query.getFilter() != null && query.getFilter().getTableName() != null) {
-            String[] tableNameAsArray = {query.getFilter().getTableName()};
-            request.types(tableNameAsArray);
+            String indexType = query.getFilter().getTableName();
+            // Assumes ES7 if type="properties"
+            if(indexType.equals("properties")) {
+                indexType = "_doc";
+            }
+            String[] indexTypeArray = {indexType};
+            request.types(indexTypeArray);
         }
 
         return request;
@@ -380,18 +385,23 @@ public class ElasticsearchQueryConverter {
         // req.searchType((params != null && params.getAggregates().size() > 0) ? SearchType.COUNT : SearchType.DFS_QUERY_THEN_FETCH);
         //
         // TODO:  Set size=0 (i.e. limit clause) when type is counts
-        String indicesValue = 
+        String indexName =
             (params != null && params.getFilter() != null && params.getFilter().getDatabaseName() != null)
             ? params.getFilter().getDatabaseName() : "_all";
 
-        String typesValue = 
+        String indexType =
             (params != null && params.getFilter() != null && params.getFilter().getTableName() != null)
             ? params.getFilter().getTableName() : "_all";
 
+        // Assumes ES7 if type="properties"
+        if(indexType.equals("properties")) {
+            indexType = "_doc";
+        }
+
         req.searchType(SearchType.DFS_QUERY_THEN_FETCH)
                 .source(source)
-                .indices(indicesValue)
-                .types(typesValue);
+                .indices(indexName)
+                .types(indexType);
 
         if (req.searchType() == SearchType.DFS_QUERY_THEN_FETCH
             && params.getLimitClause() != null && params.getLimitClause().getLimit() > RESULT_LIMIT) {

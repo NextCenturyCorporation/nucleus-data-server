@@ -90,6 +90,10 @@ The Neon Server currently supports the following datastores:
 
 We recommend installing [elasticdump](https://www.npmjs.com/package/elasticdump) to load bulk data: `npm install -g elasticdump`
 
+#### Elasticsearch 6 Index Types
+
+Do not name your index mapping type `properties`.
+
 #### Elasticsearch 6 Mapping Files
 
 It's usually very important to load a mapping file associated with your data index into Elasticsearch BEFORE loading any data into that index.
