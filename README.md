@@ -53,18 +53,28 @@ The Neon Server is deployed as an independent docker container.
 
 ### Deploy as Docker Container
 
-#### 1. Follow the [Initial Setup Instructions](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#initial-setup-instructions) above.
+#### 1. Perform All Initial Setup
 
-#### 2. (Optional) By default, the Neon Server runs on port `8090`.  If you want to use a different port:
+Follow the [Initial Setup Instructions](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#initial-setup-instructions) above.
+
+#### 2. (Optional) Update the Neon Server's Port
+
+By default, the Neon Server runs on port `8090`.  If you want to use a different port:
 
 - In `<neon-server>/server/src/main/resources/application.properties`, change the line `server.port=8090` to use your port
 - In `Dockerfile`, change the line `EXPOSE 8090` to use your port
 
-#### 3. Build the docker image: `./gradlew clean docker`
+#### 3. Build the Docker Image
 
-#### 4. Run `docker images` to verify that you have created a docker image with the repository `com.ncc.neon/server` and tag `latest`.
+`./gradlew clean docker`
 
-#### 5. (Optional) Run the docker container locally: `docker run -it --network=host --rm com.ncc.neon/server:latest`
+#### 4. Verify the Docker Image
+
+Run `docker images` to verify that you have created a docker image with the repository `com.ncc.neon/server` and tag `latest`.
+
+#### 5. (Optional) Run the Docker Container Locally
+
+`docker run -it --network=host --rm com.ncc.neon/server:latest`
 
 ## Datastore Support
 
