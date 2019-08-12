@@ -15,15 +15,15 @@ The Neon Server is a REST server that is used with the [Neon Middleware](https:/
 
 ## Initial Setup Instructions
 
-### Download Source Code
-
-`git clone https://github.com/NextCenturyCorporation/neon-server.git; cd neon-server`
-
 ### Install Dependencies
 
 - [Java 9+](https://www.oracle.com/technetwork/java/javase/downloads/jdk12-downloads-5295953.html)
 - [Docker](https://docs.docker.com/v17.12/install/)
 - A [supported datastore](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#datastore-support)
+
+### Download Source Code
+
+`git clone https://github.com/NextCenturyCorporation/neon-server.git; cd neon-server`
 
 ### Load Data
 
@@ -49,9 +49,13 @@ This will run `bootRun` from the [Spring Boot Gradle plugin](https://docs.spring
 
 ## Production Deployment Instructions
 
+The Neon Server is deployed as an independent docker container.
+
+### Deploy as Docker Container
+
 1. Follow the [Initial Setup Instructions](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#initial-setup-instructions) above.
 
-### Build
+#### Build
 
 2. (Optional) By default, the Neon Server runs on port `8090`.  If you want to use a different port:
 
@@ -62,7 +66,7 @@ This will run `bootRun` from the [Spring Boot Gradle plugin](https://docs.spring
 
 4. Run `docker images` to verify that you have created a docker image with the repository `com.ncc.neon/server` and tag `latest`.
 
-### Run Locally (Optional)
+#### Run Locally (Optional)
 
 5. Run the docker container: `docker run -it --network=host --rm com.ncc.neon/server:latest`
 
@@ -154,10 +158,12 @@ Change the modules included in your build (to add or remove adapter dependencies
 
 ## Apache 2 Open Source License
 
-Neon and  are made available by [Next Century](http://www.nextcentury.com) under the [Apache 2 Open Source License](http://www.apache.org/licenses/LICENSE-2.0.txt). You may freely download, use, and modify, in whole or in part, the source code or release packages. Any restrictions or attribution requirements are spelled out in the license file. Neon and  attribution information can be found in the [LICENSE](./LICENSE) and [NOTICE](./NOTICE.md) files. For more information about the Apache license, please visit the [The Apache Software Foundation’s License FAQ](http://www.apache.org/foundation/license-faq.html).
+Neon is made available by [Next Century](http://www.nextcentury.com) under the [Apache 2 Open Source License](http://www.apache.org/licenses/LICENSE-2.0.txt). You may freely download, use, and modify, in whole or in part, the source code or release packages. Any restrictions or attribution requirements are spelled out in the license file. Neon attribution information can be found in the [LICENSE](./LICENSE) file. For more information about the Apache license, please visit the [The Apache Software Foundation’s License FAQ](http://www.apache.org/foundation/license-faq.html).
 
 ## Contact Us
 
 Email: [neon-support@nextcentury.com](mailto:neon-support@nextcentury.com)
+
+Website: http://neonframework.org
 
 Copyright 2019 Next Century Corporation
