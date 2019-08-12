@@ -17,7 +17,7 @@ The Neon Server is a REST server that is used with the [Neon Middleware](https:/
 
 ### Download Source Code
 
-Download the source code from the GitHub repository: `git clone https://github.com/NextCenturyCorporation/neon-server.git; cd neon-server`
+`git clone https://github.com/NextCenturyCorporation/neon-server.git; cd neon-server`
 
 ### Install Dependencies
 
