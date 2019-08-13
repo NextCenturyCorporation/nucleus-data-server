@@ -29,7 +29,7 @@ The Neon Server is a REST server that is used with the [Neon Middleware](https:/
 
 If you were given a sample data bundle by the Neon Development Team, please download it and follow its specific README instructions.
 
-If you want to use your own data, please see the [datastore configuration](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#datastore-configuration) for more information.
+If you want to use your own data, please see the [Datastore Configuration](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#datastore-configuration) for more information.
 
 ### Customize Build (Optional)
 
@@ -39,11 +39,11 @@ Update the runtime properties of your Neon Server installation in the [server/sr
 
 ### Build and Run Tests
 
-To build and test the Neon Server: `./gradlew build`
+`./gradlew build`
 
 ### Run Locally
 
-To run the Neon Server: `./runLocal.sh`
+`./runLocal.sh`
 
 This will run `bootRun` from the [Spring Boot Gradle plugin](https://docs.spring.io/spring-boot/docs/current/reference/html/using-boot-running-your-application.html#using-boot-running-with-the-gradle-plugin).  To pass custom arguments into `bootRun` from the command line, use `--args='<arguments>'.  For example, to run on a specific port: `./runLocal.sh --args='--server.port=1234'`
 
@@ -80,21 +80,28 @@ Run `docker images` to verify that you have created a docker image with the repo
 
 The Neon Server currently supports the following datastores:
 
-- [Elasticsearch 6.4+](https://www.elastic.co/downloads/past-releases/elasticsearch-6-8-1)
+- [Elasticsearch 6.4 - 6.8](https://www.elastic.co/downloads/past-releases/elasticsearch-6-8-1)
+- Elasticsearch 7 (*limited testing*)
 
-*Want us to support other datastores?  [Please let us know!](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#contact-us)*
+*Want us to support another datastore?  [Please let us know!](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#contact-us)*
 
 ## Datastore Configuration
 
-### Elasticsearch 6
+### Elasticsearch 6 and 7
 
 We recommend installing [elasticdump](https://www.npmjs.com/package/elasticdump) to load bulk data: `npm install -g elasticdump`
 
-#### Elasticsearch 6 Index Types
+If you have previously installed elasticdump, we recommend that you rerun the command to update it to its latest version.
 
-Do not name your index mapping type `properties`.
+#### Elasticsearch Data Format
 
-#### Elasticsearch 6 Mapping Files
+If your data is spread across multiple indexes, we recommend that you [denormalize](https://www.elastic.co/guide/en/elasticsearch/guide/current/denormalization.html) any fields that you want to use as filters.
+
+#### Elasticsearch Index Types (6.X Only)
+
+Please do not name your index type `properties`.
+
+#### Elasticsearch Mapping Files
 
 It's usually very important to load a mapping file associated with your data index into Elasticsearch BEFORE loading any data into that index.
 
@@ -102,7 +109,7 @@ If you HAVE loaded data before loading your mapping file, you'll either need to 
 
 More information about mapping files can be found on the [Elasticsearch website](https://www.elastic.co/guide/en/elasticsearch/reference/6.4/mapping.html).
 
-#### Elasticsearch 6 Date Fields
+#### Elasticsearch Date Fields
 
 Date fields should have the `format` `"yyyy-MM-dd||dateOptionalTime||E MMM d HH:mm:ss zzz yyyy"`.  For example:
 
@@ -124,7 +131,7 @@ Note that you may need to add an additional date format to the end of the `forma
 
 For more information on date format mappings, please see the [Elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html).
 
-#### Elasticsearch 6 Keyword Fields
+#### Elasticsearch Keyword Fields
 
 We recommend that any string field not containing document text (including news articles, social media posts, or any multi-sentence text field) should have the `type` `keyword`.  For example, fields of names, links, categories, and alphanumeric IDs should all have the `type` `keyword`.
 
@@ -134,7 +141,7 @@ We recommend that any string field not containing document text (including news 
 }
 ```
 
-#### Elasticsearch 6 Text Fields
+#### Elasticsearch Text Fields
 
 Text fields should have the `fielddata` property set to `true`.  For example:
 
