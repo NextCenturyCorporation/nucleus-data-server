@@ -286,3 +286,5 @@ gradle-app.setting
 **/build/
 
 /states/
+custom.properties
+

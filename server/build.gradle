@@ -2,6 +2,7 @@ apply plugin: 'java'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'application'
+apply plugin: 'com.gorylenko.gradle-git-properties'
 
 group = 'com.ncc.neon'
 
@@ -48,3 +49,18 @@ task unpack(type: Copy) {
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
+
+gitProperties {
+    extProperty = 'gitProps'
+}
+
+generateGitProperties.outputs.upToDateWhen { false }
+
+task saveGitCommit(dependsOn: 'generateGitProperties') {
+    doLast {
+        new File(projectDir, "../custom.properties").text = project.ext.gitProps['git.commit.id']
+    }
+}
+
+bootRun.dependsOn saveGitCommit
+build.dependsOn saveGitCommit
