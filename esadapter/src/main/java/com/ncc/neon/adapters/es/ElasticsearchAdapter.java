@@ -14,6 +14,11 @@ import com.ncc.neon.models.results.TableWithFields;
 import com.ncc.neon.models.results.TabularQueryResult;
 
 import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.elasticsearch.ResourceNotFoundException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
@@ -24,7 +29,9 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -35,8 +42,28 @@ import lombok.extern.slf4j.Slf4j;
 public class ElasticsearchAdapter implements QueryAdapter {
     RestHighLevelClient client;
 
-    public ElasticsearchAdapter(String host) {
-        this.client = new RestHighLevelClient(RestClient.builder(new HttpHost(host, 9200)));
+    public ElasticsearchAdapter(String target) {
+        String[] targetData = target.split("@");
+        String[] hostData = targetData[(targetData.length > 1 ? 1 : 0)].split(":");
+        String host = hostData[0];
+        int port = hostData.length > 1 ? Integer.parseInt(hostData[1]) : 9200;
+        RestClientBuilder builder = RestClient.builder(new HttpHost(host, port));
+        if(targetData.length > 1) {
+            String[] userData = targetData[0].split(":");
+            if(userData.length > 1) {
+                String username = userData[0];
+                String password = userData[1];
+                final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+                credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
+                builder.setHttpClientConfigCallback(new HttpClientConfigCallback() {
+                    @Override
+                    public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+                        return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                    }
+                });
+            }
+        }
+        this.client = new RestHighLevelClient(builder);
     }
 
     private void logQuery(Query query, SearchRequest request) {
