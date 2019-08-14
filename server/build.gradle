@@ -56,11 +56,12 @@ gitProperties {
 
 generateGitProperties.outputs.upToDateWhen { false }
 
-task saveGitCommit(dependsOn: 'generateGitProperties') {
+task saveBuildDateAndGitCommit(dependsOn: 'generateGitProperties') {
     doLast {
-        new File(projectDir, "../custom.properties").text = project.ext.gitProps['git.commit.id']
+        new File(projectDir, "../custom.properties").text = "Build Date = " + new Date() + 
+            "\nGit Commit = " + project.ext.gitProps['git.commit.id'] + "\n"
     }
 }
 
-bootRun.dependsOn saveGitCommit
-build.dependsOn saveGitCommit
+bootRun.dependsOn saveBuildDateAndGitCommit
+build.dependsOn saveBuildDateAndGitCommit

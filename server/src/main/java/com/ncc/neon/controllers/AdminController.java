@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
@@ -24,12 +26,16 @@ import reactor.core.publisher.Mono;
 public class AdminController {
 
     String gitCommit = "HEAD";
+    Map<String, Object> customProperties = new LinkedHashMap<String, Object>();
 
     AdminController() {
         try {
             File infoFile = ResourceUtils.getFile("../custom.properties");
             if(infoFile.exists()) {
-                gitCommit = new String(Files.readAllBytes(infoFile.toPath()));
+                Arrays.stream(new String(Files.readAllBytes(infoFile.toPath())).split("\n")).forEach(line -> {
+                    String[] data = line.split(" = ");
+                    customProperties.put(data[0], data[1]);
+                });
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -40,9 +46,7 @@ public class AdminController {
 
     @GetMapping(path = "status")
     public ResponseEntity<Mono<Map<String, Object>>> status() {
-        Map<String, Object> status = Map.ofEntries(
-            Map.entry("Git Commit", gitCommit)
-        );
+        Map<String, Object> status = new LinkedHashMap<String, Object>(customProperties);
         return ResponseEntity.ok().body(Mono.just(status));
     }
 }
