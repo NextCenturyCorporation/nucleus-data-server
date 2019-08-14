@@ -9,7 +9,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,7 +29,7 @@ public class AdminController {
 
     AdminController() {
         try {
-            File infoFile = ResourceUtils.getFile("../custom.properties");
+            File infoFile = new File(ClassLoader.getSystemClassLoader().getResource("custom.properties").getFile());
             if(infoFile.exists()) {
                 Arrays.stream(new String(Files.readAllBytes(infoFile.toPath())).split("\n")).forEach(line -> {
                     String[] data = line.split(" = ");
@@ -42,6 +41,7 @@ public class AdminController {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        log.debug("Administration Properties: " + customProperties.toString());
     }
 
     @GetMapping(path = "status")

@@ -58,7 +58,7 @@ generateGitProperties.outputs.upToDateWhen { false }
 
 task saveBuildDateAndGitCommit(dependsOn: 'generateGitProperties') {
     doLast {
-        new File(projectDir, "../custom.properties").text = "Build Date = " + new Date() + 
+        new File(projectDir, "src/main/resources/custom.properties").text = "Build Date = " + new Date() + 
             "\nGit Commit = " + project.ext.gitProps['git.commit.id'] + "\n"
     }
 }
