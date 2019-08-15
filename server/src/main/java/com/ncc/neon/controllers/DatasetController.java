@@ -1,12 +1,15 @@
 package com.ncc.neon.controllers;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Duration;
+import java.time.ZonedDateTime;
 
 import com.ncc.neon.models.DataNotification;
+import com.ncc.neon.util.DateUtil;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,8 +19,11 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Mono;
 
 @CrossOrigin(origins="*")
 @RestController
@@ -25,12 +31,12 @@ import reactor.core.publisher.FluxSink;
 @Slf4j
 public class DatasetController {
 
-    private long lastUpdated = 0l;
-
-    private List<FluxSink<DataNotification>> listeners;
+    final private FluxProcessor<DataNotification, DataNotification> processor;
+    final private FluxSink<DataNotification> sink;
 
     DatasetController() {
-        listeners = new ArrayList<FluxSink<DataNotification>>();
+        processor = DirectProcessor.<DataNotification>create().serialize();
+        sink = processor.sink();
     }
 
     /**
@@ -39,22 +45,27 @@ public class DatasetController {
      */
     @PostMapping(path = "notify")
     @ResponseStatus(code = HttpStatus.ACCEPTED)
-    void notifyChange(@RequestBody() DataNotification notification) {
-        if (notification.getTimestamp() == 0)  {
-            notification.setTimestamp(System.currentTimeMillis());
+    public ResponseEntity<Mono<String>> notifyChange(@RequestBody() DataNotification notification) {
+        if (notification.getTimestamp() == null)  {
+            notification.setTimestamp(DateUtil.transformDateToString(ZonedDateTime.now()));
         }
-        notification.setPublishDate(this.lastUpdated = System.currentTimeMillis()); 
-        listeners.forEach(sink -> sink.next(notification));
-        return;
+        sink.next(notification);
+        return ResponseEntity.ok().body(Mono.just(notification.getTimestamp()));
+    }
+
+    private Flux<ServerSentEvent<DataNotification>> getHeartbeatStream() {
+        return Flux.interval(Duration.ofSeconds(30))
+            .map(i -> ServerSentEvent.<DataNotification>builder().build());
     }
 
     /**
      * Subscribe to data set change notifications
      */
     @GetMapping(path = "listen", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<DataNotification> listen() {
-        return Flux.create((FluxSink<DataNotification> sink) -> {
-            listeners.add(sink);
-        });
+    public ResponseEntity<Flux<ServerSentEvent<DataNotification>>> listen() {
+        return ResponseEntity.ok().body(Flux.merge(
+            getHeartbeatStream(),
+            processor.map(e -> ServerSentEvent.<DataNotification>builder(e).build())
+        ));
     }
 }
