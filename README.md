@@ -5,6 +5,7 @@ The Neon Server is a REST server that is used with the [Neon Middleware](https:/
 ## Table of Content
 
 * [Initial Setup Instructions](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#initial-setup-instructions)
+* [Datastore Authentication](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#datastore-authentication)
 * [Local Development Instructions](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#local-development-instructions)
 * [Production Deployment Instructions](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#production-deployment-instructions)
 * [Datastore Support](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#datastore-support)
@@ -34,6 +35,24 @@ If you want to use your own data, please see the [Datastore Configuration](https
 ### Customize Build (Optional)
 
 Update the runtime properties of your Neon Server installation in the [server/src/main/resources/application.properties](./server/src/main/resources/application.properties) file.  See the [Spring Boot Configuration Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html) for details.
+
+## Datastore Authentication
+
+### Basic Auth
+
+#### Elasticsearch
+
+In the [server/src/main/resources/server.properties](./server/src/main/resources/server.properties) file, add the following property:
+
+```
+elasticsearch.auth={'hostname':'username:password'}
+```
+
+Replace the `hostname`, `username`, and `password` as needed.  The `hostname` can be an IP address or a CNAME and can optionally have a port.  If you need multiple authentication entries, separate them with commas:
+
+```
+elasticsearch.auth={'hostname1':'username1:password1','hostname2':'username2:password2'}
+```
 
 ## Local Development Instructions
 

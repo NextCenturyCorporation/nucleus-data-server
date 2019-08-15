@@ -42,26 +42,17 @@ import lombok.extern.slf4j.Slf4j;
 public class ElasticsearchAdapter implements QueryAdapter {
     RestHighLevelClient client;
 
-    public ElasticsearchAdapter(String target) {
-        String[] targetData = target.split("@");
-        String[] hostData = targetData[(targetData.length > 1 ? 1 : 0)].split(":");
-        String host = hostData[0];
-        int port = hostData.length > 1 ? Integer.parseInt(hostData[1]) : 9200;
+    public ElasticsearchAdapter(String host, int port, String username, String password) {
         RestClientBuilder builder = RestClient.builder(new HttpHost(host, port));
-        if(targetData.length > 1) {
-            String[] userData = targetData[0].split(":");
-            if(userData.length > 1) {
-                String username = userData[0];
-                String password = userData[1];
-                final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-                credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
-                builder.setHttpClientConfigCallback(new HttpClientConfigCallback() {
-                    @Override
-                    public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
-                        return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-                    }
-                });
-            }
+        if(username != null && password != null) {
+            final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
+            builder.setHttpClientConfigCallback(new HttpClientConfigCallback() {
+                @Override
+                public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+                    return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                }
+            });
         }
         this.client = new RestHighLevelClient(builder);
     }

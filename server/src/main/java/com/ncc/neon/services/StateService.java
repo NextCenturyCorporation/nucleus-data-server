@@ -5,11 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
@@ -27,8 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class StateService {
-
-    @Value("${state.directory:../states}")
     private String stateDirectoryPath;
 
     private static ObjectMapper JSON_MAPPER = new ObjectMapper();
@@ -50,11 +46,7 @@ public class StateService {
         }
     }
 
-    StateService() {
-        this(null);
-    }
-
-    StateService(String stateDirectoryPath) {
+    StateService(final @Value("${state.directory:../states}") String stateDirectoryPath) {
         if (stateDirectoryPath != null) {
             this.stateDirectoryPath = stateDirectoryPath;
             log.debug("Configured State Directory Path = " + this.stateDirectoryPath);
