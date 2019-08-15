@@ -286,5 +286,5 @@ gradle-app.setting
 **/build/
 
 /states/
-server/src/main/resources/custom.properties
+server/src/main/resources/autogenerate.properties
 

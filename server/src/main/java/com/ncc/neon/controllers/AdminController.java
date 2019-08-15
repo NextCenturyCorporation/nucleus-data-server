@@ -25,15 +25,15 @@ import reactor.core.publisher.Mono;
 public class AdminController {
 
     String gitCommit = "HEAD";
-    Map<String, Object> customProperties = new LinkedHashMap<String, Object>();
+    Map<String, Object> administrationProperties = new LinkedHashMap<String, Object>();
 
     AdminController() {
         try {
-            File infoFile = new File(ClassLoader.getSystemClassLoader().getResource("custom.properties").getFile());
+            File infoFile = new File(ClassLoader.getSystemClassLoader().getResource("autogenerate.properties").getFile());
             if(infoFile.exists()) {
                 Arrays.stream(new String(Files.readAllBytes(infoFile.toPath())).split("\n")).forEach(line -> {
                     String[] data = line.split(" = ");
-                    customProperties.put(data[0], data[1]);
+                    administrationProperties.put(data[0], data[1]);
                 });
             }
         } catch (FileNotFoundException e) {
@@ -41,12 +41,12 @@ public class AdminController {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        log.debug("Administration Properties: " + customProperties.toString());
+        log.debug("Administration Properties: " + administrationProperties.toString());
     }
 
     @GetMapping(path = "status")
     public ResponseEntity<Mono<Map<String, Object>>> status() {
-        Map<String, Object> status = new LinkedHashMap<String, Object>(customProperties);
+        Map<String, Object> status = new LinkedHashMap<String, Object>(administrationProperties);
         return ResponseEntity.ok().body(Mono.just(status));
     }
 }
