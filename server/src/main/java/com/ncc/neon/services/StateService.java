@@ -17,12 +17,14 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.ncc.neon.models.PagedList;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ResourceUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Component
+@PropertySource(value="classpath:server.properties",ignoreResourceNotFound=true)
 @Slf4j
 public class StateService {
     private String stateDirectoryPath;

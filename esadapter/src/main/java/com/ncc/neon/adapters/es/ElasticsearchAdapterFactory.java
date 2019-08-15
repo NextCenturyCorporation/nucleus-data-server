@@ -1,5 +1,6 @@
 package com.ncc.neon.adapters.es;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.ncc.neon.adapters.QueryAdapter;
@@ -13,13 +14,20 @@ import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
-@PropertySource("classpath:server.properties")
+@PropertySource(value="classpath:server.properties",ignoreResourceNotFound=true)
 @Slf4j
 public class ElasticsearchAdapterFactory implements QueryAdapterFactory {
     private Map<String, String> authCollection;
 
-    public ElasticsearchAdapterFactory(final @Value("#{${elasticsearch.auth}}") Map<String, String> authCollection) {
-        this.authCollection = authCollection;
+    public ElasticsearchAdapterFactory(final @Value("#{${elasticsearch.auth:{}}}") Map<String, String> authCollection) {
+        if(authCollection == null) {
+            this.authCollection = new LinkedHashMap<String, String>();
+            log.debug("No elasticsearch.auth in server.properties file");
+        }
+        else {
+            this.authCollection = authCollection;
+            log.debug("Read elasticsearch.auth from server.properties file of size " + authCollection.size());
+        }
     }
 
     @Override
