@@ -66,3 +66,4 @@ task saveBuildDateAndGitCommit(dependsOn: 'generateGitProperties') {
 bootRun.dependsOn saveBuildDateAndGitCommit
 bootRun.mustRunAfter saveBuildDateAndGitCommit
 build.dependsOn saveBuildDateAndGitCommit
+test.dependsOn saveBuildDateAndGitCommit
