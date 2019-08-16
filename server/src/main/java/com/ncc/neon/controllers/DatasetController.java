@@ -63,7 +63,7 @@ public class DatasetController {
      */
     @GetMapping(path = "listen", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public ResponseEntity<Flux<ServerSentEvent<DataNotification>>> listen() {
-        return ResponseEntity.ok().body(Flux.merge(
+        return ResponseEntity.ok().header("X-Accel-Buffering", "no").body(Flux.merge(
             getHeartbeatStream(),
             processor.map(e -> ServerSentEvent.<DataNotification>builder(e).build())
         ));
