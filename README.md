@@ -171,6 +171,59 @@ Text fields should have the `fielddata` property set to `true`.  For example:
 }
 ```
 
+#### Elasticsearch Curl and Elasticdump Tips
+
+Mapping file format:  start with the "properties".  Example:
+
+```json
+{
+  "properties": {
+    "field_1": {
+      "type": "whatever_type"
+    }
+  }
+}
+```
+
+Data file format:  define individual JSON objects on separate lines in the file.  Example:
+
+```json
+{ "_index": "index_name", "_type": "_doc", "_source": { "field_1": "whatever values" }}
+{ "_index": "index_name", "_type": "_doc", "_source": { "field_1": "more values" }}
+```
+
+Create an index (with elasticdump):
+
+```
+elasticdump --type=mapping --input=mapping_file.json --output=hostname:port/index_name
+```
+
+[ES6] Create an index (with curl):
+
+```
+curl -XPUT hostname:port/index_name
+curl -XPUT hostname:port/index_name/_mapping/index_mapping_type -H "Content-Type: application/json" -d @mapping_file.json
+```
+
+[ES7] Create an index (with curl):
+
+```
+curl -XPUT hostname:port/index_name
+curl -XPUT hostname:port/index_name/_mapping -H "Content-Type: application/json" -d @mapping_file.json
+```
+
+Ingest data into an index (with elasticdump):
+
+```
+elasticdump --type=data --limit=10000 --input=data_file.json --output=hostname:port/index_name
+```
+
+Delete an index:
+
+```
+curl -XDELETE hostname:port/index_name
+```
+
 ## Technical Stack
 
 The Neon Server is a [Spring Boot](https://spring.io/projects/spring-boot) WebFlux Java application built using Gradle plugins.
