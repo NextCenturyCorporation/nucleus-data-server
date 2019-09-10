@@ -178,7 +178,7 @@ Mapping file format:  start with the "properties".  Example:
 ```json
 {
   "properties": {
-    "field_1": {
+    "whatever_field": {
       "type": "whatever_type"
     }
   }
@@ -188,8 +188,8 @@ Mapping file format:  start with the "properties".  Example:
 Data file format:  define individual JSON objects on separate lines in the file.  Example:
 
 ```json
-{ "_index": "index_name", "_type": "_doc", "_source": { "field_1": "whatever values" }}
-{ "_index": "index_name", "_type": "_doc", "_source": { "field_1": "more values" }}
+{ "_index": "index_name", "_type": "index_mapping_type", "_source": { "whatever_field": "whatever values" }}
+{ "_index": "index_name", "_type": "index_mapping_type", "_source": { "whatever_field": "more values" }}
 ```
 
 Create an index (with elasticdump):
