@@ -6,6 +6,7 @@ import com.ncc.neon.models.results.TabularQueryResult;
 import com.ncc.neon.services.QueryService;
 
 import org.elasticsearch.ResourceNotFoundException;
+import org.springframework.core.Constants;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 
 public class ExportController {
+    private final String Comma = ",";
     private QueryService queryService;
 
     ExportController(QueryService queryService) {
@@ -39,12 +41,28 @@ public class ExportController {
 
     private String GetCSVHeader(Map<String, String> fieldNameMap)
     {
-        return String.join(",", fieldNameMap.values());
+        return String.join(Comma, fieldNameMap.values());
     }
 
     private String GetCSVRecord(Map<String, Object> map, Map<String, String> fieldNameMap)
     {
-        return "";
+        StringBuilder sb = new StringBuilder();
+        List<String> fieldNames = new ArrayList<>(fieldNameMap.keySet());
+        for(int index = 0; index < fieldNames.size(); index++)
+        {
+            String fieldName = fieldNames.get(index);
+            if (map.containsKey(fieldName))
+            {
+                sb.append(map.get(fieldName));
+            }
+
+            if (index < fieldNames.size() - 1)
+            {
+                sb.append(Comma);
+            }
+        }
+
+        return sb.toString();
     }
 
     /**
@@ -57,8 +75,7 @@ public class ExportController {
     {
         log.debug("Export parameters: " + exportQuery.toString());
 
-        String csvHeader = GetCSVHeader(exportQuery.getQueryFieldNameMap());
-        if (csvHeader.isBlank() || exportQuery.getDatabaseType().isBlank() || exportQuery.getHostName().isBlank())
+        if (exportQuery.getQueryFieldNameMap().isEmpty() || exportQuery.getDatabaseType().isBlank() || exportQuery.getHostName().isBlank())
         {
             return Mono.just(ResponseEntity.badRequest().body("Missing hostName, databaseType or queryFieldNameMap"));
         }
@@ -66,10 +83,12 @@ public class ExportController {
         ConnectionInfo ci = new ConnectionInfo(exportQuery.getDatabaseType(), exportQuery.getHostName());
         Mono<TabularQueryResult> monoResult = queryService.executeQuery(ci, exportQuery.getQuery());
 
-        //add header record
-        List<String> csvRecords = new ArrayList<String>();   
-        csvRecords.add(csvHeader);
+        List<String> csvRecords = new ArrayList<String>();  
         StringBuilder csvFileContent = new StringBuilder();
+
+        //add header record
+        String csvHeader = GetCSVHeader(exportQuery.getQueryFieldNameMap());
+        csvRecords.add(csvHeader);
 
         //add data records
         monoResult
@@ -87,12 +106,12 @@ public class ExportController {
             return csvRecords;
         })
         .subscribe(csvContent -> {
-            csvFileContent.append(String.join("\n", csvRecords));
+            csvFileContent.append(String.join(System.lineSeparator(), csvRecords));
         });
 
         return Mono.just(ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE)
-        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + exportQuery.getFileName() + "\"")
+        .header(HttpHeaders.CONTENT_DISPOSITION, String.format( "attachment; filename=\"%s\"", exportQuery.getFileName()))
         .body(csvFileContent.toString()));       
 
     }    
