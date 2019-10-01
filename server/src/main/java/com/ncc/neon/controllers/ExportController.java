@@ -2,14 +2,11 @@ package com.ncc.neon.controllers;
 
 import com.ncc.neon.models.ConnectionInfo;
 import com.ncc.neon.models.queries.ExportQuery;
+import com.ncc.neon.models.queries.FieldNamePrettyNamePair;
+import com.ncc.neon.models.results.ExportResult;
 import com.ncc.neon.models.results.TabularQueryResult;
 import com.ncc.neon.services.QueryService;
 
-import org.elasticsearch.ResourceNotFoundException;
-import org.springframework.core.Constants;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -22,6 +19,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -30,7 +28,6 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequestMapping("exportservice")
 @Slf4j
-
 public class ExportController {
     private final String Comma = ",";
     private QueryService queryService;
@@ -39,21 +36,29 @@ public class ExportController {
         this.queryService = queryService;
     }
 
-    private String GetCSVHeader(Map<String, String> fieldNameMap)
+    private String GetCSVHeader(List<FieldNamePrettyNamePair> fieldNamePrettyNamePairs)
     {
-        return String.join(Comma, fieldNameMap.values());
+        return String.join(Comma, fieldNamePrettyNamePairs.stream().map(pair -> pair.getPretty()).collect(Collectors.toList()));
     }
 
-    private String GetCSVRecord(Map<String, Object> map, Map<String, String> fieldNameMap)
+    private String GetCSVRecord(Map<String, Object> map, List<FieldNamePrettyNamePair> fieldNamePrettyNamePairs)
     {
         StringBuilder sb = new StringBuilder();
-        List<String> fieldNames = new ArrayList<>(fieldNameMap.keySet());
+        List<String> fieldNames = fieldNamePrettyNamePairs.stream().map(pair -> pair.getQuery()).collect(Collectors.toList());
         for(int index = 0; index < fieldNames.size(); index++)
         {
             String fieldName = fieldNames.get(index);
             if (map.containsKey(fieldName))
             {
-                sb.append(map.get(fieldName));
+                Object value = map.get(fieldName);
+                if (value instanceof String)
+                {//put string in double quotes in case field separator comma is part of the string
+                    sb.append(String.format("\"%s\"", value));
+                }
+                else
+                {
+                    sb.append(value);
+                }
             }
 
             if (index < fieldNames.size() - 1)
@@ -69,25 +74,26 @@ public class ExportController {
      * Executes a query against the supplied connection and returns the result in CSV format
      * 
      * @param exportQuery  export parameters
+     * @return The result of the export containing the export file name and the export data in csv formt
      */
-    @PostMapping(path = "csv", produces = MediaType.TEXT_PLAIN_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public Mono<ResponseEntity<String>> exportToCSV(@RequestBody ExportQuery exportQuery) throws IOException
+    @PostMapping(path = "csv", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public Mono<ResponseEntity<ExportResult>> exportToCSV(@RequestBody ExportQuery exportQuery) throws IOException
     {
         log.debug("Export parameters: " + exportQuery.toString());
 
-        if (exportQuery.getQueryFieldNameMap().isEmpty() || exportQuery.getDatabaseType().isBlank() || exportQuery.getHostName().isBlank())
+        if (exportQuery.getFieldNamePrettyNamePairs().isEmpty() || exportQuery.getDataStoreType().isBlank() || exportQuery.getHostName().isBlank())
         {
-            return Mono.just(ResponseEntity.badRequest().body("Missing hostName, databaseType or queryFieldNameMap"));
+            return Mono.just(ResponseEntity.badRequest().body(new ExportResult(exportQuery.getFileName(), "missing hostName, dataStoreType or queryFieldNameMap")));
         }
 
-        ConnectionInfo ci = new ConnectionInfo(exportQuery.getDatabaseType(), exportQuery.getHostName());
+        ConnectionInfo ci = new ConnectionInfo(exportQuery.getDataStoreType(), exportQuery.getHostName());
         Mono<TabularQueryResult> monoResult = queryService.executeQuery(ci, exportQuery.getQuery());
 
         List<String> csvRecords = new ArrayList<String>();  
         StringBuilder csvFileContent = new StringBuilder();
 
         //add header record
-        String csvHeader = GetCSVHeader(exportQuery.getQueryFieldNameMap());
+        String csvHeader = GetCSVHeader(exportQuery.getFieldNamePrettyNamePairs());
         csvRecords.add(csvHeader);
 
         //add data records
@@ -95,24 +101,16 @@ public class ExportController {
         .map(result -> {
             List<Map<String, Object>> list = result.getData();
             
-            list.forEach(map -> {
-                String csvRecord = GetCSVRecord(map, exportQuery.getQueryFieldNameMap());
-                if (!csvRecord.isBlank())
-                {
-                    csvRecords.add(csvRecord);
-                }                
-            });
-
+            list.forEach(map -> csvRecords.add(GetCSVRecord(map, exportQuery.getFieldNamePrettyNamePairs())));
             return csvRecords;
         })
         .subscribe(csvContent -> {
             csvFileContent.append(String.join(System.lineSeparator(), csvRecords));
         });
 
+        ExportResult exportResult = new ExportResult(exportQuery.getFileName(), csvFileContent.toString());
         return Mono.just(ResponseEntity.ok()
-        .header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE)
-        .header(HttpHeaders.CONTENT_DISPOSITION, String.format( "attachment; filename=\"%s\"", exportQuery.getFileName()))
-        .body(csvFileContent.toString()));       
+        .body(exportResult));       
 
     }    
 }

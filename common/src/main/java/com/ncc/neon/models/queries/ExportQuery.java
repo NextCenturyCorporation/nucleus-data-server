@@ -1,6 +1,6 @@
 package com.ncc.neon.models.queries;
 
-import java.util.Map;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,9 +11,8 @@ import lombok.NoArgsConstructor;
 public class ExportQuery {
 
     String fileName;
-    String databaseType;
+    String dataStoreType;
     String hostName;
     Query query;
-    Map<String, String> queryFieldNameMap;    //mapping of field names to pretty field names
-
+    List<FieldNamePrettyNamePair> fieldNamePrettyNamePairs;
 }

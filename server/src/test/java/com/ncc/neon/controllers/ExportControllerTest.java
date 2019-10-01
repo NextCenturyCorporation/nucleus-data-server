@@ -6,13 +6,14 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 import com.ncc.neon.models.ConnectionInfo;
 import com.ncc.neon.models.queries.ExportQuery;
+import com.ncc.neon.models.queries.FieldNamePrettyNamePair;
 import com.ncc.neon.models.queries.Query;
+import com.ncc.neon.models.results.ExportResult;
 import com.ncc.neon.models.results.TabularQueryResult;
 import com.ncc.neon.services.QueryService;
 
@@ -22,7 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -33,7 +33,6 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.util.Arrays;
 
 @RunWith(SpringRunner.class)
-//@WebFluxTest(ExportController.class)
 @SpringBootTest
 @AutoConfigureWebTestClient
 public class ExportControllerTest {
@@ -49,7 +48,7 @@ public class ExportControllerTest {
 
     @Test
     public void exportToCSV_shouldReturnBadRequestForInvalidInput() {
-        ExportQuery exportQuery = new ExportQuery("test.csv", "elasticsearch", "loaclhost", new Query(), new HashMap<String, String>());
+        ExportQuery exportQuery = new ExportQuery("test.csv", "elasticsearch", "loaclhost", new Query(), new ArrayList<FieldNamePrettyNamePair>());
         webTestClient.post()
                 .uri("/exportservice/csv")
 				.contentType(MediaType.APPLICATION_JSON_UTF8)
@@ -61,14 +60,16 @@ public class ExportControllerTest {
     @Test
     public void exportToCSV_shouldReturnOnlyHeaderRowWhenNoData()
     {
-        Map<String, String> queryFieldNameMap = Map.of("firstName","first name", "lastName", "last name");
+        List<FieldNamePrettyNamePair> fieldNamePrettyNamePairs = 
+        List.of(new FieldNamePrettyNamePair("firstName", "first name"), new FieldNamePrettyNamePair("lastName", "last name"));
+        
 
-        ExportQuery exportQuery = new ExportQuery("test.csv", "elasticsearch", "loaclhost", new Query(), queryFieldNameMap);
+        ExportQuery exportQuery = new ExportQuery("test.csv", "elasticsearch", "loaclhost", new Query(), fieldNamePrettyNamePairs);
 
         when(queryResult.getData()).thenReturn(new ArrayList<Map<String, Object>>());
         Mono<TabularQueryResult> queryResultMono = Mono.just(queryResult);
 
-        ConnectionInfo ci = new ConnectionInfo(exportQuery.getDatabaseType(), exportQuery.getHostName());
+        ConnectionInfo ci = new ConnectionInfo(exportQuery.getDataStoreType(), exportQuery.getHostName());
         when(queryService.executeQuery(ci, exportQuery.getQuery())).thenReturn(queryResultMono);
 
         webTestClient.post()
@@ -77,41 +78,39 @@ public class ExportControllerTest {
                 .body(Mono.just(exportQuery), ExportQuery.class)
                 .exchange()
                 .expectStatus().isOk()
-                .expectHeader().contentType(MediaType.TEXT_PLAIN_VALUE)
-                .expectHeader().contentDisposition(ContentDisposition.parse("attachment; filename=\"" + exportQuery.getFileName() + "\""))
-                .expectBody()
-                .consumeWith(
-                    response -> 
-                    {   
-                        String responseBody = new String(response.getResponseBody());
-                        //there should be header row only
-                        String[] csvRecords = responseBody.split(System.lineSeparator());
-                        Assertions.assertThat(csvRecords.length).isEqualTo(1);
+                .expectHeader().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
+                .expectBody(ExportResult.class)
+                .value(exportResult -> {
+                    assertEquals("test.csv", exportResult.getFileName());
 
-                        String[] headerArray = csvRecords[0].split(",");
-                        List<Object> headerRow = Arrays.asList(headerArray);
-                        assertTrue(headerRow.contains("last name"));
-                        assertTrue(headerRow.contains("first name"));
-                    }
-                );
-                
+                    //there should be header row only
+                    String[] csvRecords = exportResult.getData().toString().split(System.lineSeparator());
+                    Assertions.assertThat(csvRecords.length).isEqualTo(1);
+
+                    String[] headerArray = csvRecords[0].split(",");
+                    List<Object> headerRow = Arrays.asList(headerArray);
+                    assertTrue(headerRow.contains("last name"));
+                    assertTrue(headerRow.contains("first name"));                    
+                });
+
     }
 
     @Test
     public void exportToCSV_dataRowFieldOrdersShouldAlignWithHeaderRow()
     {
-        Map<String, String> queryFieldNameMap = Map.of("firstName","first name", "lastName", "last name", "email", "email");
+        List<FieldNamePrettyNamePair> fieldNamePrettyNamePairs = 
+        List.of(new FieldNamePrettyNamePair("firstName", "first name"), new FieldNamePrettyNamePair("lastName", "last name"), new FieldNamePrettyNamePair("age", "age"));
 
-        ExportQuery exportQuery = new ExportQuery("test.csv", "elasticsearch", "loaclhost", new Query(), queryFieldNameMap);
+        ExportQuery exportQuery = new ExportQuery("test.csv", "elasticsearch", "loaclhost", new Query(), fieldNamePrettyNamePairs);
 
         List<Map<String, Object>> data = List.of(
-            Map.of("firstName", "John", "lastName", "Doe", "email", "john@test.com"),
-            Map.of("firstName", "Jane", "lastName", "Doe", "email", "jane@test.com"));
+            Map.of("firstName", "John", "lastName", "Doe", "age", 30),
+            Map.of("firstName", "Jane", "lastName", "Doe", "age", 40));
 
         when(queryResult.getData()).thenReturn(data);
         Mono<TabularQueryResult> queryResultMono = Mono.just(queryResult);
 
-        ConnectionInfo ci = new ConnectionInfo(exportQuery.getDatabaseType(), exportQuery.getHostName());
+        ConnectionInfo ci = new ConnectionInfo(exportQuery.getDataStoreType(), exportQuery.getHostName());
         when(queryService.executeQuery(ci, exportQuery.getQuery())).thenReturn(queryResultMono);
 
         webTestClient.post()
@@ -120,16 +119,15 @@ public class ExportControllerTest {
                 .body(Mono.just(exportQuery), ExportQuery.class)
                 .exchange()
                 .expectStatus().isOk()
-                .expectHeader().contentType(MediaType.TEXT_PLAIN_VALUE)
-                .expectHeader().contentDisposition(ContentDisposition.parse("attachment; filename=\"" + exportQuery.getFileName() + "\""))
-                .expectBody()
-                .consumeWith(
-                    response -> 
+                .expectHeader().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
+                .expectBody(ExportResult.class)
+                .value(
+                    exportResult -> 
                     {   
-                        String responseBody = new String(response.getResponseBody());
+                        assertEquals("test.csv", exportResult.getFileName());
 
                         //validate row count including header row
-                        String[] csvRecords = responseBody.split(System.lineSeparator());
+                        String[] csvRecords = exportResult.getData().toString().split(System.lineSeparator());
                         Assertions.assertThat(csvRecords.length).isEqualTo(3);
 
                         String[] mapRecordKeys = csvRecords[0].split(",");
@@ -143,14 +141,14 @@ public class ExportControllerTest {
 
                         assertTrue(firstMapRecord.containsKey("first name"));
                         assertTrue(firstMapRecord.containsKey("last name"));
-                        assertTrue(firstMapRecord.containsKey("email"));
+                        assertTrue(firstMapRecord.containsKey("age"));
                     
-                        assertEquals("John", firstMapRecord.get("first name"));
-                        assertEquals("Doe", firstMapRecord.get("last name"));
-                        assertEquals("john@test.com", firstMapRecord.get("email"));
+                        assertEquals("\"John\"", firstMapRecord.get("first name"));
+                        assertEquals("\"Doe\"", firstMapRecord.get("last name"));
+                        assertEquals("30", firstMapRecord.get("age"));
 
 
-                        //validate first record values
+                        //validate second record values
                         String[] secondRecordValues = csvRecords[2].split(",");
                         Map<String, String> secondMapRecord = new HashMap<>();
                         secondMapRecord.put(mapRecordKeys[0], secondRecordValues[0]);
@@ -159,14 +157,13 @@ public class ExportControllerTest {
 
                         assertTrue(secondMapRecord.containsKey("first name"));
                         assertTrue(secondMapRecord.containsKey("last name"));
-                        assertTrue(secondMapRecord.containsKey("email"));
+                        assertTrue(secondMapRecord.containsKey("age"));
                     
-                        assertEquals("Jane", secondMapRecord.get("first name"));
-                        assertEquals("Doe", secondMapRecord.get("last name"));
-                        assertEquals("jane@test.com", secondMapRecord.get("email"));
+                        assertEquals("\"Jane\"", secondMapRecord.get("first name"));
+                        assertEquals("\"Doe\"", secondMapRecord.get("last name"));
+                        assertEquals("40", secondMapRecord.get("age"));
 
                     }
                 );
-                
     }    
 }
