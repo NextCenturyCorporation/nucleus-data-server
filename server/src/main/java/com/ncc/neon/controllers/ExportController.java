@@ -74,7 +74,9 @@ public class ExportController {
     {
         log.debug("Export parameters: " + exportQuery.toString());
 
-        if (exportQuery.getFieldNamePrettyNamePairs().isEmpty() || exportQuery.getDataStoreType().isBlank() || exportQuery.getHostName().isBlank())
+        if (exportQuery.getFieldNamePrettyNamePairs().isEmpty() || 
+            exportQuery.getDataStoreType().trim().isEmpty() || 
+            exportQuery.getHostName().trim().isEmpty())
         {
             return Mono.just(ResponseEntity.badRequest().body(new ExportResult(exportQuery.getFileName(), "missing hostName, dataStoreType or queryFieldNameMap")));
         }
@@ -84,12 +86,7 @@ public class ExportController {
 
         Writer writer = new StringWriter();
         
-        ICSVWriter csvWriter = new CSVWriterBuilder(writer)
-        .withSeparator(CSVWriter.DEFAULT_SEPARATOR)
-        .withQuoteChar(CSVWriter.NO_QUOTE_CHARACTER)
-        .withEscapeChar(CSVWriter.DEFAULT_ESCAPE_CHARACTER)
-        .withLineEnd(CSVWriter.DEFAULT_LINE_END)
-        .build();        
+        ICSVWriter csvWriter = new CSVWriterBuilder(writer).build();        
 
         csvWriter.writeNext(GetCSVHeader(exportQuery.getFieldNamePrettyNamePairs()));
 

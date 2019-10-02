@@ -89,8 +89,8 @@ public class ExportControllerTest {
 
                     String[] headerArray = csvRecords[0].split(",");
                     List<Object> headerRow = Arrays.asList(headerArray);
-                    assertTrue(headerRow.contains("last name"));
-                    assertTrue(headerRow.contains("first name"));                    
+                    assertTrue(headerRow.contains("\"last name\""));
+                    assertTrue(headerRow.contains("\"first name\""));                    
                 });
 
     }
@@ -139,13 +139,13 @@ public class ExportControllerTest {
                         firstMapRecord.put(mapRecordKeys[1], firstRecordValues[1]);
                         firstMapRecord.put(mapRecordKeys[2], firstRecordValues[2]);
 
-                        assertTrue(firstMapRecord.containsKey("first name"));
-                        assertTrue(firstMapRecord.containsKey("last name"));
-                        assertTrue(firstMapRecord.containsKey("age"));
+                        assertTrue(firstMapRecord.containsKey("\"first name\""));
+                        assertTrue(firstMapRecord.containsKey("\"last name\""));
+                        assertTrue(firstMapRecord.containsKey("\"age\""));
                     
-                        assertEquals("John", firstMapRecord.get("first name"));
-                        assertEquals("Doe", firstMapRecord.get("last name"));
-                        assertEquals("30", firstMapRecord.get("age"));
+                        assertEquals("\"John\"", firstMapRecord.get("\"first name\""));
+                        assertEquals("\"Doe\"", firstMapRecord.get("\"last name\""));
+                        assertEquals("\"30\"", firstMapRecord.get("\"age\""));
 
 
                         //validate second record values
@@ -155,13 +155,13 @@ public class ExportControllerTest {
                         secondMapRecord.put(mapRecordKeys[1], secondRecordValues[1]);
                         secondMapRecord.put(mapRecordKeys[2], secondRecordValues[2]);
 
-                        assertTrue(secondMapRecord.containsKey("first name"));
-                        assertTrue(secondMapRecord.containsKey("last name"));
-                        assertTrue(secondMapRecord.containsKey("age"));
+                        assertTrue(secondMapRecord.containsKey("\"first name\""));
+                        assertTrue(secondMapRecord.containsKey("\"last name\""));
+                        assertTrue(secondMapRecord.containsKey("\"age\""));
                     
-                        assertEquals("Jane", secondMapRecord.get("first name"));
-                        assertEquals("Doe", secondMapRecord.get("last name"));
-                        assertEquals("40", secondMapRecord.get("age"));
+                        assertEquals("\"Jane\"", secondMapRecord.get("\"first name\""));
+                        assertEquals("\"Doe\"", secondMapRecord.get("\"last name\""));
+                        assertEquals("\"40\"", secondMapRecord.get("\"age\""));
 
                     }
                 );
