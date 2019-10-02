@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class FieldNamePrettyNamePair {
-    public String query;
-    public String pretty;
+    private String query;
+    private String pretty;
 }

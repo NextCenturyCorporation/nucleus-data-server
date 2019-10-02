@@ -143,8 +143,8 @@ public class ExportControllerTest {
                         assertTrue(firstMapRecord.containsKey("last name"));
                         assertTrue(firstMapRecord.containsKey("age"));
                     
-                        assertEquals("\"John\"", firstMapRecord.get("first name"));
-                        assertEquals("\"Doe\"", firstMapRecord.get("last name"));
+                        assertEquals("John", firstMapRecord.get("first name"));
+                        assertEquals("Doe", firstMapRecord.get("last name"));
                         assertEquals("30", firstMapRecord.get("age"));
 
 
@@ -159,8 +159,8 @@ public class ExportControllerTest {
                         assertTrue(secondMapRecord.containsKey("last name"));
                         assertTrue(secondMapRecord.containsKey("age"));
                     
-                        assertEquals("\"Jane\"", secondMapRecord.get("first name"));
-                        assertEquals("\"Doe\"", secondMapRecord.get("last name"));
+                        assertEquals("Jane", secondMapRecord.get("first name"));
+                        assertEquals("Doe", secondMapRecord.get("last name"));
                         assertEquals("40", secondMapRecord.get("age"));
 
                     }

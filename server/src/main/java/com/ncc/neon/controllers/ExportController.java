@@ -6,7 +6,9 @@ import com.ncc.neon.models.queries.FieldNamePrettyNamePair;
 import com.ncc.neon.models.results.ExportResult;
 import com.ncc.neon.models.results.TabularQueryResult;
 import com.ncc.neon.services.QueryService;
-
+import com.opencsv.CSVWriter;
+import com.opencsv.CSVWriterBuilder;
+import com.opencsv.ICSVWriter;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -16,7 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,45 +32,35 @@ import reactor.core.publisher.Mono;
 @RequestMapping("exportservice")
 @Slf4j
 public class ExportController {
-    private final String Comma = ",";
     private QueryService queryService;
 
     ExportController(QueryService queryService) {
         this.queryService = queryService;
     }
 
-    private String GetCSVHeader(List<FieldNamePrettyNamePair> fieldNamePrettyNamePairs)
+    private String[] GetCSVHeader(List<FieldNamePrettyNamePair> fieldNamePrettyNamePairs)
     {
-        return String.join(Comma, fieldNamePrettyNamePairs.stream().map(pair -> pair.getPretty()).collect(Collectors.toList()));
+        return fieldNamePrettyNamePairs.stream().map(pair -> pair.getPretty()).collect(Collectors.toList()).toArray(String[]::new);
     }
 
-    private String GetCSVRecord(Map<String, Object> map, List<FieldNamePrettyNamePair> fieldNamePrettyNamePairs)
+    private String[] GetCSVRecord(Map<String, Object> map, List<FieldNamePrettyNamePair> fieldNamePrettyNamePairs)
     {
-        StringBuilder sb = new StringBuilder();
         List<String> fieldNames = fieldNamePrettyNamePairs.stream().map(pair -> pair.getQuery()).collect(Collectors.toList());
+        String[] csvRecord = new String[fieldNames.size()];
+
         for(int index = 0; index < fieldNames.size(); index++)
         {
             String fieldName = fieldNames.get(index);
             if (map.containsKey(fieldName))
             {
-                Object value = map.get(fieldName);
-                if (value instanceof String)
-                {//put string in double quotes in case field separator comma is part of the string
-                    sb.append(String.format("\"%s\"", value));
-                }
-                else
-                {
-                    sb.append(value);
-                }
+                csvRecord[index] = map.get(fieldName).toString();
             }
-
-            if (index < fieldNames.size() - 1)
+            else
             {
-                sb.append(Comma);
+                csvRecord[index] = "";
             }
         }
-
-        return sb.toString();
+        return csvRecord;
     }
 
     /**
@@ -89,26 +82,27 @@ public class ExportController {
         ConnectionInfo ci = new ConnectionInfo(exportQuery.getDataStoreType(), exportQuery.getHostName());
         Mono<TabularQueryResult> monoResult = queryService.executeQuery(ci, exportQuery.getQuery());
 
-        List<String> csvRecords = new ArrayList<String>();  
-        StringBuilder csvFileContent = new StringBuilder();
+        Writer writer = new StringWriter();
+        
+        ICSVWriter csvWriter = new CSVWriterBuilder(writer)
+        .withSeparator(CSVWriter.DEFAULT_SEPARATOR)
+        .withQuoteChar(CSVWriter.NO_QUOTE_CHARACTER)
+        .withEscapeChar(CSVWriter.DEFAULT_ESCAPE_CHARACTER)
+        .withLineEnd(CSVWriter.DEFAULT_LINE_END)
+        .build();        
 
-        //add header record
-        String csvHeader = GetCSVHeader(exportQuery.getFieldNamePrettyNamePairs());
-        csvRecords.add(csvHeader);
+        csvWriter.writeNext(GetCSVHeader(exportQuery.getFieldNamePrettyNamePairs()));
 
         //add data records
         monoResult
         .map(result -> {
-            List<Map<String, Object>> list = result.getData();
-            
-            list.forEach(map -> csvRecords.add(GetCSVRecord(map, exportQuery.getFieldNamePrettyNamePairs())));
-            return csvRecords;
+            return result.getData();           
         })
-        .subscribe(csvContent -> {
-            csvFileContent.append(String.join(System.lineSeparator(), csvRecords));
+        .subscribe(records -> {
+            records.forEach(record -> csvWriter.writeNext(GetCSVRecord(record, exportQuery.getFieldNamePrettyNamePairs())));
         });
 
-        ExportResult exportResult = new ExportResult(exportQuery.getFileName(), csvFileContent.toString());
+        ExportResult exportResult = new ExportResult(exportQuery.getFileName(), writer.toString());
         return Mono.just(ResponseEntity.ok()
         .body(exportResult));       
 
