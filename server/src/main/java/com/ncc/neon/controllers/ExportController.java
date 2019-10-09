@@ -6,9 +6,10 @@ import com.ncc.neon.models.queries.FieldNamePrettyNamePair;
 import com.ncc.neon.models.results.ExportResult;
 import com.ncc.neon.models.results.TabularQueryResult;
 import com.ncc.neon.services.QueryService;
-import com.opencsv.CSVWriter;
+import com.ncc.neon.util.CoreUtil;
 import com.opencsv.CSVWriterBuilder;
 import com.opencsv.ICSVWriter;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -17,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -24,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 @CrossOrigin(origins = "*")
@@ -33,7 +35,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class ExportController {
     private QueryService queryService;
-
+    
     ExportController(QueryService queryService) {
         this.queryService = queryService;
     }
@@ -51,14 +53,8 @@ public class ExportController {
         for(int index = 0; index < fieldNames.size(); index++)
         {
             String fieldName = fieldNames.get(index);
-            if (map.containsKey(fieldName))
-            {
-                csvRecord[index] = map.get(fieldName).toString();
-            }
-            else
-            {
-                csvRecord[index] = "";
-            }
+            Object value = CoreUtil.deepFind(map, fieldName).toString();
+            csvRecord[index] = value.toString();
         }
         return csvRecord;
     }
@@ -88,6 +84,7 @@ public class ExportController {
         
         ICSVWriter csvWriter = new CSVWriterBuilder(writer).build();        
 
+        //add header
         csvWriter.writeNext(GetCSVHeader(exportQuery.getFieldNamePrettyNamePairs()));
 
         //add data records
@@ -99,7 +96,7 @@ public class ExportController {
             records.forEach(record -> csvWriter.writeNext(GetCSVRecord(record, exportQuery.getFieldNamePrettyNamePairs())));
         });
 
-        ExportResult exportResult = new ExportResult(exportQuery.getFileName(), writer.toString());
+        ExportResult exportResult = new ExportResult(String.format("%s.csv", exportQuery.getFileName()), writer.toString());
         return Mono.just(ResponseEntity.ok()
         .body(exportResult));       
 

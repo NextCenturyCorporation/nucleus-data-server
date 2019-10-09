@@ -48,7 +48,7 @@ public class ExportControllerTest {
 
     @Test
     public void exportToCSV_shouldReturnBadRequestForInvalidInput() {
-        ExportQuery exportQuery = new ExportQuery("test.csv", "elasticsearch", "loaclhost", new Query(), new ArrayList<FieldNamePrettyNamePair>());
+        ExportQuery exportQuery = new ExportQuery("test", "elasticsearch", "loaclhost", new Query(), new ArrayList<FieldNamePrettyNamePair>());
         webTestClient.post()
                 .uri("/exportservice/csv")
 				.contentType(MediaType.APPLICATION_JSON_UTF8)
@@ -64,7 +64,7 @@ public class ExportControllerTest {
         List.of(new FieldNamePrettyNamePair("firstName", "first name"), new FieldNamePrettyNamePair("lastName", "last name"));
         
 
-        ExportQuery exportQuery = new ExportQuery("test.csv", "elasticsearch", "loaclhost", new Query(), fieldNamePrettyNamePairs);
+        ExportQuery exportQuery = new ExportQuery("test", "elasticsearch", "loaclhost", new Query(), fieldNamePrettyNamePairs);
 
         when(queryResult.getData()).thenReturn(new ArrayList<Map<String, Object>>());
         Mono<TabularQueryResult> queryResultMono = Mono.just(queryResult);
@@ -101,7 +101,7 @@ public class ExportControllerTest {
         List<FieldNamePrettyNamePair> fieldNamePrettyNamePairs = 
         List.of(new FieldNamePrettyNamePair("firstName", "first name"), new FieldNamePrettyNamePair("lastName", "last name"), new FieldNamePrettyNamePair("age", "age"));
 
-        ExportQuery exportQuery = new ExportQuery("test.csv", "elasticsearch", "loaclhost", new Query(), fieldNamePrettyNamePairs);
+        ExportQuery exportQuery = new ExportQuery("test", "elasticsearch", "loaclhost", new Query(), fieldNamePrettyNamePairs);
 
         List<Map<String, Object>> data = List.of(
             Map.of("firstName", "John", "lastName", "Doe", "age", 30),
@@ -166,4 +166,61 @@ public class ExportControllerTest {
                     }
                 );
     }    
+
+    @Test
+    public void exportToCSV_shouldReadValuesFromNestedObects()
+    {
+        List<FieldNamePrettyNamePair> fieldNamePrettyNamePairs = 
+        List.of(new FieldNamePrettyNamePair("geoLocation.lat", "latitude"), 
+                new FieldNamePrettyNamePair("geoLocation.lon", "longitude"),
+                new FieldNamePrettyNamePair("type", "type"));
+
+        ExportQuery exportQuery = new ExportQuery("test", "elasticsearch", "loaclhost", new Query(), fieldNamePrettyNamePairs);
+
+        Map<String, Object> location = Map.of("lat", 2.5, "lon", 3.5);
+
+        List<Map<String, Object>> data = List.of( Map.of("geoLocation", location, "type", "shelter"));
+
+        when(queryResult.getData()).thenReturn(data);
+        Mono<TabularQueryResult> queryResultMono = Mono.just(queryResult);
+
+        ConnectionInfo ci = new ConnectionInfo(exportQuery.getDataStoreType(), exportQuery.getHostName());
+        when(queryService.executeQuery(ci, exportQuery.getQuery())).thenReturn(queryResultMono);
+
+        webTestClient.post()
+                .uri("/exportservice/csv")
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .body(Mono.just(exportQuery), ExportQuery.class)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
+                .expectBody(ExportResult.class)
+                .value(
+                    exportResult -> 
+                    {   
+                        assertEquals("test.csv", exportResult.getFileName());
+
+                        //validate row count including header row
+                        String[] csvRecords = exportResult.getData().toString().split(System.lineSeparator());
+                        Assertions.assertThat(csvRecords.length).isEqualTo(2);
+
+                        String[] mapRecordKeys = csvRecords[0].split(",");
+                       
+                        //validate first record values
+                        String[] firstRecordValues = csvRecords[1].split(",");
+                        Map<String, String> firstMapRecord = new HashMap<>();
+                        firstMapRecord.put(mapRecordKeys[0], firstRecordValues[0]);
+                        firstMapRecord.put(mapRecordKeys[1], firstRecordValues[1]);
+                        firstMapRecord.put(mapRecordKeys[2], firstRecordValues[2]);
+
+                        assertTrue(firstMapRecord.containsKey("\"latitude\""));
+                        assertTrue(firstMapRecord.containsKey("\"longitude\""));
+                        assertTrue(firstMapRecord.containsKey("\"type\""));
+                    
+                        assertEquals("\"2.5\"", firstMapRecord.get("\"latitude\""));
+                        assertEquals("\"3.5\"", firstMapRecord.get("\"longitude\""));
+                        assertEquals("\"shelter\"", firstMapRecord.get("\"type\""));
+                    }
+                );        
+    }        
 }
