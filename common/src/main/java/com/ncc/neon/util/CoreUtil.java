@@ -8,8 +8,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CoreUtil {
 
-    private static final String Dot = Pattern.quote(".");
+    private static final String DOT = Pattern.quote(".");
     
+    /**
+     * Queries a given object to retrieve a value nested inside the object using the given path string (with periods to mark each nested property).
+     * eg. path string "address.geoLocation.lat" queries the value of "lat" which is nested three levels deep
+     * @param map  object to be queried
+     * @param pathString a "." separated path string representing the query.
+     * @return returns the value retreived
+     */
     public static Object deepFind(Map<String, Object> map, String pathString) {
 
         if (pathString.trim().isEmpty() || map == null )
@@ -18,7 +25,7 @@ public class CoreUtil {
             return null;
         }
 
-        String[] pathArray = pathString.split(Dot);
+        String[] pathArray = pathString.split(DOT);
         Object value = map.get(pathArray[0]);
         if (value instanceof Map)
         {
