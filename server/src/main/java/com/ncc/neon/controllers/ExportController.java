@@ -42,7 +42,8 @@ public class ExportController {
 
     private String[] GetCSVHeader(List<FieldNamePrettyNamePair> fieldNamePrettyNamePairs)
     {
-        return fieldNamePrettyNamePairs.stream().map(pair -> pair.getPretty()).collect(Collectors.toList()).toArray(String[]::new);
+        List<String> fieldNamePrettyNameList = fieldNamePrettyNamePairs.stream().map(pair -> pair.getPretty()).collect(Collectors.toList());
+        return fieldNamePrettyNameList.stream().toArray(String[]::new);
     }
 
     private String[] GetCSVRecord(Map<String, Object> map, List<FieldNamePrettyNamePair> fieldNamePrettyNamePairs)
