@@ -171,9 +171,16 @@ Text fields should have the `fielddata` property set to `true`.  For example:
 }
 ```
 
-#### Elasticsearch Curl and Elasticdump Tips
+#### Elasticsearch Data Ingest Tips
 
-Mapping file format:  start with the "properties".  Example:
+Data file format:  define individual JSON objects on separate lines in the file.  Example:
+
+```json
+{ "_index": "index_name", "_type": "index_mapping_type", "_source": { "whatever_field": "whatever values" }}
+{ "_index": "index_name", "_type": "index_mapping_type", "_source": { "whatever_field": "more values" }}
+```
+
+**CURL** Mapping file format:  start with the "properties".  Example:
 
 ```json
 {
@@ -185,43 +192,54 @@ Mapping file format:  start with the "properties".  Example:
 }
 ```
 
-Data file format:  define individual JSON objects on separate lines in the file.  Example:
-
-```json
-{ "_index": "index_name", "_type": "index_mapping_type", "_source": { "whatever_field": "whatever values" }}
-{ "_index": "index_name", "_type": "index_mapping_type", "_source": { "whatever_field": "more values" }}
-```
-
-Create an index (with elasticdump):
-
-```
-elasticdump --type=mapping --input=mapping_file.json --output=hostname:port/index_name
-```
-
-[ES6] Create an index (with curl):
+**CURL** [ES6] Create an index:
 
 ```
 curl -XPUT hostname:port/index_name
 curl -XPUT hostname:port/index_name/_mapping/index_mapping_type -H "Content-Type: application/json" -d @mapping_file.json
 ```
 
-[ES7] Create an index (with curl):
+**CURL** [ES7] Create an index:
 
 ```
 curl -XPUT hostname:port/index_name
 curl -XPUT hostname:port/index_name/_mapping -H "Content-Type: application/json" -d @mapping_file.json
 ```
 
-Ingest data into an index (with elasticdump):
-
-```
-elasticdump --type=data --limit=10000 --input=data_file.json --output=hostname:port/index_name
-```
-
-Delete an index:
+**CURL** Delete an index:
 
 ```
 curl -XDELETE hostname:port/index_name
+```
+
+**ELASTICDUMP** Mapping file format:  start with the index name.  Example:
+
+```json
+{
+  "index_name": {
+    "mappings": {
+      "index_mapping_type": {
+        "properties": {
+          "whatever_field": {
+            "type": "whatever_type"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**ELASTICDUMP** Create an index:
+
+```
+elasticdump --type=mapping --input=mapping_file.json --output=hostname:port/index_name
+```
+
+**ELASTICDUMP** Ingest data into an index:
+
+```
+elasticdump --type=data --limit=10000 --input=data_file.json --output=hostname:port/index_name
 ```
 
 ## Technical Stack
