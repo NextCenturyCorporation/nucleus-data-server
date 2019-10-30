@@ -57,4 +57,13 @@ public interface QueryAdapter {
      * @return Mapping of table names to field names
      */
     Flux<TableWithFields> getTableAndFieldNames(String databaseName);
+
+    /**
+     *
+     * @param databaseName
+     * @param tableName
+     * @param sourceData
+     * @return Whether the data upload was successful
+     */
+    Mono<Boolean> addData(String databaseName, String tableName, TabularQueryResult sourceData);
 }

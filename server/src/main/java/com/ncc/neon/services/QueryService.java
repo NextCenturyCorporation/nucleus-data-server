@@ -50,4 +50,9 @@ public class QueryService {
         QueryAdapter adapter = this.queryAdapterLocator.getAdapter(ci);
         return adapter.getTableAndFieldNames(databaseName);
     }
+
+    public Mono<Boolean> addData(ConnectionInfo ci, String databaseName, String table, TabularQueryResult sourceData){
+        QueryAdapter adapter = this.queryAdapterLocator.getAdapter(ci);
+        return adapter.addData(databaseName, table, sourceData);
+    }
 }

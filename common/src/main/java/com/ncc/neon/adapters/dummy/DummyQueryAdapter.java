@@ -60,4 +60,9 @@ public class DummyQueryAdapter implements QueryAdapter {
         return tablesAndFields;
     }
 
+    @Override
+    public Mono<Boolean> addData(String databaseName, String tableName, TabularQueryResult sourceData) {
+        Mono<Boolean> terminated = addData(databaseName, tableName, sourceData);
+        return terminated;
+    }
 }
