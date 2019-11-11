@@ -8,6 +8,7 @@ import java.util.Map;
 import com.ncc.neon.adapters.QueryAdapter;
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.results.FieldTypePair;
+import com.ncc.neon.models.results.ImportResult;
 import com.ncc.neon.models.results.TableWithFields;
 import com.ncc.neon.models.results.TabularQueryResult;
 
@@ -61,8 +62,7 @@ public class DummyQueryAdapter implements QueryAdapter {
     }
 
     @Override
-    public Mono<Boolean> addData(String databaseName, String tableName, TabularQueryResult sourceData) {
-        Mono<Boolean> terminated = addData(databaseName, tableName, sourceData);
-        return terminated;
+    public Flux<ImportResult> addData(String databaseName, String tableName, List<String> sourceData) {
+        return addData(databaseName, tableName, sourceData);
     }
 }

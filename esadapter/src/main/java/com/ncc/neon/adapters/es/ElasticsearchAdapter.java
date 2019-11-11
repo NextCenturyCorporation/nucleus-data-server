@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import com.ncc.neon.adapters.QueryAdapter;
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.results.FieldTypePair;
+import com.ncc.neon.models.results.ImportResult;
 import com.ncc.neon.models.results.TableWithFields;
 import com.ncc.neon.models.results.TabularQueryResult;
 
@@ -25,17 +26,13 @@ import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
-import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -46,8 +43,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import lombok.extern.slf4j.Slf4j;
-import java.util.concurrent.TimeUnit;
-
 @Slf4j
 public class ElasticsearchAdapter implements QueryAdapter {
     RestHighLevelClient client;
@@ -280,90 +275,44 @@ public class ElasticsearchAdapter implements QueryAdapter {
         });
     }
 
+    @SuppressWarnings("deprecation")
     @Override
-    public Mono<Boolean> addData(String databaseName, String tableName, TabularQueryResult newData) {
-//         BulkRequestBuilder bulkRequest = this.client.prepareBulk();
-//         bulkRequest.add(
-//                 client.prepareIndex(databaseName, tableName).setSource(newData, TabularQueryResult));
-//        BulkRequest request = new BulkRequest();
-//        BulkProcessor bulkProcessor = BulkProcessor.builder(client::bulkAsync, listener).build();
-//
-//        BufferedReader br = new BufferedReader(newData);
-//
-//        String line;
-//
-//        while ((line = br.readLine()) != null) {
-//            bulkProcessor.add(new IndexRequest(databaseName, tableName).source(line, XContentType.JSON));
-//        }
+    public Flux<ImportResult> addData(String databaseName, String tableName, List<String> sourceData) {
 
-        long t=System.currentTimeMillis();
-        try {
-            Response response = client.getLowLevelClient().performRequest("HEAD", "/" + databaseName);
-            int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode == 404) {
-//                CreateIndexRequest cireq = new CreateIndexRequest(databaseName);
-//                CreateIndexResponse ciresp = client.indices().create(cireq);
-                System.out.println("Index does not exist");
-            } else {
-                System.out.println("Index exists");
-            }
+        BulkRequest bulkRequest = new BulkRequest();
+        sourceData.forEach((String record) -> {
+            bulkRequest.add(new IndexRequest(databaseName, tableName).source(record, XContentType.JSON));
+        });
 
-
-            BulkProcessor.Listener listener = new BulkProcessor.Listener() {
-                int count = 0;
-
+        return Flux.create(sink -> {
+        client.bulkAsync(bulkRequest, new ActionListener<BulkResponse>() {
                 @Override
-                public void beforeBulk(long l, BulkRequest bulkRequest) {
-                    count = count + bulkRequest.numberOfActions();
-                    System.out.println("Uploaded " + count + " so far");
-                }
-
-                @Override
-                public void afterBulk(long l, BulkRequest bulkRequest, BulkResponse bulkResponse) {
-                    if (bulkResponse.hasFailures()) {
+                public void onResponse(BulkResponse bulkResponse) {
+                    if (bulkResponse.hasFailures())
+                    {
+                        int failureCount = 0;
                         for (BulkItemResponse bulkItemResponse : bulkResponse) {
-                            if (bulkItemResponse.isFailed()) {
-                                System.out.println(bulkItemResponse.getOpType());
-                                BulkItemResponse.Failure failure = bulkItemResponse.getFailure();
-                                System.out.println("Error " + failure.toString());
+                            if (bulkItemResponse.isFailed()) { 
+                                failureCount++;
                             }
                         }
+
+                        sink.next(new ImportResult(sourceData.size(), failureCount));
                     }
+                    else
+                    {
+                        sink.next(new ImportResult(sourceData.size(), 0));
+                    }
+
+                    sink.complete();
                 }
 
                 @Override
-                public void afterBulk(long l, BulkRequest bulkRequest, Throwable throwable) {
-                    System.out.println("Big errors " + throwable.toString());
+                public void onFailure(Exception e) {
+                    sink.error(e);
                 }
-            };
-
-            BulkProcessor bulkProcessor = BulkProcessor.builder(client::bulkAsync, listener).build();
-
-//            BufferedReader br = new BufferedReader(new FileReader("enron.json"));
-//
-//            String line;
-//
-//            while ((line = br.readLine()) != null) {
-            bulkProcessor.add(new IndexRequest(databaseName, databaseName).source(newData, XContentType.JSON));
-//            }
-
-            System.out.println("Waiting to finish");
-
-            boolean terminated = bulkProcessor.awaitClose(30L, TimeUnit.SECONDS);
-            if (!terminated) {
-                System.out.println("Some requests have not been processed");
-            }
-
-            client.close();
-            long tn = System.currentTimeMillis();
-            System.out.println("Took " + (tn - t) / 1000 + " seconds");
-
-            return Mono.just(terminated);
-
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
-        return Mono.just(false);
+            });
+        });
     }
 
 }

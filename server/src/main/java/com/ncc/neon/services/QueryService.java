@@ -1,9 +1,12 @@
 package com.ncc.neon.services;
 
+import java.util.List;
+
 import com.ncc.neon.adapters.QueryAdapter;
 import com.ncc.neon.models.ConnectionInfo;
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.results.FieldTypePair;
+import com.ncc.neon.models.results.ImportResult;
 import com.ncc.neon.models.results.TabularQueryResult;
 import com.ncc.neon.models.results.TableWithFields;
 
@@ -51,7 +54,7 @@ public class QueryService {
         return adapter.getTableAndFieldNames(databaseName);
     }
 
-    public Mono<Boolean> addData(ConnectionInfo ci, String databaseName, String table, TabularQueryResult sourceData){
+    public Flux<ImportResult> addData(ConnectionInfo ci, String databaseName, String table, List<String> sourceData){
         QueryAdapter adapter = this.queryAdapterLocator.getAdapter(ci);
         return adapter.addData(databaseName, table, sourceData);
     }

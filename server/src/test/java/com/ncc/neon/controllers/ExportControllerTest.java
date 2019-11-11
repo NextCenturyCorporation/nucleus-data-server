@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.ncc.neon.NeonServerApplication;
 import com.ncc.neon.models.ConnectionInfo;
 import com.ncc.neon.models.queries.ExportQuery;
 import com.ncc.neon.models.queries.FieldNamePrettyNamePair;
@@ -24,6 +25,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
@@ -33,6 +35,7 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.util.Arrays;
 
 @RunWith(SpringRunner.class)
+@ContextConfiguration(classes = NeonServerApplication.class)
 @SpringBootTest
 @AutoConfigureWebTestClient
 public class ExportControllerTest {

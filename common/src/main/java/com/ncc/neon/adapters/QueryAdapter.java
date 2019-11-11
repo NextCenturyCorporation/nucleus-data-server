@@ -1,7 +1,10 @@
 package com.ncc.neon.adapters;
 
+import java.util.List;
+
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.results.FieldTypePair;
+import com.ncc.neon.models.results.ImportResult;
 import com.ncc.neon.models.results.TabularQueryResult;
 import com.ncc.neon.models.results.TableWithFields;
 
@@ -65,5 +68,5 @@ public interface QueryAdapter {
      * @param sourceData
      * @return Whether the data upload was successful
      */
-    Mono<Boolean> addData(String databaseName, String tableName, TabularQueryResult sourceData);
+    Flux<ImportResult> addData(String databaseName, String tableName, List<String> sourceData);
 }

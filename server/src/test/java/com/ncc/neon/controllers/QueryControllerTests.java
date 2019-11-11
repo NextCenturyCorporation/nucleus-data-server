@@ -3,6 +3,7 @@ package com.ncc.neon.controllers;
 import java.util.List;
 import java.util.Map;
 
+import com.ncc.neon.NeonServerApplication;
 import com.ncc.neon.models.queries.AggregateClause;
 import com.ncc.neon.models.queries.Filter;
 import com.ncc.neon.models.queries.GroupByClause;
@@ -22,12 +23,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import reactor.core.publisher.Mono;
 
 @RunWith(SpringRunner.class)
+@ContextConfiguration(classes = NeonServerApplication.class)
 @SpringBootTest
 @AutoConfigureWebTestClient
 public class QueryControllerTests {
