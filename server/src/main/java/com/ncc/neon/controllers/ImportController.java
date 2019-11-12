@@ -25,10 +25,10 @@ public class ImportController {
     }
 
     /**
-     * imports tabular data to a data store
+     * imports JSON formated data to a data store
      * 
-     * @param importQuery  import parameters
-     * @return Boolean
+     * @param importQuery object containing import parameters
+     * @return import result containing total and failed counts
      */
     @PostMapping(path="/", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<Flux<ImportResult>> importData(@RequestBody ImportQuery importQuery)

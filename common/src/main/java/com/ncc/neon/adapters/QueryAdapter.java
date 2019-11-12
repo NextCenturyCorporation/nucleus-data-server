@@ -66,7 +66,7 @@ public interface QueryAdapter {
      * @param databaseName
      * @param tableName
      * @param sourceData
-     * @return Whether the data upload was successful
+     * @return import result containing total and failed counts
      */
     Flux<ImportResult> addData(String databaseName, String tableName, List<String> sourceData);
 }
