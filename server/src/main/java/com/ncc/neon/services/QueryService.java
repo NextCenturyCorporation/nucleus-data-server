@@ -54,7 +54,7 @@ public class QueryService {
         return adapter.getTableAndFieldNames(databaseName);
     }
 
-    public Flux<ImportResult> addData(ConnectionInfo ci, String databaseName, String table, List<String> sourceData){
+    public Mono<ImportResult> addData(ConnectionInfo ci, String databaseName, String table, List<String> sourceData){
         QueryAdapter adapter = this.queryAdapterLocator.getAdapter(ci);
         return adapter.addData(databaseName, table, sourceData);
     }

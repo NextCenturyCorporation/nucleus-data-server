@@ -4,6 +4,9 @@ import com.ncc.neon.models.ConnectionInfo;
 import com.ncc.neon.models.queries.ImportQuery;
 import com.ncc.neon.models.results.ImportResult;
 import com.ncc.neon.services.QueryService;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -12,11 +15,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import reactor.core.publisher.Flux;
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("importservice")
+@Slf4j
 public class ImportController {
     private QueryService queryService;
 
@@ -30,12 +35,25 @@ public class ImportController {
      * @param importQuery object containing import parameters
      * @return import result containing total and failed counts
      */
-    @PostMapping(path="/", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity<Flux<ImportResult>> importData(@RequestBody ImportQuery importQuery)
+    @PostMapping(path="/", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity<Mono<ImportResult>> importData(@RequestBody ImportQuery importQuery)
     {
+        log.debug("Export parameters: " + importQuery.toString());
+
+        if (StringUtils.isBlank(importQuery.getDataStoreType()) || 
+            StringUtils.isBlank(importQuery.getHostName()) ||
+            StringUtils.isBlank(importQuery.getDatabase()) ||
+            StringUtils.isBlank(importQuery.getTable()) ||
+            CollectionUtils.isEmpty(importQuery.getSource())
+        )
+        {
+            String error = "one or more missing parameters (dataStoreType, hostName, database, table, source).";
+            return ResponseEntity.badRequest().body(Mono.just(new ImportResult(0, 0, error)));
+        }
+
         ConnectionInfo ci = new ConnectionInfo(importQuery.getDataStoreType(), importQuery.getHostName());
 
-        Flux<ImportResult> response = queryService.addData(ci, importQuery.getDatabase(), importQuery.getTable(), importQuery.getSource());
+        Mono<ImportResult> response = queryService.addData(ci, importQuery.getDatabase(), importQuery.getTable(), importQuery.getSource());
 
         return ResponseEntity.ok().body(response);
     }    

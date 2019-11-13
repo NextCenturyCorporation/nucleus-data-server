@@ -38,7 +38,7 @@ import org.assertj.core.util.Arrays;
 @ContextConfiguration(classes = NeonServerApplication.class)
 @SpringBootTest
 @AutoConfigureWebTestClient
-public class ExportControllerTest {
+public class ExportControllerTests {
 
     @Autowired
     WebTestClient webTestClient;

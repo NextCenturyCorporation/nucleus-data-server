@@ -62,7 +62,7 @@ public class DummyQueryAdapter implements QueryAdapter {
     }
 
     @Override
-    public Flux<ImportResult> addData(String databaseName, String tableName, List<String> sourceData) {
+    public Mono<ImportResult> addData(String databaseName, String tableName, List<String> sourceData) {
         return addData(databaseName, tableName, sourceData);
     }
 }

@@ -68,5 +68,5 @@ public interface QueryAdapter {
      * @param sourceData
      * @return import result containing total and failed counts
      */
-    Flux<ImportResult> addData(String databaseName, String tableName, List<String> sourceData);
+    Mono<ImportResult> addData(String databaseName, String tableName, List<String> sourceData);
 }

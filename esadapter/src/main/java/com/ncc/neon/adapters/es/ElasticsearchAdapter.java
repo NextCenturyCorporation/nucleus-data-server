@@ -277,14 +277,14 @@ public class ElasticsearchAdapter implements QueryAdapter {
 
     @SuppressWarnings("deprecation")
     @Override
-    public Flux<ImportResult> addData(String databaseName, String tableName, List<String> sourceData) {
+    public Mono<ImportResult> addData(String databaseName, String tableName, List<String> sourceData) {
 
         BulkRequest bulkRequest = new BulkRequest();
         sourceData.forEach((String record) -> {
             bulkRequest.add(new IndexRequest(databaseName, tableName).source(record, XContentType.JSON));
         });
 
-        return Flux.create(sink -> {
+        return Mono.create(sink -> {
         client.bulkAsync(bulkRequest, new ActionListener<BulkResponse>() {
                 @Override
                 public void onResponse(BulkResponse bulkResponse) {
@@ -297,14 +297,12 @@ public class ElasticsearchAdapter implements QueryAdapter {
                             }
                         }
 
-                        sink.next(new ImportResult(sourceData.size(), failureCount));
+                        sink.success(new ImportResult(sourceData.size(), failureCount));
                     }
                     else
                     {
-                        sink.next(new ImportResult(sourceData.size(), 0));
+                        sink.success(new ImportResult(sourceData.size(), 0));
                     }
-
-                    sink.complete();
                 }
 
                 @Override
