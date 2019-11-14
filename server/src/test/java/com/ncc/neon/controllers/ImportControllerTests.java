@@ -35,11 +35,8 @@ public class ImportControllerTests {
     @MockBean
     private QueryService queryService;
 
-    @MockBean
-    private ImportResult importResult;
-
     @Test
-    public void importToCSV_shouldReturnBadRequestForInvalidInput() {
+    public void importFromCSV_shouldReturnBadRequestForInvalidInput() {
         ImportQuery importQuery = new ImportQuery();
         webTestClient.post()
                 .uri("/importservice/")
@@ -50,7 +47,7 @@ public class ImportControllerTests {
     }
 
     @Test
-    public void exportToCSV_shouldReturnDataForValidInput()
+    public void importFromCSV_shouldReturnDataForValidInput()
     {
         List<String> source = List.of("record1", "record2");       
         ImportQuery importQuery = new ImportQuery("testHost", "testDataStoreType", "tesetDatabase", "testTable", source);
