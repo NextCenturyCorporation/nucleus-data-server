@@ -45,7 +45,6 @@ public class SqlQueryConverter {
     }
 
     private static StringBuilder appendGroupBy(StringBuilder builder, Query query) {
-        //if (query.getGroupByClauses().size() > 0 || (type == SqlType.MYSQL && query.getSortClauses().size() > 0)) {
         if (query.getGroupByClauses().size() > 0) {
             List<String> groups = query.getGroupByClauses().stream().map(groupBy -> {
                 if (groupBy instanceof GroupByFunctionClause) {
@@ -53,12 +52,6 @@ public class SqlQueryConverter {
                 }
                 return ((GroupByFieldClause) groupBy).getField();
             }).collect(Collectors.toList());
-            /*
-            if (type == SqlType.MYSQL) {
-                groups.addAll(query.getSortClauses().stream().map(sortBy -> sortBy.getFieldName()).filter(field ->
-                    !groups.contains(field)).collect(Collectors.toList()));
-            }
-            */
             return builder.append(" GROUP BY ").append(groups.stream().collect(Collectors.joining(", ")));
         }
         return builder;
@@ -109,15 +102,7 @@ public class SqlQueryConverter {
                 query.getFields().stream().filter(field -> !groupByFunctionFields.contains(field)),
                 aggregateAndGroupStream
             )).distinct().collect(Collectors.toList());
-        /*
-        List<String> fields = Stream.concat(aggregateStream, groupByStream).collect(Collectors.toList());
-        if (query.getFields().size() == 1 && query.getFields().get(0).equals("*")) {
-            fields.add(0, "*");
-        } else {
-            fields.addAll(query.getFields().stream().filter(field -> !fields.contains(field)).collect(
-                Collectors.toList()));
-        }
-        */
+
         return builder.append("SELECT ").append(query.isDistinct() ? "DISTINCT " : "")
             .append((fields.size() == 0 ? "*" : fields.stream().collect(Collectors.joining(", "))))
             .append(" FROM ").append(query.getFilter().getDatabaseName()).append(".")
