@@ -40,18 +40,16 @@ Update the runtime properties of your Neon Server installation in the [server/sr
 
 ### Basic Auth
 
-#### Elasticsearch
-
-In the [server/src/main/resources/server.properties](./server/src/main/resources/server.properties) file, add the following property:
+In the [server/src/main/resources/server.properties](./server/src/main/resources/server.properties) file, add the following property, replacing `my_datastore_type` with your datastore type (`elasticsearch`, `mysql`, `postgresql`):
 
 ```
-elasticsearch.auth={'hostname':'username:password'}
+my_datastore_type.auth={'hostname':'username:password'}
 ```
 
 Replace the `hostname`, `username`, and `password` as needed.  The `hostname` can be an IP address or a CNAME and can optionally have a port.  If you need multiple authentication entries, separate them with commas:
 
 ```
-elasticsearch.auth={'hostname1':'username1:password1','hostname2':'username2:password2'}
+my_datastore_type.auth={'hostname1':'username1:password1','hostname2':'username2:password2'}
 ```
 
 ## Local Development Instructions
@@ -100,7 +98,11 @@ Run `docker images` to verify that you have created a docker image with the repo
 The Neon Server currently supports the following datastores:
 
 - [Elasticsearch 6.4 - 6.8](https://www.elastic.co/downloads/past-releases/elasticsearch-6-8-1)
-- Elasticsearch 7 (*limited testing*)
+- [Elasticsearch 7](https://www.elastic.co/downloads/elasticsearch)
+- [MySQL](https://www.mysql.com/downloads/)
+- [PostgreSQL](https://www.postgresql.org/download/)
+
+Elasticsearch support provided by the official [Java High Level REST Client](https://www.elastic.co/guide/en/elasticsearch/client/java-rest/master/java-rest-high.html).  SQL support provided by [R2DBC drivers](https://r2dbc.io).
 
 *Want us to support another datastore?  [Please let us know!](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#contact-us)*
 
@@ -251,6 +253,7 @@ The Neon Server is a [Spring Boot](https://spring.io/projects/spring-boot) WebFl
 The application is built using multiple custom modules:
 
 * The **server** module contains the core Neon Server code.
+* The **sqladapter** module contains the SQL JDBC datastore adapter that currently supports MySQL and PostgreSQL.
 * The **esadapter** module contains the Elasticsearch REST datastore adapter.
 * The **common** module contains the common adapter and model classes.
 

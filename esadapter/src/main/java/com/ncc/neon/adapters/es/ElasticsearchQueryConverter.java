@@ -64,7 +64,7 @@ public class ElasticsearchQueryConverter {
         SearchSourceBuilder source = createSourceBuilderWithState(query);
 
         if (query.getFields() != null && query.getFields() != SelectClause.ALL_FIELDS) {
-            String[] includes = query.getFields().toArray(new String[query.getFields().size()]);
+            String[] includes = query.getFields().stream().distinct().collect(Collectors.toList()).toArray(new String[] {});
             source.fetchSource(includes, null);
         }
 

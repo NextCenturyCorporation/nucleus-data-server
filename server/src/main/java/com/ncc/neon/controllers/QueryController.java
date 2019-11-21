@@ -122,7 +122,7 @@ public class QueryController {
     Mono<Map<String, String>> getFieldTypes(@PathVariable String host, @PathVariable String databaseType,
             @PathVariable String databaseName, @PathVariable String tableName) {
         ConnectionInfo ci = new ConnectionInfo(databaseType, host);
-        return queryService.getFieldTypes(ci, databaseName, tableName).collectMap(p -> p.getField(), p -> p.getType());
+        return queryService.getFieldTypes(ci, databaseName, tableName).collectMap(p -> p.getField(), p -> p.getType().name);
     }
 
     /**

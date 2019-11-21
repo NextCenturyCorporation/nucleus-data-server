@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import com.ncc.neon.adapters.QueryAdapter;
 import com.ncc.neon.models.queries.Query;
+import com.ncc.neon.models.results.FieldType;
 import com.ncc.neon.models.results.FieldTypePair;
 import com.ncc.neon.models.results.TableWithFields;
 import com.ncc.neon.models.results.TabularQueryResult;
@@ -19,7 +20,6 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.elasticsearch.ResourceNotFoundException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
@@ -36,14 +36,28 @@ import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
-public class ElasticsearchAdapter implements QueryAdapter {
-    RestHighLevelClient client;
+public class ElasticsearchAdapter extends QueryAdapter {
+    static final int DEFAULT_PORT = 9200;
 
-    public ElasticsearchAdapter(String host, int port, String username, String password) {
-        RestClientBuilder builder = RestClient.builder(new HttpHost(host, port));
+    private RestHighLevelClient client;
+
+    public ElasticsearchAdapter(String host, String usernameFromConfig, String passwordFromConfig) {
+        super("Elasticsearch", host, usernameFromConfig, passwordFromConfig);
+
+        // Expect host to be "host", "username@host", or "username:password@host" (ending with optional ":port")
+        String[] hostAndAuthData = host.split("@");
+        String[] hostAndPortData = hostAndAuthData[(hostAndAuthData.length > 1 ? 1 : 0)].split(":");
+        String hostOnly = hostAndPortData[0];
+        int port = hostAndPortData.length > 1 ? Integer.parseInt(hostAndPortData[1]) : DEFAULT_PORT;
+
+        String[] userAndPassData = hostAndAuthData.length > 1 ? hostAndAuthData[0].split(":") : new String[] {};
+        String username = usernameFromConfig != null ? usernameFromConfig : (userAndPassData.length > 0 ?
+            userAndPassData[0] : null);
+        String password = passwordFromConfig != null ? passwordFromConfig : (userAndPassData.length > 1 ?
+            userAndPassData[1] : null);
+
+        RestClientBuilder builder = RestClient.builder(new HttpHost(hostOnly, port));
         if(username != null && password != null) {
             final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
             credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
@@ -57,19 +71,9 @@ public class ElasticsearchAdapter implements QueryAdapter {
         this.client = new RestHighLevelClient(builder);
     }
 
-    private void logQuery(Query query, SearchRequest request) {
-        log.debug("Neon Query:  " + query.toString());
-        log.debug("ES Query:  " + request.toString());
-    }
-
-    private void logResults(SearchResponse response, TabularQueryResult results) {
-        log.debug("ES Results:  " + response.toString());
-        log.debug("Neon Results:  " + results.toString());
-    }
-
     @Override
     public Mono<TabularQueryResult> execute(Query query) {
-        checkDatabaseAndTableExists(query);
+        verifyQueryTablesExist(query);
 
         SearchRequest request = ElasticsearchQueryConverter.convertQuery(query);
         SearchResponse response = null;
@@ -86,24 +90,6 @@ public class ElasticsearchAdapter implements QueryAdapter {
         }
 
         return Mono.just(results);
-    }
-
-    /**
-     * Note: This method is not an appropriate check for queries against index
-     * mappings as they allow both the databaseName and tableName to be wildcarded.
-     * This method allows only the databaseName to be wildcarded to match the
-     * behavior of index searches.
-     */
-    private void checkDatabaseAndTableExists(Query query) {
-        if(query == null || query.getFilter() == null) {
-            throw new ResourceNotFoundException("Query does not exist");
-        }
-
-        // TODO: Fix (THOR-1077) - commenting out for now
-        //String tableName = query.getFilter().getTableName();
-        //if(showTables(tableName).collectList().block().indexOf(tableName) >= 0) {
-        //    throw new ResourceNotFoundException("Table ${tableName} does not exist");
-        //}
     }
 
     // TODO: generalize getting flux further?
@@ -159,9 +145,6 @@ public class ElasticsearchAdapter implements QueryAdapter {
             response.getMappings().get(databaseName).keysIt().forEachRemaining(tableName -> {
                 Map<String, Map> mappingProperties = getPropertiesFromMapping(response, databaseName, tableName);
                 List<String> fieldNames = getFieldNamesFromMapping(mappingProperties, null);
-                if(!fieldNames.contains("_id")) {
-                    fieldNames.add("_id");
-                }
                 sink.next(new TableWithFields(tableName, fieldNames));
             });
         });
@@ -213,13 +196,44 @@ public class ElasticsearchAdapter implements QueryAdapter {
                 if (parentFieldName != null) {
                     fieldName = parentFieldName + "." + fieldName;
                 }
-                fieldTypePairs.add(new FieldTypePair(fieldName, type));
+                fieldTypePairs.add(new FieldTypePair(fieldName, retrieveFieldType(type)));
             } else if (value.get("properties") != null) {
                 Map<String, Map> nestedFields = (Map<String, Map>) value.get("properties");
                 fieldTypePairs.addAll(getFieldsFromMapping(nestedFields, fieldName));
             }
         });
+        fieldTypePairs.add(new FieldTypePair("_id", FieldType.ID));
         return fieldTypePairs;
+    }
+
+    private FieldType retrieveFieldType(String type) {
+        switch (type) {
+            case "boolean":
+                return FieldType.BOOLEAN;
+            case "byte":
+            case "integer":
+            case "long":
+            case "short":
+                return FieldType.INTEGER;
+            case "date":
+                return FieldType.DATETIME;
+            case "double":
+            case "float":
+            case "half_float":
+            case "scaled_float":
+                return FieldType.DECIMAL;
+            case "geo-point":
+            case "geo-shape":
+                return FieldType.GEO;
+            case "keyword":
+                return FieldType.KEYWORD;
+            case "nested":
+            case "object":
+                return FieldType.OBJECT;
+            case "text":
+            default:
+                return FieldType.TEXT;
+        }
     }
 
     /* Recursive function to get all the field names */

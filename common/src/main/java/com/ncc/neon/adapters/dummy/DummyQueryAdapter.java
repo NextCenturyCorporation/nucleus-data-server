@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.ncc.neon.adapters.QueryAdapter;
 import com.ncc.neon.models.queries.Query;
+import com.ncc.neon.models.results.FieldType;
 import com.ncc.neon.models.results.FieldTypePair;
 import com.ncc.neon.models.results.TableWithFields;
 import com.ncc.neon.models.results.TabularQueryResult;
@@ -14,10 +15,11 @@ import com.ncc.neon.models.results.TabularQueryResult;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-/**
- * DummyQueryAdapter
- */
-public class DummyQueryAdapter implements QueryAdapter {
+public class DummyQueryAdapter extends QueryAdapter {
+
+    DummyQueryAdapter() {
+        super("dummy", null, null, null);
+    }
 
     @Override
     public Mono<TabularQueryResult> execute(Query query) {
@@ -47,7 +49,7 @@ public class DummyQueryAdapter implements QueryAdapter {
 
     @Override
     public Flux<FieldTypePair> getFieldTypes(String databaseName, String tableName) {
-        Flux<FieldTypePair> fieldTypes = getFieldNames("", "").map(name -> new FieldTypePair(name, name + "-type"));
+        Flux<FieldTypePair> fieldTypes = getFieldNames("", "").map(name -> new FieldTypePair(name, FieldType.TEXT));
         return fieldTypes;
     }
 
@@ -59,5 +61,4 @@ public class DummyQueryAdapter implements QueryAdapter {
         Flux<TableWithFields> tablesAndFields = showTables("").map(name -> new TableWithFields(name, fields));
         return tablesAndFields;
     }
-
 }
