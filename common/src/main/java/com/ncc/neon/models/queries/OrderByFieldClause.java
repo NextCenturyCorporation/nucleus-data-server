@@ -5,16 +5,17 @@ import lombok.Data;
 
 @AllArgsConstructor
 @Data
-public class GroupByFieldClause implements GroupByClause {
+public class OrderByFieldClause implements OrderByClause {
     FieldClause fieldClause;
+    Order order;
 
     @Override
-    public String getCompleteField() {
+    public String getCompleteFieldOrGroup() {
         return this.fieldClause.getComplete();
     }
 
     @Override
-    public String getField() {
+    public String getFieldOrGroup() {
         return this.fieldClause.getField();
     }
 }

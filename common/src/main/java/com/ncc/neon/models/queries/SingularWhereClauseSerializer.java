@@ -23,8 +23,14 @@ public class SingularWhereClauseSerializer extends StdSerializer<SingularWhereCl
 
     @Override
     public void serialize(SingularWhereClause clause, JsonGenerator gen, SerializerProvider serializers) throws IOException, JsonProcessingException {
-        gen.writeStringField("lhs", clause.getLhs());
+        gen.writeObjectFieldStart("lhs");
+        gen.writeStringField("database", clause.getLhs().getDatabase());
+        gen.writeStringField("table", clause.getLhs().getTable());
+        gen.writeStringField("field", clause.getLhs().getField());
+        gen.writeEndObject();
+
         gen.writeStringField("operator", clause.getOperator());
+
         if(clause.isBoolean()) {
             gen.writeBooleanField("rhs", clause.getRhsBoolean());
         }

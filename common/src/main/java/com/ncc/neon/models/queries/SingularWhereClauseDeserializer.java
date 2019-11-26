@@ -27,29 +27,35 @@ public class SingularWhereClauseDeserializer extends StdDeserializer<SingularWhe
     @Override
     public SingularWhereClause deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
         JsonNode node = jp.getCodec().readTree(jp);
+        JsonNode lhs = node.get("lhs");
         JsonNode rhs = node.get("rhs");
+        String database = lhs.get("database").asText();
+        String table = lhs.get("table").asText();
+        String field = lhs.get("field").asText();
+        FieldClause fieldClause = new FieldClause(database, table, field);
+        String operator = node.get("operator").asText();
         if(rhs.isBoolean()) {
-            return SingularWhereClause.fromBoolean(node.get("lhs").asText(), node.get("operator").asText(),
+            return SingularWhereClause.fromBoolean(fieldClause, operator,
                 ((BooleanNode) rhs).booleanValue());
         }
         if(rhs.isDouble()) {
-            return SingularWhereClause.fromDouble(node.get("lhs").asText(), node.get("operator").asText(),
+            return SingularWhereClause.fromDouble(fieldClause, operator,
                 ((DoubleNode) rhs).doubleValue());
         }
         if(rhs.isInt()) {
-            return SingularWhereClause.fromDouble(node.get("lhs").asText(), node.get("operator").asText(),
+            return SingularWhereClause.fromDouble(fieldClause, operator,
                 ((IntNode) rhs).doubleValue());
         }
         if(rhs.isTextual()) {
             ZonedDateTime date = DateUtil.transformStringToDate(rhs.asText());
 
             if(date != null) {
-                return SingularWhereClause.fromDate(node.get("lhs").asText(), node.get("operator").asText(), date);
+                return SingularWhereClause.fromDate(fieldClause, operator, date);
             } else {
-                return SingularWhereClause.fromString(node.get("lhs").asText(), node.get("operator").asText(), rhs.asText());
+                return SingularWhereClause.fromString(fieldClause, operator, rhs.asText());
             }
         }
-        return SingularWhereClause.fromNull(node.get("lhs").asText(), node.get("operator").asText());
+        return SingularWhereClause.fromNull(fieldClause, operator);
     }
 }
 

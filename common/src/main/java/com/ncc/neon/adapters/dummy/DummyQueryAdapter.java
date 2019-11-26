@@ -1,8 +1,6 @@
 package com.ncc.neon.adapters.dummy;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Map;
 
 import com.ncc.neon.adapters.QueryAdapter;
@@ -23,42 +21,50 @@ public class DummyQueryAdapter extends QueryAdapter {
 
     @Override
     public Mono<TabularQueryResult> execute(Query query) {
-        List<Map<String, Object>> table = new ArrayList<>();
-        Map<String, Object> row = new HashMap<>();
-        row.put("column1", "value1");
-        row.put("column2", 2);
-        table.add(row);
-        table.add(row);
-        return Mono.just(new TabularQueryResult(table));
+        return Mono.just(new TabularQueryResult(Arrays.asList(
+            Map.ofEntries(
+                Map.entry("fieldA", "value1"),
+                Map.entry("fieldB", 1)
+            ),
+            Map.ofEntries(
+                Map.entry("fieldA", "value2"),
+                Map.entry("fieldB", 2)
+            )
+        )));
     }
 
     @Override
     public Flux<String> showDatabases() {
-        return Flux.just("A", "B", "C", "X", "Y", "Z");
+        return Flux.just("A", "B", "C", "D");
     }
 
     @Override
     public Flux<String> showTables(String dbName) {
-        return Flux.just("1", "2");
+        return Flux.just("X", "Y");
     }
 
     @Override
     public Flux<String> getFieldNames(String databaseName, String tableName) {
-        return Flux.just("id", "date", "msg");
+        return Flux.just("id", "blob", "date", "flag", "name", "size", "text", "type");
     }
 
     @Override
     public Flux<FieldTypePair> getFieldTypes(String databaseName, String tableName) {
-        Flux<FieldTypePair> fieldTypes = getFieldNames("", "").map(name -> new FieldTypePair(name, FieldType.TEXT));
-        return fieldTypes;
+        return Flux.just(
+            new FieldTypePair("id", FieldType.ID),
+            new FieldTypePair("blob", FieldType.OBJECT),
+            new FieldTypePair("date", FieldType.DATETIME),
+            new FieldTypePair("flag", FieldType.BOOLEAN),
+            new FieldTypePair("name", FieldType.KEYWORD),
+            new FieldTypePair("size", FieldType.DECIMAL),
+            new FieldTypePair("text", FieldType.TEXT),
+            new FieldTypePair("type", FieldType.KEYWORD)
+        );
     }
 
     @Override
     public Flux<TableWithFields> getTableAndFieldNames(String dbName) {
-        List<String> fields = new ArrayList<String>();
-        fields.add("field1");
-        fields.add("field2");
-        Flux<TableWithFields> tablesAndFields = showTables("").map(name -> new TableWithFields(name, fields));
-        return tablesAndFields;
+        // TODO Deprecated
+        return Flux.just();
     }
 }

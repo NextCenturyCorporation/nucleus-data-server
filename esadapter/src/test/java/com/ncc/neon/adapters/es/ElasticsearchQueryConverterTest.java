@@ -6,9 +6,10 @@ import java.util.Arrays;
 
 import com.ncc.neon.adapters.QueryBuilder;
 import com.ncc.neon.models.queries.AndWhereClause;
-import com.ncc.neon.models.queries.Filter;
+import com.ncc.neon.models.queries.FieldClause;
 import com.ncc.neon.models.queries.LimitClause;
 import com.ncc.neon.models.queries.Query;
+import com.ncc.neon.models.queries.SelectClause;
 import com.ncc.neon.models.queries.SingularWhereClause;
 
 import org.elasticsearch.action.search.SearchRequest;
@@ -448,7 +449,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         Query query = buildQueryGroupByDateSecond();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupName").field("testGroupField")
+        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupLabel").field("testGroupField")
             .dateHistogramInterval(DateHistogramInterval.SECOND).format("s");
         SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
@@ -460,7 +461,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         Query query = buildQueryGroupByDateMinute();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupName").field("testGroupField")
+        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupLabel").field("testGroupField")
             .dateHistogramInterval(DateHistogramInterval.MINUTE).format("m");
         SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
@@ -472,7 +473,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         Query query = buildQueryGroupByDateHour();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupName").field("testGroupField")
+        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupLabel").field("testGroupField")
             .dateHistogramInterval(DateHistogramInterval.HOUR).format("H");
         SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
@@ -484,7 +485,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         Query query = buildQueryGroupByDateDay();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupName").field("testGroupField")
+        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupLabel").field("testGroupField")
             .dateHistogramInterval(DateHistogramInterval.DAY).format("d");
         SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
@@ -496,7 +497,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         Query query = buildQueryGroupByDateMonth();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupName").field("testGroupField")
+        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupLabel").field("testGroupField")
             .dateHistogramInterval(DateHistogramInterval.MONTH).format("M");
         SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
@@ -508,7 +509,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         Query query = buildQueryGroupByDateYear();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupName").field("testGroupField")
+        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupLabel").field("testGroupField")
             .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy");
         SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
@@ -535,15 +536,15 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         Query query = buildQueryMultipleGroupByDate();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        DateHistogramAggregationBuilder aggBuilder5 = AggregationBuilders.dateHistogram("testGroupName5").field("testGroupField5")
+        DateHistogramAggregationBuilder aggBuilder5 = AggregationBuilders.dateHistogram("testGroupLabel5").field("testGroupField5")
             .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy");
-        DateHistogramAggregationBuilder aggBuilder4 = AggregationBuilders.dateHistogram("testGroupName4").field("testGroupField4")
+        DateHistogramAggregationBuilder aggBuilder4 = AggregationBuilders.dateHistogram("testGroupLabel4").field("testGroupField4")
             .dateHistogramInterval(DateHistogramInterval.MONTH).format("M").subAggregation(aggBuilder5);
-        DateHistogramAggregationBuilder aggBuilder3 = AggregationBuilders.dateHistogram("testGroupName3").field("testGroupField3")
+        DateHistogramAggregationBuilder aggBuilder3 = AggregationBuilders.dateHistogram("testGroupLabel3").field("testGroupField3")
             .dateHistogramInterval(DateHistogramInterval.DAY).format("d").subAggregation(aggBuilder4);
-        DateHistogramAggregationBuilder aggBuilder2 = AggregationBuilders.dateHistogram("testGroupName2").field("testGroupField2")
+        DateHistogramAggregationBuilder aggBuilder2 = AggregationBuilders.dateHistogram("testGroupLabel2").field("testGroupField2")
             .dateHistogramInterval(DateHistogramInterval.HOUR).format("H").subAggregation(aggBuilder3);
-        DateHistogramAggregationBuilder aggBuilder1 = AggregationBuilders.dateHistogram("testGroupName1").field("testGroupField1")
+        DateHistogramAggregationBuilder aggBuilder1 = AggregationBuilders.dateHistogram("testGroupLabel1").field("testGroupField1")
             .dateHistogramInterval(DateHistogramInterval.MINUTE).format("m").subAggregation(aggBuilder2);
         SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
@@ -555,11 +556,11 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         Query query = buildQueryMultipleGroupByDateAndField();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        DateHistogramAggregationBuilder aggBuilder4 = AggregationBuilders.dateHistogram("testGroupName4").field("testGroupField4")
+        DateHistogramAggregationBuilder aggBuilder4 = AggregationBuilders.dateHistogram("testGroupLabel4").field("testGroupField4")
             .dateHistogramInterval(DateHistogramInterval.MONTH).format("M");
         TermsAggregationBuilder aggBuilder3 = AggregationBuilders.terms("testGroupField3").field("testGroupField3").size(10000)
             .subAggregation(aggBuilder4);
-        DateHistogramAggregationBuilder aggBuilder2 = AggregationBuilders.dateHistogram("testGroupName2").field("testGroupField2")
+        DateHistogramAggregationBuilder aggBuilder2 = AggregationBuilders.dateHistogram("testGroupLabel2").field("testGroupField2")
             .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy").subAggregation(aggBuilder3);
         TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testGroupField1").field("testGroupField1").size(10000)
             .subAggregation(aggBuilder2);
@@ -582,14 +583,31 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
     }
 
     @Test
+    public void convertQueryAggregateCountGroupTest() {
+        Query query = buildQueryAggregateCountGroup();
+
+        SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
+        DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupLabel").field("testGroupField")
+            .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy");
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
     public void convertQueryMultipleAggregateAndGroupTest() {
         Query query = buildQueryMultipleAggregateAndGroup();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        StatsAggregationBuilder aggBuilder4 = AggregationBuilders.stats("_statsFor_testAggField2").field("testAggField2");
-        StatsAggregationBuilder aggBuilder3 = AggregationBuilders.stats("_statsFor_testAggField1").field("testAggField1");
-        TermsAggregationBuilder aggBuilder2 = AggregationBuilders.terms("testGroupField2").field("testGroupField2").size(10000)
-            .subAggregation(aggBuilder3).subAggregation(aggBuilder4);
+        StatsAggregationBuilder aggBuilder6 = AggregationBuilders.stats("_statsFor_testAggField2").field("testAggField2");
+        StatsAggregationBuilder aggBuilder5 = AggregationBuilders.stats("_statsFor_testAggField1").field("testAggField1");
+        DateHistogramAggregationBuilder aggBuilder4 = AggregationBuilders.dateHistogram("testGroupLabel4")
+            .field("testGroupField4").dateHistogramInterval(DateHistogramInterval.MONTH).format("M")
+            .subAggregation(aggBuilder5).subAggregation(aggBuilder6);
+        TermsAggregationBuilder aggBuilder3 = AggregationBuilders.terms("testGroupField3").field("testGroupField3").size(10000)
+            .subAggregation(aggBuilder4);
+        DateHistogramAggregationBuilder aggBuilder2 = AggregationBuilders.dateHistogram("testGroupLabel2").field("testGroupField2")
+            .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy").subAggregation(aggBuilder3);
         TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testGroupField1").field("testGroupField1").size(10000)
             .subAggregation(aggBuilder2);
         SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
@@ -603,9 +621,9 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         StatsAggregationBuilder aggBuilder3 = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
-        DateHistogramAggregationBuilder aggBuilder2 = AggregationBuilders.dateHistogram("testGroupName2").field("testGroupField2")
+        DateHistogramAggregationBuilder aggBuilder2 = AggregationBuilders.dateHistogram("testGroupLabel2").field("testGroupField2")
             .dateHistogramInterval(DateHistogramInterval.MONTH).format("M").subAggregation(aggBuilder3);
-        DateHistogramAggregationBuilder aggBuilder1 = AggregationBuilders.dateHistogram("testGroupName1").field("testGroupField1")
+        DateHistogramAggregationBuilder aggBuilder1 = AggregationBuilders.dateHistogram("testGroupLabel1").field("testGroupField1")
             .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy").subAggregation(aggBuilder2);
         SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
@@ -628,6 +646,30 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         SearchSourceBuilder source = createSourceBuilder().sort(SortBuilders.fieldSort("testSortField").order(SortOrder.DESC));
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQuerySortOnGroupAscendingTest() {
+        Query query = buildQuerySortOnGroupAscending();
+
+        SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
+        DateHistogramAggregationBuilder aggBuilder1 = AggregationBuilders.dateHistogram("testGroupLabel").field("testGroupField")
+            .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy").order(BucketOrder.key(true));
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQuerySortOnGroupDescendingTest() {
+        Query query = buildQuerySortOnGroupDescending();
+
+        SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
+        DateHistogramAggregationBuilder aggBuilder1 = AggregationBuilders.dateHistogram("testGroupLabel").field("testGroupField")
+            .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy").order(BucketOrder.key(false));
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -668,22 +710,34 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testField2").field("testField2");
         SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1).aggregation(aggBuilder2)
             .sort(SortBuilders.fieldSort("testField1").order(SortOrder.ASC))
-            .sort(SortBuilders.fieldSort("testField2").order(SortOrder.DESC))
-            .sort(SortBuilders.fieldSort("testField4").order(SortOrder.ASC));
+            .sort(SortBuilders.fieldSort("testField3").order(SortOrder.DESC));
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    public void convertQueryGroupAndSortTest() {
-        Query query = buildQueryGroupAndSort();
+    public void convertQueryGroupByFieldAndSortTest() {
+        Query query = buildQueryGroupByFieldAndSort();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        TermsAggregationBuilder aggBuilder3 = AggregationBuilders.terms("testField3").field("testField3").size(10000);
-        TermsAggregationBuilder aggBuilder2 = AggregationBuilders.terms("testField2").field("testField2").size(10000)
-            .order(BucketOrder.key(false)).subAggregation(aggBuilder3);
+        TermsAggregationBuilder aggBuilder2 = AggregationBuilders.terms("testField2").field("testField2").size(10000);
         TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testField1").field("testField1").size(10000)
             .order(BucketOrder.key(true)).subAggregation(aggBuilder2);
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQueryGroupByFunctionAndSortTest() {
+        Query query = buildQueryGroupByFunctionAndSort();
+
+        SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
+        DateHistogramAggregationBuilder aggBuilder2 = AggregationBuilders.dateHistogram("testGroupLabel2").field("testGroupField2")
+            .dateHistogramInterval(DateHistogramInterval.MONTH).format("M").order(BucketOrder.key(false));
+        DateHistogramAggregationBuilder aggBuilder1 = AggregationBuilders.dateHistogram("testGroupLabel1").field("testGroupField1")
+            .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy").order(BucketOrder.key(true))
+            .subAggregation(aggBuilder2);
         SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
@@ -836,7 +890,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
     @Test
     public void convertQueryLimitZeroTest() {
         Query query = new Query();
-        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setSelectClause(new SelectClause("testDatabase", "testTable"));
         query.setLimitClause(new LimitClause(0));
 
         // Elasticsearch-specific test:  do not set the query limit to zero!
@@ -849,7 +903,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
     @Test
     public void convertQueryLimitMaximumTest() {
         Query query = new Query();
-        query.setFilter(new Filter("testDatabase", "testTable"));
+        query.setSelectClause(new SelectClause("testDatabase", "testTable"));
         query.setLimitClause(new LimitClause(1000000));
 
         // Elasticsearch-specific test:  do not set the query limit to more than 10,000!
@@ -863,7 +917,8 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
     @Test
     public void convertQueryWithIdNotEqualsEmptyStringTest() {
         Query query = new Query();
-        query.setFilter(new Filter("testDatabase", "testTable", null, SingularWhereClause.fromString("_id", "!=", "")));
+        query.setSelectClause(new SelectClause("testDatabase", "testTable"));
+        query.setWhereClause(SingularWhereClause.fromString(new FieldClause("testDatabase", "testTable", "_id"), "!=", ""));
 
         // Elasticsearch-specific test:  ignore _id not equals empty string
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
@@ -875,11 +930,12 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
     @Test
     public void convertQueryWithCompoundIdNotEqualsEmptyStringTest() {
         Query query = new Query();
-        query.setFilter(new Filter("testDatabase", "testTable", null, new AndWhereClause(Arrays.asList(
-            SingularWhereClause.fromString("testFilterField", "!=", "testFilterValue"),
-            SingularWhereClause.fromNull("_id", "!="),
-            SingularWhereClause.fromString("_id", "!=", "")
-        ))));
+        query.setSelectClause(new SelectClause("testDatabase", "testTable"));
+        query.setWhereClause(new AndWhereClause(Arrays.asList(
+            SingularWhereClause.fromString(new FieldClause("testDatabase", "testTable", "testFilterField"), "!=", "testFilterValue"),
+            SingularWhereClause.fromNull(new FieldClause("testDatabase", "testTable", "_id"), "!="),
+            SingularWhereClause.fromString(new FieldClause("testDatabase", "testTable", "_id"), "!=", "")
+        )));
 
         // Elasticsearch-specific test:  _id not equals empty string
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);

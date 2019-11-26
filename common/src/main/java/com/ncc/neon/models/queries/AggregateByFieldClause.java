@@ -5,15 +5,15 @@ import lombok.Data;
 
 @AllArgsConstructor
 @Data
-public class GroupByFieldClause implements GroupByClause {
+public class AggregateByFieldClause implements AggregateClause {
     FieldClause fieldClause;
+    String label;
+    String operation;
 
-    @Override
     public String getCompleteField() {
         return this.fieldClause.getComplete();
     }
 
-    @Override
     public String getField() {
         return this.fieldClause.getField();
     }

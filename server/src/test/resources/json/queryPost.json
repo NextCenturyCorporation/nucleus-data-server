@@ -1,28 +1,25 @@
 {
-  "filter": {
-    "databaseName": "ldc_uyg_jul_18",
-    "tableName": "ui_out",
-    "whereClause": {
-      "type": "where",
-      "lhs": "topic",
-      "operator": "!=",
-      "rhs": null
-    }
+  "selectClause": {
+    "database": "testDatabase",
+    "table": "testTable",
+    "fieldClauses": []
   },
-  "fields": ["*"],
-  "aggregateArraysByElement": false,
-  "ignoreFilters_": false,
-  "selectionOnly_": false,
-  "ignoredFilterIds_": [],
+  "whereClause": {
+    "type": "where",
+    "lhs": { "database": "testDatabase", "table": "testTable", "field": "testWhereField" },
+    "operator": "!=",
+    "rhs": null
+  },
+  "aggregateClauses": [
+    { "type": "field", "operation": "count", "label": "testAggregateLabel", "fieldClause": { "database": "testDatabase", "table": "testTable", "field": "testAggregateField" } }
+  ],
   "groupByClauses": [
-    { "type": "single", "field": "topic", "prettyField": "topic" },
-    { "type": "single", "field": "topic", "prettyField": "topic" }
+    { "type": "field", "fieldClause": { "database": "testDatabase", "table": "testTable", "field": "testGroupField" } }
   ],
-  "isDistinct": false,
-  "aggregates": [
-    { "operation": "count", "field": "*", "name": "_aggregation" }
+  "orderByClauses": [
+    { "type": "field", "fieldClause": { "database": "testDatabase", "table": "testTable", "field": "testOrderField" }, "order": -1 }
   ],
-  "sortClauses": [{ "fieldName": "_aggregation", "sortOrder": -1 }],
-  "limitClause": { "limit": 11 },
-  "offsetClause":{"offset":10}
+  "limitClause": { "limit": 12 },
+  "offsetClause":{ "offset": 34 },
+  "isDistinct": false
 }
