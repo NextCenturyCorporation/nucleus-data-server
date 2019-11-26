@@ -58,7 +58,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
             userAndPassData[1] : null);
 
         RestClientBuilder builder = RestClient.builder(new HttpHost(hostOnly, port));
-        if(username != null && password != null) {
+        if (username != null && password != null) {
             final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
             credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
             builder.setHttpClientConfigCallback(new HttpClientConfigCallback() {
@@ -85,7 +85,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
             e.printStackTrace();
         }
 
-        if(response != null) {
+        if (response != null) {
             results = ElasticsearchResultsConverter.convertResults(query, response);
         }
 

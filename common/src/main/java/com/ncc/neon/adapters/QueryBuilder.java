@@ -18,6 +18,7 @@ import com.ncc.neon.util.DateUtil;
 
 /**
  * Builds queries for the query adapters' unit tests.
+ * The tests can't seem to find this file unless it's on the "src/main/java" path.
  */
 public class QueryBuilder {
 

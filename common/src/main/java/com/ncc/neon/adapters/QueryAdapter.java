@@ -55,13 +55,13 @@ public abstract class QueryAdapter {
      * Returns whether all the tables in the given query exist.
      */
     protected void verifyQueryTablesExist(Query query) {
-        if(query == null || query.getFilter() == null) {
+        if (query == null || query.getFilter() == null) {
             throw new RuntimeException("Query does not exist");
         }
 
         // TODO: Fix (THOR-1077) - commenting out for now
         //String tableName = query.getFilter().getTableName();
-        //if(showTables(tableName).collectList().block().indexOf(tableName) >= 0) {
+        //if (showTables(tableName).collectList().block().indexOf(tableName) >= 0) {
         //    throw new RuntimeException("Table ${tableName} does not exist");
         //}
     }

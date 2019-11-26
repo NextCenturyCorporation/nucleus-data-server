@@ -146,7 +146,7 @@ public class SqlQueryConverter {
     }
 
     private static String transformSingularWhere(SingularWhereClause where, SqlType type) {
-        if(Arrays.asList("contains", "not contains", "notcontains").contains(where.getOperator())) {
+        if (Arrays.asList("contains", "not contains", "notcontains").contains(where.getOperator())) {
             boolean not = !where.getOperator().equals("contains");
             String operator = (type == SqlType.POSTGRESQL ? (not ? "!~" : "~") : ((not ? "NOT " : "") + "REGEXP"));
             return where.getLhs() + " " + operator + " '.*" + preventInjection(where.getRhsString()) + ".*'";

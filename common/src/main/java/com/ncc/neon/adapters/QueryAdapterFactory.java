@@ -17,7 +17,7 @@ public abstract class QueryAdapterFactory {
 
     public QueryAdapterFactory(final String prettyName, final Map<String, String> authCollection) {
         this.prettyName = prettyName;
-        if(authCollection == null) {
+        if (authCollection == null) {
             log.debug(prettyName + " adapter did not find any auth in the server.properties file");
         }
         else {
@@ -49,9 +49,9 @@ public abstract class QueryAdapterFactory {
         String auth = this.authCollection.containsKey(host) ? this.authCollection.get(host) : null;
         String username = null;
         String password = null;
-        if(auth != null) {
+        if (auth != null) {
             String[] authData = auth.split(":");
-            if(authData.length > 1) {
+            if (authData.length > 1) {
                 username = authData[0];
                 password = authData[1];
             }

@@ -140,10 +140,10 @@ public class ElasticsearchResultsConverter {
                 @Override
                 @SuppressWarnings({"rawtypes", "unchecked"})
                 public int compare(Map<String, Object> a, Map<String, Object> b) {
-                    if(a instanceof Comparable && b instanceof Comparable) {
+                    if (a instanceof Comparable && b instanceof Comparable) {
                         return sort.getSortDirection() * ((Comparable) a.get(field)).compareTo(((Comparable) b.get(field)));
                     }
-                    if(isNumeric(a.get(field).toString()) && isNumeric(b.get(field).toString())) {
+                    if (isNumeric(a.get(field).toString()) && isNumeric(b.get(field).toString())) {
                         return sort.getSortDirection() * (Double.valueOf(a.get(field).toString())).compareTo(
                             Double.valueOf(b.get(field).toString()));
                     }
@@ -352,7 +352,7 @@ public class ElasticsearchResultsConverter {
                     Object bField = b.get(sortClause.getFieldName());
                     int order = 0;
 
-                    if(isFieldDouble(aField.toString()) && isFieldDouble(bField.toString())) {
+                    if (isFieldDouble(aField.toString()) && isFieldDouble(bField.toString())) {
                         Double aFieldAsDouble = Double.parseDouble(aField.toString());
                         Double bFieldAsDouble = Double.parseDouble(bField.toString());
 
