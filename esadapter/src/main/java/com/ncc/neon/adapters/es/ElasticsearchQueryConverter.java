@@ -18,7 +18,7 @@ import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.queries.SingularWhereClause;
 import com.ncc.neon.models.queries.OrderByClause;
 import com.ncc.neon.models.queries.OrderByFieldClause;
-import com.ncc.neon.models.queries.OrderByGroupClause;
+import com.ncc.neon.models.queries.OrderByOperationClause;
 import com.ncc.neon.models.queries.Order;
 import com.ncc.neon.models.queries.WhereClause;
 import com.ncc.neon.util.DateUtil;
@@ -311,7 +311,7 @@ public class ElasticsearchQueryConverter {
     }
 
     private static SortBuilder<FieldSortBuilder> convertSortClause(OrderByClause orderClause) {
-        return SortBuilders.fieldSort(orderClause.getFieldOrGroup())
+        return SortBuilders.fieldSort(orderClause.getFieldOrOperation())
             .order(orderClause.getOrder() == Order.ASCENDING ? SortOrder.ASC : SortOrder.DESC);
     }
  
@@ -399,10 +399,10 @@ public class ElasticsearchQueryConverter {
             dateHist.offset("1d");
         }
 
-        OrderByGroupClause orderByGroupClause = query.getOrderByClauses().stream().filter(
-            orderByClause -> orderByClause instanceof OrderByGroupClause &&
-            groupByFunctionClause.getLabel().equals(orderByClause.getFieldOrGroup())
-        ).map(orderClause -> (OrderByGroupClause) orderClause).findFirst().orElse(null);
+        OrderByOperationClause orderByGroupClause = query.getOrderByClauses().stream().filter(
+            orderByClause -> orderByClause instanceof OrderByOperationClause &&
+            groupByFunctionClause.getLabel().equals(orderByClause.getFieldOrOperation())
+        ).map(orderClause -> (OrderByOperationClause) orderClause).findFirst().orElse(null);
 
         if(orderByGroupClause != null) {
             dateHist.order(BucketOrder.key(orderByGroupClause.getOrder().getDirection() ==
@@ -422,7 +422,7 @@ public class ElasticsearchQueryConverter {
 
             OrderByFieldClause orderByFieldClause = query.getOrderByClauses().stream().filter(
                 orderByClause -> orderByClause instanceof OrderByFieldClause &&
-                groupByFieldClause.getField().equals(orderByClause.getFieldOrGroup())
+                groupByFieldClause.getField().equals(orderByClause.getFieldOrOperation())
             ).map(orderClause -> (OrderByFieldClause) orderClause).findFirst().orElse(null);
 
             if(orderByFieldClause != null) {

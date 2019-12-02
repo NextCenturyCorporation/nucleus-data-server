@@ -5,17 +5,17 @@ import lombok.Data;
 
 @AllArgsConstructor
 @Data
-public class OrderByFieldClause implements OrderByClause {
-    FieldClause fieldClause;
+public class OrderByOperationClause implements OrderByClause {
+    String operation;
     Order order;
 
     @Override
     public String getCompleteFieldOrOperation() {
-        return this.fieldClause.getComplete();
+        return this.getFieldOrOperation();
     }
 
     @Override
     public String getFieldOrOperation() {
-        return this.fieldClause.getField();
+        return this.operation;
     }
 }

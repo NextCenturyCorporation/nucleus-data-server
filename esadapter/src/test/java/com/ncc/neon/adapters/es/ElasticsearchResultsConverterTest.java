@@ -20,7 +20,7 @@ import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.queries.SelectClause;
 import com.ncc.neon.models.queries.SingularWhereClause;
 import com.ncc.neon.models.queries.OrderByFieldClause;
-import com.ncc.neon.models.queries.OrderByGroupClause;
+import com.ncc.neon.models.queries.OrderByOperationClause;
 import com.ncc.neon.models.queries.Order;
 import com.ncc.neon.models.results.TabularQueryResult;
 
@@ -680,7 +680,7 @@ public class ElasticsearchResultsConverterTest {
         ));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause(new FieldClause("testDatabase", "testTable", "testGroupField"))));
         query.setLimitClause(new LimitClause(2));
-        query.setOrderByClauses(Arrays.asList(new OrderByGroupClause("testCount", Order.ASCENDING)));
+        query.setOrderByClauses(Arrays.asList(new OrderByOperationClause("testCount", Order.ASCENDING)));
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries());
@@ -805,7 +805,7 @@ public class ElasticsearchResultsConverterTest {
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause(new FieldClause("testDatabase", "testTable", "testGroupField"))));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
-        query.setOrderByClauses(Arrays.asList(new OrderByGroupClause("testCount", Order.ASCENDING)));
+        query.setOrderByClauses(Arrays.asList(new OrderByOperationClause("testCount", Order.ASCENDING)));
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries());
@@ -995,7 +995,7 @@ public class ElasticsearchResultsConverterTest {
         ));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause(new FieldClause("testDatabase", "testTable", "testGroupField"))));
         query.setOffsetClause(new OffsetClause(1));
-        query.setOrderByClauses(Arrays.asList(new OrderByGroupClause("testCount", Order.ASCENDING)));
+        query.setOrderByClauses(Arrays.asList(new OrderByOperationClause("testCount", Order.ASCENDING)));
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries());
@@ -1126,7 +1126,7 @@ public class ElasticsearchResultsConverterTest {
             new AggregateByFieldClause(new FieldClause("testDatabase", "testTable", "testGroupField"), "testCount", "count")
         ));
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause(new FieldClause("testDatabase", "testTable", "testGroupField"))));
-        query.setOrderByClauses(Arrays.asList(new OrderByGroupClause("testCount", Order.ASCENDING)));
+        query.setOrderByClauses(Arrays.asList(new OrderByOperationClause("testCount", Order.ASCENDING)));
 
         Aggregations bucketAggregations1 = mock(Aggregations.class);
         when(bucketAggregations1.asMap()).thenReturn(Map.ofEntries());
@@ -1364,7 +1364,7 @@ public class ElasticsearchResultsConverterTest {
         query.setGroupByClauses(Arrays.asList(new GroupByFieldClause(new FieldClause("testDatabase", "testTable", "testGroupField"))));
         query.setLimitClause(new LimitClause(2));
         query.setOffsetClause(new OffsetClause(1));
-        query.setOrderByClauses(Arrays.asList(new OrderByGroupClause("testSum", Order.ASCENDING)));
+        query.setOrderByClauses(Arrays.asList(new OrderByOperationClause("testSum", Order.ASCENDING)));
 
         Stats stats1 = mock(Stats.class);
         when(stats1.getSum()).thenReturn(12.0);

@@ -121,7 +121,7 @@ public class SqlQueryConverter {
     private static StringBuilder appendOrderBy(StringBuilder builder, Query query) {
         if (query.getOrderByClauses().size() > 0) {
             List<String> orderBys = query.getOrderByClauses().stream().map(orderBy ->
-                orderBy.getCompleteFieldOrGroup() + (orderBy.getOrder() == Order.ASCENDING ? " ASC" : " DESC")
+                orderBy.getCompleteFieldOrOperation() + (orderBy.getOrder() == Order.ASCENDING ? " ASC" : " DESC")
             ).collect(Collectors.toList());
             return builder.append(" ORDER BY ").append(orderBys.stream().collect(Collectors.joining(", ")));
         }

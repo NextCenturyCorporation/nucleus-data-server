@@ -650,9 +650,36 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         assertThat(actual).isEqualTo(expected);
     }
 
+
     @Test
-    public void convertQuerySortOnGroupAscendingTest() {
-        Query query = buildQuerySortOnGroupAscending();
+    public void convertQuerySortOnAggregationAscendingTest() {
+        Query query = buildQuerySortOnAggregationAscending();
+
+        SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
+        StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testField").field("testField");
+        TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testField").field("testField").size(10000)
+            .subAggregation(aggBuilder2);
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQuerySortOnAggregationDescendingTest() {
+        Query query = buildQuerySortOnAggregationDescending();
+
+        SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
+        StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testField").field("testField");
+        TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testField").field("testField").size(10000)
+            .subAggregation(aggBuilder2);
+        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchRequest expected = createRequest("testDatabase", "testTable", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQuerySortOnGroupOperationAscendingTest() {
+        Query query = buildQuerySortOnGroupOperationAscending();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         DateHistogramAggregationBuilder aggBuilder1 = AggregationBuilders.dateHistogram("testGroupLabel").field("testGroupField")
@@ -663,8 +690,8 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
     }
 
     @Test
-    public void convertQuerySortOnGroupDescendingTest() {
-        Query query = buildQuerySortOnGroupDescending();
+    public void convertQuerySortOnGroupOperationDescendingTest() {
+        Query query = buildQuerySortOnGroupOperationDescending();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         DateHistogramAggregationBuilder aggBuilder1 = AggregationBuilders.dateHistogram("testGroupLabel").field("testGroupField")

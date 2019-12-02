@@ -16,7 +16,7 @@ import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.queries.SelectClause;
 import com.ncc.neon.models.queries.SingularWhereClause;
 import com.ncc.neon.models.queries.OrderByFieldClause;
-import com.ncc.neon.models.queries.OrderByGroupClause;
+import com.ncc.neon.models.queries.OrderByOperationClause;
 import com.ncc.neon.models.queries.Order;
 import com.ncc.neon.util.DateUtil;
 
@@ -422,23 +422,49 @@ public class QueryBuilder {
         return query;
     }
 
-    protected Query buildQuerySortOnGroupAscending() {
+    protected Query buildQuerySortOnAggregationAscending() {
         Query query = new Query();
         query.setSelectClause(new SelectClause("testDatabase", "testTable"));
-        query.setGroupByClauses(Arrays.asList(
-            new GroupByOperationClause(new FieldClause("testDatabase", "testTable", "testGroupField"), "testGroupLabel", "year")
+        query.setAggregateClauses(Arrays.asList(
+            new AggregateByFieldClause(new FieldClause("testDatabase", "testTable", "testField"), "testAggLabel", "sum")
         ));
-        query.setOrderByClauses(Arrays.asList(new OrderByGroupClause("testGroupLabel", Order.ASCENDING)));
+        query.setGroupByClauses(Arrays.asList(
+            new GroupByFieldClause(new FieldClause("testDatabase", "testTable", "testField"))
+        ));
+        query.setOrderByClauses(Arrays.asList(new OrderByOperationClause("testAggLabel", Order.ASCENDING)));
         return query;
     }
 
-    protected Query buildQuerySortOnGroupDescending() {
+    protected Query buildQuerySortOnAggregationDescending() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTable"));
+        query.setAggregateClauses(Arrays.asList(
+            new AggregateByFieldClause(new FieldClause("testDatabase", "testTable", "testField"), "testAggLabel", "sum")
+        ));
+        query.setGroupByClauses(Arrays.asList(
+            new GroupByFieldClause(new FieldClause("testDatabase", "testTable", "testField"))
+        ));
+        query.setOrderByClauses(Arrays.asList(new OrderByOperationClause("testAggLabel", Order.DESCENDING)));
+        return query;
+    }
+
+    protected Query buildQuerySortOnGroupOperationAscending() {
         Query query = new Query();
         query.setSelectClause(new SelectClause("testDatabase", "testTable"));
         query.setGroupByClauses(Arrays.asList(
             new GroupByOperationClause(new FieldClause("testDatabase", "testTable", "testGroupField"), "testGroupLabel", "year")
         ));
-        query.setOrderByClauses(Arrays.asList(new OrderByGroupClause("testGroupLabel", Order.DESCENDING)));
+        query.setOrderByClauses(Arrays.asList(new OrderByOperationClause("testGroupLabel", Order.ASCENDING)));
+        return query;
+    }
+
+    protected Query buildQuerySortOnGroupOperationDescending() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTable"));
+        query.setGroupByClauses(Arrays.asList(
+            new GroupByOperationClause(new FieldClause("testDatabase", "testTable", "testGroupField"), "testGroupLabel", "year")
+        ));
+        query.setOrderByClauses(Arrays.asList(new OrderByOperationClause("testGroupLabel", Order.DESCENDING)));
         return query;
     }
 
@@ -506,8 +532,8 @@ public class QueryBuilder {
             new GroupByOperationClause(new FieldClause("testDatabase", "testTable", "testGroupField2"), "testGroupLabel2", "month")
         ));
         query.setOrderByClauses(Arrays.asList(
-            new OrderByGroupClause("testGroupLabel1", Order.ASCENDING),
-            new OrderByGroupClause("testGroupLabel2", Order.DESCENDING)
+            new OrderByOperationClause("testGroupLabel1", Order.ASCENDING),
+            new OrderByOperationClause("testGroupLabel2", Order.DESCENDING)
         ));
         return query;
     }

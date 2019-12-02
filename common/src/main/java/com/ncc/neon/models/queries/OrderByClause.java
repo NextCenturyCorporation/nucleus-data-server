@@ -6,10 +6,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     @JsonSubTypes.Type(value = OrderByFieldClause.class, name = "field"),
-    @JsonSubTypes.Type(value = OrderByGroupClause.class, name = "group")
+    @JsonSubTypes.Type(value = OrderByOperationClause.class, name = "operation")
 })
 public interface OrderByClause {
-    public String getCompleteFieldOrGroup();
-    public String getFieldOrGroup();
+    public String getCompleteFieldOrOperation();
+    public String getFieldOrOperation();
     public Order getOrder();
 }

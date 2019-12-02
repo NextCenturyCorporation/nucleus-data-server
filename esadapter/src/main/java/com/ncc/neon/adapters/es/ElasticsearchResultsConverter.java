@@ -136,7 +136,7 @@ public class ElasticsearchResultsConverter {
         String field = query.getSelectClause().getFieldClauses().get(0).getField();
 
         List<OrderByFieldClause> orderByFieldClauses = query.getOrderByClauses().stream().filter(orderClause ->
-            orderClause instanceof OrderByFieldClause && orderClause.getFieldOrGroup().equals(field)
+            orderClause instanceof OrderByFieldClause && orderClause.getFieldOrOperation().equals(field)
         ).map(orderClause -> (OrderByFieldClause) orderClause).collect(Collectors.toList());
 
         if (orderByFieldClauses.size() > 0) {
@@ -351,8 +351,8 @@ public class ElasticsearchResultsConverter {
         if (orderClauses != null && orderClauses.size() > 0) {
             buckets.sort((a, b) -> {
                 for (OrderByClause orderClause : orderClauses) {
-                    Object aField = a.get(orderClause.getFieldOrGroup());
-                    Object bField = b.get(orderClause.getFieldOrGroup());
+                    Object aField = a.get(orderClause.getFieldOrOperation());
+                    Object bField = b.get(orderClause.getFieldOrOperation());
                     int order = 0;
 
                     if(isFieldDouble(aField.toString()) && isFieldDouble(bField.toString())) {

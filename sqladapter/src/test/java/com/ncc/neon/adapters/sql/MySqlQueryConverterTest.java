@@ -436,8 +436,28 @@ public class MySqlQueryConverterTest extends QueryBuilder {
     }
 
     @Test
-    public void convertQuerySortOnGroupAscendingTest() {
-        Query query = buildQuerySortOnGroupAscending();
+    public void convertQuerySortOnAggregationAscendingTest() {
+        Query query = buildQuerySortOnAggregationAscending();
+        String actual = SqlQueryConverter.convertQuery(query, SqlType.MYSQL);
+        String expected = "SELECT SUM(testDatabase.testTable.testField) AS testAggLabel, " +
+            "testDatabase.testTable.testField FROM testDatabase.testTable GROUP BY testDatabase.testTable.testField " +
+            "ORDER BY testAggLabel ASC";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQuerySortOnAggregationDescendingTest() {
+        Query query = buildQuerySortOnAggregationDescending();
+        String actual = SqlQueryConverter.convertQuery(query, SqlType.MYSQL);
+        String expected = "SELECT SUM(testDatabase.testTable.testField) AS testAggLabel, " +
+            "testDatabase.testTable.testField FROM testDatabase.testTable GROUP BY testDatabase.testTable.testField " +
+            "ORDER BY testAggLabel DESC";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQuerySortOnGroupOperationAscendingTest() {
+        Query query = buildQuerySortOnGroupOperationAscending();
         String actual = SqlQueryConverter.convertQuery(query, SqlType.MYSQL);
         String expected = "SELECT YEAR(testDatabase.testTable.testGroupField) AS testGroupLabel FROM " +
             "testDatabase.testTable GROUP BY testGroupLabel ORDER BY testGroupLabel ASC";
@@ -445,8 +465,8 @@ public class MySqlQueryConverterTest extends QueryBuilder {
     }
 
     @Test
-    public void convertQuerySortOnGroupDescendingTest() {
-        Query query = buildQuerySortOnGroupDescending();
+    public void convertQuerySortOnGroupOperationDescendingTest() {
+        Query query = buildQuerySortOnGroupOperationDescending();
         String actual = SqlQueryConverter.convertQuery(query, SqlType.MYSQL);
         String expected = "SELECT YEAR(testDatabase.testTable.testGroupField) AS testGroupLabel FROM " +
             "testDatabase.testTable GROUP BY testGroupLabel ORDER BY testGroupLabel DESC";
