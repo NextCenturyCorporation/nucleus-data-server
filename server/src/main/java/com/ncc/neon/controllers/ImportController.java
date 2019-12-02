@@ -1,5 +1,7 @@
 package com.ncc.neon.controllers;
 
+import java.util.ArrayList;
+
 import com.ncc.neon.models.ConnectionInfo;
 import com.ncc.neon.models.queries.ImportQuery;
 import com.ncc.neon.models.results.ImportResult;
@@ -38,7 +40,14 @@ public class ImportController {
     @PostMapping(path="/", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<Mono<ImportResult>> importData(@RequestBody ImportQuery importQuery)
     {
-        log.debug("Export parameters: " + importQuery.toString());
+        log.debug(
+            String.format("Export parameters: storeType: %s, host: %s, db: %s, table: %s, recordCount: %d ", 
+            importQuery.getDataStoreType(), 
+            importQuery.getHostName(), 
+            importQuery.getDatabase(), 
+            importQuery.getTable(), 
+            importQuery.getSource().size()
+        ));
 
         if (StringUtils.isBlank(importQuery.getDataStoreType()) || 
             StringUtils.isBlank(importQuery.getHostName()) ||
@@ -48,7 +57,7 @@ public class ImportController {
         )
         {
             String error = "one or more missing parameters (dataStoreType, hostName, database, table, source).";
-            return ResponseEntity.badRequest().body(Mono.just(new ImportResult(0, 0, error)));
+            return ResponseEntity.badRequest().body(Mono.just(new ImportResult(error)));
         }
 
         ConnectionInfo ci = new ConnectionInfo(importQuery.getDataStoreType(), importQuery.getHostName());

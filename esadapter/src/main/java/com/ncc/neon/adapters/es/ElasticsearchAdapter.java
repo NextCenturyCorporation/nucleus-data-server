@@ -2,6 +2,7 @@ package com.ncc.neon.adapters.es;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -26,6 +27,7 @@ import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
+import org.elasticsearch.action.admin.indices.shards.IndicesShardStoresResponse.Failure;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -37,6 +39,7 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 
 import reactor.core.publisher.Flux;
@@ -280,6 +283,7 @@ public class ElasticsearchAdapter implements QueryAdapter {
     public Mono<ImportResult> addData(String databaseName, String tableName, List<String> sourceData) {
 
         BulkRequest bulkRequest = new BulkRequest();
+        bulkRequest.timeout(TimeValue.timeValueMinutes(1));
         sourceData.forEach((String record) -> {
             bulkRequest.add(new IndexRequest(databaseName, tableName).source(record, XContentType.JSON));
         });
@@ -288,21 +292,18 @@ public class ElasticsearchAdapter implements QueryAdapter {
         client.bulkAsync(bulkRequest, new ActionListener<BulkResponse>() {
                 @Override
                 public void onResponse(BulkResponse bulkResponse) {
+                    List<String> recordErrors = new ArrayList<>();
+
                     if (bulkResponse.hasFailures())
                     {
-                        int failureCount = 0;
-                        for (BulkItemResponse bulkItemResponse : bulkResponse) {
-                            if (bulkItemResponse.isFailed()) { 
-                                failureCount++;
-                            }
-                        }
+                        recordErrors = Arrays.stream(bulkResponse.getItems())
+                        .filter(item -> item.isFailed()).map((BulkItemResponse item) -> {
+                            return String.format("%d,%s", item.getFailure().getSeqNo(), item.getFailure().getMessage());
+                        }).collect(Collectors.toList());
+                    }
 
-                        sink.success(new ImportResult(sourceData.size(), failureCount));
-                    }
-                    else
-                    {
-                        sink.success(new ImportResult(sourceData.size(), 0));
-                    }
+                    sink.success(new ImportResult(recordErrors));
+
                 }
 
                 @Override

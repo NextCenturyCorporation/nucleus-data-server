@@ -52,7 +52,7 @@ public class ImportControllerTests {
         List<String> source = List.of("record1", "record2");       
         ImportQuery importQuery = new ImportQuery("testHost", "testDataStoreType", "tesetDatabase", "testTable", source);
 
-        ImportResult importResult = new ImportResult(3, 1, "On record failed to import");
+        ImportResult importResult = new ImportResult("On record failed to import");
 
         ConnectionInfo ci = new ConnectionInfo(importQuery.getDataStoreType(), importQuery.getHostName());
         when(queryService.addData(ci, importQuery.getDatabase(), importQuery.getTable(), importQuery.getSource())).thenReturn(Mono.just(importResult));
@@ -66,8 +66,6 @@ public class ImportControllerTests {
                 .expectHeader().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
                 .expectBody(ImportResult.class)
                 .value(result -> {
-                    assertEquals(importResult.getTotal(), result.getTotal());
-                    assertEquals(importResult.getFailCount(), result.getFailCount());
                     assertEquals(importResult.getError(), result.getError());
                 });
     }

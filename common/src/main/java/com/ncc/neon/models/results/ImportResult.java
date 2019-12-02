@@ -1,18 +1,22 @@
 package com.ncc.neon.models.results;
 
-import lombok.AllArgsConstructor;
-import lombok.Value;
+import java.util.List;
 
-@AllArgsConstructor
-@Value
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
+@Data
 public class ImportResult {
-    int total;
-    int failCount;
     String error;
+    List<String> recordErrors;
 
-    public ImportResult(int total, int failCount) {
-        this.total = total;
-        this.failCount = failCount;
-        this.error = "";
+    public ImportResult(List<String> recordErrors) {
+        this.recordErrors = recordErrors;
+    }
+
+    public ImportResult(String error)
+    {
+        this.error = error;
     }
 }
