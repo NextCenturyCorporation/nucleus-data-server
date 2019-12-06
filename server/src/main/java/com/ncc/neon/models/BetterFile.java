@@ -3,6 +3,7 @@ package com.ncc.neon.models;
 public class BetterFile {
     int bytes;
     String filename;
+    String id;
 
     public BetterFile() {
         super();
@@ -19,5 +20,13 @@ public class BetterFile {
 
     public String getFilename() {
         return filename;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getId() {
+        return id;
     }
 }
