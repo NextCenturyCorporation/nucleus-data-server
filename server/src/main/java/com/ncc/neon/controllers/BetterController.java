@@ -10,13 +10,19 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Mono;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,6 +63,34 @@ public class BetterController {
         }
 
         return "success";
+    }
+
+    @GetMapping(path = "download")
+    @ResponseBody
+    ResponseEntity<?> download(@RequestParam("file") String file) {
+        ResponseEntity res;
+        // TODO: set path to share dir env var.
+        // TODO: don't allow relative paths.
+        Path fileRef = Paths.get(".").resolve(file);
+        Resource resource = null;
+        try {
+            resource = new UrlResource(fileRef.toUri());
+
+            if (resource.exists() || resource.isReadable()) {
+                res = ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_DISPOSITION,
+                                "attachment; filename=\"" + resource.getFilename() + "\"")
+                        .body(resource);
+            }
+            else {
+                res = ResponseEntity.notFound().build();
+            }
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            res = ResponseEntity.badRequest().build();
+        }
+
+        return res;
     }
 
     @GetMapping(path = "tokenize")
