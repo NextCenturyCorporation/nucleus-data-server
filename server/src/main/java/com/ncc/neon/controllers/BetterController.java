@@ -5,11 +5,14 @@ import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.ncc.neon.models.BetterFile;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.apache.http.HttpHost;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.client.*;
+import org.elasticsearch.client.transport.TransportClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +23,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
+import java.util.UUID;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -28,10 +33,7 @@ import java.nio.file.Paths;
 public class BetterController {
     OkHttpClient client = new OkHttpClient();
     ObjectMapper objectMapper = new ObjectMapper();
-    RestClient restClient = RestClient.builder(
-            new HttpHost("localhost", 9200, "http"),
-            new HttpHost("localhost", 9205, "http")
-    ).build();
+    RestHighLevelClient rhlc = new RestHighLevelClient(RestClient.builder(new HttpHost("localhost", 9200, "http")));
 
     @GetMapping(path = "willOverwrite")
     public boolean willOverwrite(@RequestParam("file") String file) {
@@ -94,7 +96,10 @@ public class BetterController {
                 .build();
         try {
             Response response = client.newCall(req).execute();
-            BetterFile bf = objectMapper.readValue(response.body().string(), BetterFile.class);
+            BetterFile[] bf = objectMapper.readValue(response.body().string(), BetterFile[].class);
+            for(BetterFile f : bf) {
+                System.out.println(f.getFilename());
+            }
             storeInES(bf);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (IOException ioe) {
@@ -102,8 +107,19 @@ public class BetterController {
         }
     }
 
-    private void storeInES(BetterFile bf) {
-
+    private void storeInES(BetterFile[] bf) {
+        for (BetterFile file: bf) {
+            UUID uuid = UUID.randomUUID();
+            file.setId(uuid.toString());
+            Map<String, Object> bfMapper = objectMapper.convertValue(file, Map.class);
+            IndexRequest indexRequest = new IndexRequest("files", "filedata", file.getId()).source(bfMapper);
+            try {
+                IndexResponse indexResponse = rhlc.index(indexRequest, RequestOptions.DEFAULT);
+                System.out.println(indexResponse.getResult().name());
+            } catch(IOException ioe) {
+                ioe.printStackTrace();
+            }
+        }
     }
 
 }
