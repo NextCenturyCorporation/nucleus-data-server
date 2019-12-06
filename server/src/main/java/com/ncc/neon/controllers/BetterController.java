@@ -1,15 +1,11 @@
 package com.ncc.neon.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.ncc.neon.models.BetterFile;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
-import okhttp3.RequestBody;
 import org.apache.http.HttpHost;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -18,9 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
-import reactor.core.publisher.Mono;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
@@ -71,7 +65,13 @@ public class BetterController {
         ResponseEntity res;
         // TODO: set path to share dir env var.
         // TODO: don't allow relative paths.
-        Path fileRef = Paths.get(".").resolve(file);
+        String shareDir = System.getenv("SHARE_DIR");
+
+        if (shareDir == null) {
+            shareDir = "share";
+        }
+
+        Path fileRef = Paths.get(shareDir).resolve(file);
         Resource resource = null;
         try {
             resource = new UrlResource(fileRef.toUri());
