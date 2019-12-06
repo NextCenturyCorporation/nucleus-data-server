@@ -16,16 +16,17 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @CrossOrigin(origins = "*")
@@ -44,23 +45,21 @@ public class BetterController {
     }
 
     @PostMapping(path = "upload")
-    String upload(@RequestParam("file") MultipartFile file) {
-        if (file.isEmpty()) {
-            return "file is empty";
-        }
-        try {
+    Mono<ResponseEntity> upload(@RequestPart("file") Mono<FilePart> file) {
+        // TODO: Return message if file is not provided.
 
-            // Get the file and save it somewhere
-            byte[] bytes = file.getBytes();
-            Path path = Paths.get("/Users/bpham/test/" + file.getOriginalFilename());
-            Files.write(path, bytes);
+        String shareDir = System.getenv("SHARE_DIR");
 
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "failed";
+        // Default to a known directory.
+        if (shareDir == null) {
+            shareDir = "share";
         }
 
-        return "success";
+        final String finalShareDir = Paths.get(".").resolve(shareDir).toString();
+
+        return file.flatMap(it -> it.transferTo(Paths.get(finalShareDir)
+                .resolve(Objects.requireNonNull(it.filename()))))
+                .then(Mono.just(ResponseEntity.ok().body("Ok")));
     }
 
     @GetMapping(path = "download")
@@ -77,7 +76,7 @@ public class BetterController {
 
         Path fileRef = Paths.get(shareDir).resolve(file);
         Resource resource = null;
-        
+
         try {
             resource = new UrlResource(fileRef.toUri());
 
