@@ -634,4 +634,81 @@ public class PostgreSqlQueryConverterTest extends QueryBuilder {
         String expected = "SELECT * FROM testDatabase.testTable WHERE testDatabase.testTable.testFilterField = '\\'; SQL INJECTION; \\''";
         assertThat(actual).isEqualTo(expected);
     }
+
+    @Test
+    public void convertQueryJoinTest() {
+        Query query = buildQueryJoin();
+        String actual = SqlQueryConverter.convertQuery(query, SqlType.POSTGRESQL);
+        String expected = "SELECT * FROM testDatabase.testTableA JOIN testDatabase.testTableB ON " +
+            "testDatabase.testTableA.testField1 = testDatabase.testTableB.testField2";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQueryCrossJoinTest() {
+        Query query = buildQueryCrossJoin();
+        String actual = SqlQueryConverter.convertQuery(query, SqlType.POSTGRESQL);
+        String expected = "SELECT * FROM testDatabase.testTableA CROSS JOIN testDatabase.testTableB ON " +
+            "testDatabase.testTableA.testField1 = testDatabase.testTableB.testField2";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQueryFullJoinTest() {
+        Query query = buildQueryFullJoin();
+        String actual = SqlQueryConverter.convertQuery(query, SqlType.POSTGRESQL);
+        String expected = "SELECT * FROM testDatabase.testTableA FULL JOIN testDatabase.testTableB ON " +
+            "testDatabase.testTableA.testField1 = testDatabase.testTableB.testField2";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQueryInnerJoinTest() {
+        Query query = buildQueryInnerJoin();
+        String actual = SqlQueryConverter.convertQuery(query, SqlType.POSTGRESQL);
+        String expected = "SELECT * FROM testDatabase.testTableA INNER JOIN testDatabase.testTableB ON " +
+            "testDatabase.testTableA.testField1 = testDatabase.testTableB.testField2";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQueryLeftJoinTest() {
+        Query query = buildQueryLeftJoin();
+        String actual = SqlQueryConverter.convertQuery(query, SqlType.POSTGRESQL);
+        String expected = "SELECT * FROM testDatabase.testTableA LEFT JOIN testDatabase.testTableB ON " +
+            "testDatabase.testTableA.testField1 = testDatabase.testTableB.testField2";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQueryRightJoinTest() {
+        Query query = buildQueryRightJoin();
+        String actual = SqlQueryConverter.convertQuery(query, SqlType.POSTGRESQL);
+        String expected = "SELECT * FROM testDatabase.testTableA RIGHT JOIN testDatabase.testTableB ON " +
+            "testDatabase.testTableA.testField1 = testDatabase.testTableB.testField2";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQueryJoinWithCompoundOnTest() {
+        Query query = buildQueryJoinWithCompoundOn();
+        String actual = SqlQueryConverter.convertQuery(query, SqlType.POSTGRESQL);
+        String expected = "SELECT * FROM testDatabase.testTableA JOIN testDatabase.testTableB ON " +
+            "(testDatabase.testTableA.testField1 = testDatabase.testTableB.testField2 AND " +
+            "testDatabase.testTableA.testField3 != 0.0 AND testDatabase.testTableB.testField4 = 'a' AND " +
+            "(testDatabase.testTableA.testField5 > " +
+            "TO_TIMESTAMP('2019-01-01T00:00:00Z','YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') OR "+
+            "testDatabase.testTableB.testField6 IS NOT NULL))";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQueryMultipleJoinTest() {
+        Query query = buildQueryMultipleJoin();
+        String actual = SqlQueryConverter.convertQuery(query, SqlType.POSTGRESQL);
+        String expected = "SELECT * FROM testDatabase.testTableA JOIN testDatabase.testTableB ON " +
+            "testDatabase.testTableA.testField1 = testDatabase.testTableB.testField2 JOIN testDatabase.testTableC " +
+            "ON testDatabase.testTableA.testField1 = testDatabase.testTableC.testField3";
+        assertThat(actual).isEqualTo(expected);
+    }
 }

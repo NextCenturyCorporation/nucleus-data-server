@@ -973,4 +973,65 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
+
+    @Test
+    public void convertQueryIgnoresFieldsFromOtherDatabasesAndTablesTest() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabaseA", "testTableX", Arrays.asList(
+            new FieldClause("testDatabaseA", "testTableX", "testField1"),
+            new FieldClause("testDatabaseA", "testTableY", "testField2"),
+            new FieldClause("testDatabaseB", "testTableX", "testField3"),
+            new FieldClause("testDatabaseB", "testTableY", "testField4")
+        )));
+
+        SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
+        SearchSourceBuilder source = createSourceBuilder().fetchSource(new String[]{ "testField1" }, null);
+        SearchRequest expected = createRequest("testDatabaseA", "testTableX", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQueryIgnoresSingularWhereFromOtherTableTest() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabaseA", "testTableX"));
+        query.setWhereClause(SingularWhereClause.fromString(
+            new FieldClause("testDatabaseA", "testTableY", "testField1"), "=", "a"));
+
+        SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
+        SearchSourceBuilder source = createSourceBuilder();
+        SearchRequest expected = createRequest("testDatabaseA", "testTableX", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQueryIgnoresSingularWhereFromOtherDatabaseTest() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabaseA", "testTableX"));
+        query.setWhereClause(SingularWhereClause.fromString(
+            new FieldClause("testDatabaseB", "testTableX", "testField1"), "=", "a"));
+
+        SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
+        SearchSourceBuilder source = createSourceBuilder();
+        SearchRequest expected = createRequest("testDatabaseA", "testTableX", source);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertQueryIgnoresMultipleWheresFromOtherDatabasesAndTablesTest() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabaseA", "testTableX"));
+        query.setWhereClause(new AndWhereClause(Arrays.asList(
+            SingularWhereClause.fromString(new FieldClause("testDatabaseA", "testTableX", "testField1"), "=", "a"),
+            SingularWhereClause.fromString(new FieldClause("testDatabaseA", "testTableY", "testField2"), "=", "b"),
+            SingularWhereClause.fromString(new FieldClause("testDatabaseB", "testTableX", "testField3"), "=", "c"),
+            SingularWhereClause.fromString(new FieldClause("testDatabaseB", "testTableY", "testField4"), "=", "d")
+        )));
+
+        SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery()
+            .must(QueryBuilders.termQuery("testField1", "a")));
+        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchRequest expected = createRequest("testDatabaseA", "testTableX", source);
+        assertThat(actual).isEqualTo(expected);
+    }
 }

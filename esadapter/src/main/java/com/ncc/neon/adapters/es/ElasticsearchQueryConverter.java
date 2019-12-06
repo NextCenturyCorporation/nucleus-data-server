@@ -15,6 +15,7 @@ import com.ncc.neon.models.queries.GroupByFieldClause;
 import com.ncc.neon.models.queries.GroupByOperationClause;
 import com.ncc.neon.models.queries.OrWhereClause;
 import com.ncc.neon.models.queries.Query;
+import com.ncc.neon.models.queries.SelectClause;
 import com.ncc.neon.models.queries.SingularWhereClause;
 import com.ncc.neon.models.queries.OrderByClause;
 import com.ncc.neon.models.queries.OrderByFieldClause;
@@ -64,10 +65,8 @@ public class ElasticsearchQueryConverter {
     public static SearchRequest convertQuery(Query query) {
         SearchSourceBuilder source = createSourceBuilderWithState(query);
 
-        if (query.getSelectClause().getFieldClauses().size() > 0) {
-            String[] includes = query.getSelectClause().getFieldClauses().stream()
-                .map(fieldClause -> fieldClause.getField()).distinct().collect(Collectors.toList())
-                .toArray(new String[] {});
+        String[] includes = collectFields(query).toArray(new String[] {});
+        if (includes.length > 0) {
             source.fetchSource(includes, null);
         }
 
@@ -75,6 +74,13 @@ public class ElasticsearchQueryConverter {
 
         SearchRequest request = createSearchRequest(source, query);
         return request;
+    }
+
+    public static List<String> collectFields(Query query) {
+        return query.getSelectClause().getFieldClauses().stream()
+            .filter(fieldClause -> fieldClause.getDatabase().equals(query.getSelectClause().getDatabase()) &&
+                fieldClause.getTable().equals(query.getSelectClause().getTable()))
+            .map(fieldClause -> fieldClause.getField()).distinct().collect(Collectors.toList());
     }
 
     /*
@@ -96,7 +102,7 @@ public class ElasticsearchQueryConverter {
 
         // Convert the WhereClauses into a single ElasticSearch QueryBuilder object
         if(whereClauses.size() > 0) {
-            QueryBuilder qbWithWhereClauses = convertWhereClauses(whereClauses);
+            QueryBuilder qbWithWhereClauses = convertWhereClauses(query.getSelectClause(), whereClauses);
             if(qbWithWhereClauses != null) {
                 ssb = ssb.query(qbWithWhereClauses);
             }
@@ -142,12 +148,12 @@ public class ElasticsearchQueryConverter {
      * this case, a BoolQueryBuilder that combines all the subsidiary QueryBuilder
      * objects
      */
-    private static QueryBuilder convertWhereClauses(List<WhereClause> whereClauses) {
+    private static QueryBuilder convertWhereClauses(SelectClause selectClause, List<WhereClause> whereClauses) {
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
         // Build the elasticsearch filters for the where clauses
         List<QueryBuilder> convertedWhereClauses = whereClauses.stream()
-            .map(whereClause -> convertWhereClause(whereClause))
+            .map(whereClause -> convertWhereClause(selectClause, whereClause))
             .filter(convertedWhereClause -> convertedWhereClause != null).collect(Collectors.toList());
 
         convertedWhereClauses.forEach(convertedWhereClause -> {
@@ -157,28 +163,28 @@ public class ElasticsearchQueryConverter {
         return convertedWhereClauses.size() > 0 ? queryBuilder : null;
     }
 
-    private static QueryBuilder convertWhereClause(WhereClause whereClause) {
+    private static QueryBuilder convertWhereClause(SelectClause selectClause, WhereClause whereClause) {
         if (whereClause instanceof SingularWhereClause) {
-            return convertSingularWhereClause((SingularWhereClause) whereClause);
+            return convertSingularWhereClause(selectClause, (SingularWhereClause) whereClause);
         }
         if (whereClause instanceof CompoundWhereClause) {
-            return convertCompoundWhereClause((CompoundWhereClause) whereClause);
+            return convertCompoundWhereClause(selectClause, (CompoundWhereClause) whereClause);
         }
         return null;
     }
 
-    private static QueryBuilder convertCompoundWhereClause(CompoundWhereClause whereClause) {
+    private static QueryBuilder convertCompoundWhereClause(SelectClause selectClause, CompoundWhereClause whereClause) {
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
         if (whereClause instanceof AndWhereClause) {
-            whereClause.getWhereClauses().stream().map(innerWhere -> convertWhereClause(innerWhere))
+            whereClause.getWhereClauses().stream().map(innerWhere -> convertWhereClause(selectClause, innerWhere))
                 .filter(inner -> inner != null).forEach(inner -> {
                     queryBuilder.must(inner);
                 });
         }
         
         if (whereClause instanceof OrWhereClause) {
-            whereClause.getWhereClauses().stream().map(innerWhere -> convertWhereClause(innerWhere))
+            whereClause.getWhereClauses().stream().map(innerWhere -> convertWhereClause(selectClause, innerWhere))
                 .filter(inner -> inner != null).forEach(inner -> {
                     queryBuilder.should(inner);
                 });
@@ -187,7 +193,12 @@ public class ElasticsearchQueryConverter {
         return queryBuilder;
     }
 
-    private static QueryBuilder convertSingularWhereClause(SingularWhereClause clause) {
+    private static QueryBuilder convertSingularWhereClause(SelectClause selectClause, SingularWhereClause clause) {
+        if (!clause.getLhs().getDatabase().equals(selectClause.getDatabase()) ||
+            !clause.getLhs().getTable().equals(selectClause.getTable())) {
+            return null;
+        }
+
         if(Arrays.asList("<", ">", "<=", ">=").contains(clause.getOperator())) {
             Object rhs = clause.isDate() ? DateUtil.transformDateToString(clause.getRhsDate()) : clause.getRhs();
 
@@ -245,8 +256,7 @@ public class ElasticsearchQueryConverter {
      * doc_count in the buckets
     */
     private static void convertAggregations(Query query, SearchSourceBuilder source) {
-        List<String> fields = query.getSelectClause().getFieldClauses().stream()
-            .map(fieldClause -> fieldClause.getField()).collect(Collectors.toList());
+        List<String> fields = collectFields(query);
 
         if (query.isDistinct()) {
             if (fields.size() == 0 || fields.size() > 1) {

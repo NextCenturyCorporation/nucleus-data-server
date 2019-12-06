@@ -50,7 +50,7 @@ public class QueryJsonTest {
         boolean isDistinct = false;
 
         Query query = new Query(selectClause, whereClause, aggregateClauses, groupByClauses, orderByClauses,
-            limitClause, offsetClause, isDistinct);
+            limitClause, offsetClause, List.of(), isDistinct);
 
         assertThat(this.json.read("/json/queryWithNegativeDouble.json")).isEqualTo(query);
     }
@@ -68,7 +68,7 @@ public class QueryJsonTest {
         boolean isDistinct = false;
 
         Query query = new Query(selectClause, whereClause, aggregateClauses, groupByClauses, orderByClauses,
-            limitClause, offsetClause, isDistinct);
+            limitClause, offsetClause, List.of(), isDistinct);
 
         assertThat(this.json.read("/json/queryWithNegativeInt.json")).isEqualTo(query);
     }
@@ -88,7 +88,7 @@ public class QueryJsonTest {
         boolean isDistinct = false;
 
         Query query = new Query(selectClause, whereClause, aggregateClauses, groupByClauses, orderByClauses,
-            limitClause, offsetClause, isDistinct);
+            limitClause, offsetClause, List.of(), isDistinct);
 
         return query;
     }

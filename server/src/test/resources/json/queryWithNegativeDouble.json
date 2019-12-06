@@ -14,6 +14,7 @@
   "groupByClauses": [],
   "orderByClauses": [],
   "limitClause": { "limit": 10 },
-  "offsetClause":{ "offset": 0 },
+  "offsetClause": { "offset": 0 },
+  "joinClauses": [],
   "isDistinct": false
 }

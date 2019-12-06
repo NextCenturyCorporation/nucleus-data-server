@@ -21,5 +21,6 @@
   ],
   "limitClause": { "limit": 12 },
   "offsetClause":{ "offset": 34 },
+  "joinClauses": [],
   "isDistinct": false
 }

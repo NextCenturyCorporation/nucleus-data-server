@@ -26,6 +26,7 @@ public class Query {
     List<OrderByClause> orderByClauses = new ArrayList<>();
     LimitClause limitClause;
     OffsetClause offsetClause;
+    List<JoinClause> joinClauses = new ArrayList<>();
 
     @JsonProperty(value = "isDistinct")
     boolean isDistinct = false;

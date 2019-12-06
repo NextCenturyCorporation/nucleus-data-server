@@ -9,8 +9,10 @@ import com.ncc.neon.models.queries.AggregateByFieldClause;
 import com.ncc.neon.models.queries.AggregateByTotalCountClause;
 import com.ncc.neon.models.queries.AndWhereClause;
 import com.ncc.neon.models.queries.CompoundWhereClause;
+import com.ncc.neon.models.queries.FieldsWhereClause;
 import com.ncc.neon.models.queries.GroupByFieldClause;
 import com.ncc.neon.models.queries.GroupByOperationClause;
+import com.ncc.neon.models.queries.JoinClause;
 import com.ncc.neon.models.queries.OrWhereClause;
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.queries.SingularWhereClause;
@@ -31,7 +33,11 @@ public class SqlQueryConverter {
                 appendOrderBy(
                     appendGroupBy(
                         appendWhere(
-                            appendSelect(new StringBuilder(), query, type),
+                            appendJoin(
+                                appendSelect(new StringBuilder(), query, type),
+                                query,
+                                type
+                            ),
                             query,
                             type
                         ),
@@ -42,6 +48,7 @@ public class SqlQueryConverter {
                 query
             ).toString();
         } catch (Exception e) {
+            System.err.println(e);
             return null;
         }
     }
@@ -57,6 +64,43 @@ public class SqlQueryConverter {
             return builder.append(" GROUP BY ").append(groups.stream().collect(Collectors.joining(", ")));
         }
         return builder;
+    }
+
+    private static StringBuilder appendJoin(StringBuilder builder, Query query, SqlType type) {
+        System.out.println("number of joins " + query.getJoinClauses().size());
+        for (JoinClause joinClause : query.getJoinClauses()) {
+            String joinType = retrieveJoinType(joinClause);
+            System.out.println("join clause " + joinClause.toString());
+            System.out.println("join of type " + joinType);
+            if (joinType.equals("FULL JOIN") && type == SqlType.MYSQL) {
+                throw new UnsupportedOperationException("MySQL does not support full joins.");
+            }
+            else {
+                builder.append(" ").append(joinType).append(" ").append(joinClause.getDatabase()).append(".")
+                    .append(joinClause.getTable()).append(" ON ")
+                    .append(transformWhere(joinClause.getOnClause(), type));
+            }
+        }
+        return builder;
+    }
+
+    private static String retrieveJoinType(JoinClause joinClause) {
+        if (joinClause.getType().toUpperCase().equals("CROSS")) {
+            return "CROSS JOIN";
+        }
+        if (joinClause.getType().toUpperCase().equals("FULL")) {
+            return "FULL JOIN";
+        }
+        if (joinClause.getType().toUpperCase().equals("INNER")) {
+            return "INNER JOIN";
+        }
+        if (joinClause.getType().toUpperCase().equals("LEFT")) {
+            return "LEFT JOIN";
+        }
+        if (joinClause.getType().toUpperCase().equals("RIGHT")) {
+            return "RIGHT JOIN";
+        }
+        return "JOIN";
     }
 
     private static StringBuilder appendLimitAndOffset(StringBuilder builder, Query query) throws Exception {
@@ -154,6 +198,21 @@ public class SqlQueryConverter {
             innerWhereString != null).collect(Collectors.joining(joinType)) + ")";
     }
 
+    private static String transformFieldsWhere(FieldsWhereClause where, SqlType type) {
+        String field1 = where.getLhs().getComplete();
+        String field2 = where.getRhs().getComplete();
+
+        if(Arrays.asList("contains", "not contains", "notcontains").contains(where.getOperator())) {
+            boolean not = !where.getOperator().equals("contains");
+            String operator = (type == SqlType.POSTGRESQL ? (not ? "!~" : "~") : ((not ? "NOT " : "") + "REGEXP"));
+            return field1 + " " + operator + " " + field2;
+        }
+
+        String operator = (where.getOperator().equals("notin") ? "NOT IN" : where.getOperator().toUpperCase());
+
+        return field1 + " " + operator + " " + field2;
+    }
+
     private static String transformSingularWhere(SingularWhereClause where, SqlType type) {
         String field = where.getLhs().getComplete();
 
@@ -166,6 +225,7 @@ public class SqlQueryConverter {
         if (where.isNull() && Arrays.asList("=", "!=").contains(where.getOperator())) {
             return field + " IS" + (where.getOperator().equals("=") ? "" : " NOT") + " NULL";
         }
+
         if (where.isBoolean() && Arrays.asList("=", "!=").contains(where.getOperator())) {
             return (!(where.getOperator().equals("=") ^ where.getRhsBoolean()) ? "" : "NOT ") + field;
         }
@@ -190,6 +250,9 @@ public class SqlQueryConverter {
         }
         if (where instanceof CompoundWhereClause) {
             return transformCompoundWhere((CompoundWhereClause) where, type);
+        }
+        if (where instanceof FieldsWhereClause) {
+            return transformFieldsWhere((FieldsWhereClause) where, type);
         }
         return null;
     }

@@ -6,9 +6,12 @@ import com.ncc.neon.models.queries.AggregateByFieldClause;
 import com.ncc.neon.models.queries.AggregateByGroupCountClause;
 import com.ncc.neon.models.queries.AggregateByTotalCountClause;
 import com.ncc.neon.models.queries.AndWhereClause;
+import com.ncc.neon.models.queries.CompoundWhereClause;
 import com.ncc.neon.models.queries.FieldClause;
+import com.ncc.neon.models.queries.FieldsWhereClause;
 import com.ncc.neon.models.queries.GroupByFieldClause;
 import com.ncc.neon.models.queries.GroupByOperationClause;
+import com.ncc.neon.models.queries.JoinClause;
 import com.ncc.neon.models.queries.LimitClause;
 import com.ncc.neon.models.queries.OffsetClause;
 import com.ncc.neon.models.queries.OrWhereClause;
@@ -655,6 +658,109 @@ public class QueryBuilder {
         query.setAggregateClauses(Arrays.asList(
             new AggregateByFieldClause(new FieldClause("testDatabase", "testTable", "testAggField"), "testAggLabel1", "count"),
             new AggregateByFieldClause(new FieldClause("testDatabase", "testTable", "testAggField"), "testAggLabel2", "sum")
+        ));
+        return query;
+    }
+
+    protected Query buildQueryJoin() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTableA"));
+        query.setJoinClauses(Arrays.asList(new JoinClause("", "testDatabase", "testTableB", new FieldsWhereClause(
+            new FieldClause("testDatabase", "testTableA", "testField1"),
+            "=",
+            new FieldClause("testDatabase", "testTableB", "testField2")
+        ))));
+        return query;
+    }
+
+    protected Query buildQueryCrossJoin() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTableA"));
+        query.setJoinClauses(Arrays.asList(new JoinClause("cross", "testDatabase", "testTableB", new FieldsWhereClause(
+            new FieldClause("testDatabase", "testTableA", "testField1"),
+            "=",
+            new FieldClause("testDatabase", "testTableB", "testField2")
+        ))));
+        return query;
+    }
+
+    protected Query buildQueryFullJoin() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTableA"));
+        query.setJoinClauses(Arrays.asList(new JoinClause("full", "testDatabase", "testTableB", new FieldsWhereClause(
+            new FieldClause("testDatabase", "testTableA", "testField1"),
+            "=",
+            new FieldClause("testDatabase", "testTableB", "testField2")
+        ))));
+        return query;
+    }
+
+    protected Query buildQueryInnerJoin() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTableA"));
+        query.setJoinClauses(Arrays.asList(new JoinClause("inner", "testDatabase", "testTableB", new FieldsWhereClause(
+            new FieldClause("testDatabase", "testTableA", "testField1"),
+            "=",
+            new FieldClause("testDatabase", "testTableB", "testField2")
+        ))));
+        return query;
+    }
+
+    protected Query buildQueryLeftJoin() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTableA"));
+        query.setJoinClauses(Arrays.asList(new JoinClause("left", "testDatabase", "testTableB", new FieldsWhereClause(
+            new FieldClause("testDatabase", "testTableA", "testField1"),
+            "=",
+            new FieldClause("testDatabase", "testTableB", "testField2")
+        ))));
+        return query;
+    }
+
+    protected Query buildQueryRightJoin() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTableA"));
+        query.setJoinClauses(Arrays.asList(new JoinClause("right", "testDatabase", "testTableB", new FieldsWhereClause(
+            new FieldClause("testDatabase", "testTableA", "testField1"),
+            "=",
+            new FieldClause("testDatabase", "testTableB", "testField2")
+        ))));
+        return query;
+    }
+
+    protected Query buildQueryJoinWithCompoundOn() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTableA"));
+        query.setJoinClauses(Arrays.asList(new JoinClause("", "testDatabase", "testTableB",
+            new AndWhereClause(Arrays.asList(
+                new FieldsWhereClause(new FieldClause("testDatabase", "testTableA", "testField1"), "=",
+                    new FieldClause("testDatabase", "testTableB", "testField2")),
+                SingularWhereClause.fromDouble(new FieldClause("testDatabase", "testTableA", "testField3"), "!=", 0),
+                SingularWhereClause.fromString(new FieldClause("testDatabase", "testTableB", "testField4"), "=", "a"),
+                new OrWhereClause(Arrays.asList(
+                    SingularWhereClause.fromDate(new FieldClause("testDatabase", "testTableA", "testField5"), ">",
+                        DateUtil.transformStringToDate("2019-01-01T00:00Z")),
+                    SingularWhereClause.fromNull(new FieldClause("testDatabase", "testTableB", "testField6"), "!=")
+                ))
+            ))
+        )));
+        return query;
+    }
+
+    protected Query buildQueryMultipleJoin() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTableA"));
+        query.setJoinClauses(Arrays.asList(
+            new JoinClause("", "testDatabase", "testTableB", new FieldsWhereClause(
+                new FieldClause("testDatabase", "testTableA", "testField1"),
+                "=",
+                new FieldClause("testDatabase", "testTableB", "testField2")
+            )),
+            new JoinClause("", "testDatabase", "testTableC", new FieldsWhereClause(
+                new FieldClause("testDatabase", "testTableA", "testField1"),
+                "=",
+                new FieldClause("testDatabase", "testTableC", "testField3")
+            ))
         ));
         return query;
     }

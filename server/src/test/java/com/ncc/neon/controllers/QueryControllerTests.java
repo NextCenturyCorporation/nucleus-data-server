@@ -115,7 +115,7 @@ public class QueryControllerTests {
         boolean isDistinct = false;
 
         Query query = new Query(selectClause, whereClause, aggregateClauses, groupByClauses, orderByClauses,
-            limitClause, offsetClause, isDistinct);
+            limitClause, offsetClause, List.of(), isDistinct);
 
         this.webClient.post()
                 .uri("/queryservice/query/localhost/dummy")
