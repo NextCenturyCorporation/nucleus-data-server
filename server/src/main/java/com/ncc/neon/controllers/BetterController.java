@@ -67,16 +67,17 @@ public class BetterController {
     @ResponseBody
     ResponseEntity<?> download(@RequestParam("file") String file) {
         ResponseEntity res;
-        // TODO: set path to share dir env var.
         // TODO: don't allow relative paths.
         String shareDir = System.getenv("SHARE_DIR");
 
+        // Default to a known directory.
         if (shareDir == null) {
             shareDir = "share";
         }
 
         Path fileRef = Paths.get(shareDir).resolve(file);
         Resource resource = null;
+        
         try {
             resource = new UrlResource(fileRef.toUri());
 
