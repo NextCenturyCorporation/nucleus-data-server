@@ -8,6 +8,15 @@ group = 'com.ncc.neon'
 
 repositories {
     mavenCentral()
+    maven {
+      url "https://repo.spring.io/release"
+    }
+    maven {
+      url "https://repo.spring.io/milestone"
+    }
+    maven {
+      url "https://repo.spring.io/snapshot"
+    }
 }
 
 springBoot {
@@ -32,14 +41,22 @@ dependencies {
     serverAdapters.split(',').each {
         compile project(':' + it)
     }
-    implementation('org.springframework.boot:spring-boot-starter-actuator')
-    implementation('org.springframework.boot:spring-boot-starter-webflux')
-    implementation('com.fasterxml.jackson.dataformat:jackson-dataformat-yaml')
+    compileLibraries.each {
+        compileOnly it
+    }
+    implementationLibraries.each {
+        implementation it
+    }
+    runtimeLibraries.each {
+        runtimeOnly it
+    }
+    testCompileLibraries.each {
+        testCompile it
+    }
+    testImplementationLibraries.each {
+        testImplementation it
+    }
     implementation('com.opencsv:opencsv:4.6')
-    runtimeOnly('org.springframework.boot:spring-boot-devtools')
-    compileOnly('org.projectlombok:lombok')
-    testImplementation('org.springframework.boot:spring-boot-starter-test')
-    testImplementation('io.projectreactor:reactor-test')
 }
 
 task unpack(type: Copy) {

@@ -9,6 +9,15 @@ targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
+    maven {
+      url "https://repo.spring.io/release"
+    }
+    maven {
+      url "https://repo.spring.io/milestone"
+    }
+    maven {
+      url "https://repo.spring.io/snapshot"
+    }
 }
 
 springBoot {
@@ -19,7 +28,7 @@ springBoot {
 jar {
     enabled = true
     //Excluding this as its a only use if for VScode see class for more info
-    exclude '**/EsNeonServerApplication*'
+    exclude '**/SqlNeonServerApplication*'
 }
 
 bootJar {
@@ -30,15 +39,19 @@ bootJar {
 task unpack(type: Copy) {
     dependsOn bootJar
     from(zipTree(tasks.bootJar.outputs.files.singleFile))
-    exclude '**/EsNeonServerApplication*'
+    exclude '**/SqlNeonServerApplication*'
     into("build/dependency")
 }
 
 dependencies {
     compile project(':common')
-    compile 'org.elasticsearch:elasticsearch:6.4.3'
-    compile 'org.elasticsearch.client:elasticsearch-rest-client:6.4.3'
-    compile 'org.elasticsearch.client:elasticsearch-rest-high-level-client:6.4.3'
+    compile 'mysql:mysql-connector-java'
+    compile 'org.postgresql:postgresql'
+    implementation 'org.springframework.data:spring-data-r2dbc:1.0.0.RC1'
+    implementation 'io.r2dbc:r2dbc-pool:0.8.0.RC2'
+    //implementation 'io.r2dbc:r2dbc-client:0.8.0.RC2'
+    implementation 'dev.miku:r2dbc-mysql:0.8.0.RC2'
+    implementation 'io.r2dbc:r2dbc-postgresql:0.8.0.RC2'
     compileLibraries.each {
         compileOnly it
     }

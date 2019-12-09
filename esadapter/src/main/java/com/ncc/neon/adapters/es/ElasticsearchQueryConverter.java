@@ -64,7 +64,7 @@ public class ElasticsearchQueryConverter {
         SearchSourceBuilder source = createSourceBuilderWithState(query);
 
         if (query.getFields() != null && query.getFields() != SelectClause.ALL_FIELDS) {
-            String[] includes = query.getFields().toArray(new String[query.getFields().size()]);
+            String[] includes = query.getFields().stream().distinct().collect(Collectors.toList()).toArray(new String[] {});
             source.fetchSource(includes, null);
         }
 
@@ -92,9 +92,9 @@ public class ElasticsearchQueryConverter {
         SearchSourceBuilder ssb = createSearchSourceBuilder(query);
 
         // Convert the WhereClauses into a single ElasticSearch QueryBuilder object
-        if(whereClauses.size() > 0) {
+        if (whereClauses.size() > 0) {
             QueryBuilder qbWithWhereClauses = convertWhereClauses(whereClauses);
-            if(qbWithWhereClauses != null) {
+            if (qbWithWhereClauses != null) {
                 ssb = ssb.query(qbWithWhereClauses);
             }
         }
@@ -123,7 +123,7 @@ public class ElasticsearchQueryConverter {
     private static Collection<? extends WhereClause> getCountFieldClauses(Query query) {
         List<SingularWhereClause> clauses = new ArrayList<>();
 
-        if(query.getAggregates() != null) {
+        if (query.getAggregates() != null) {
             // Do not add an exists filter (!= null) on fields that are group function names since they are not real fields!
             Map<String, Boolean> groupNames = query.getGroupByClauses().stream().filter(clause -> clause instanceof GroupByFunctionClause)
                 .map(clause -> ((GroupByFunctionClause) clause).getName()).collect(Collectors.toMap(name -> name, name -> true));
@@ -201,7 +201,7 @@ public class ElasticsearchQueryConverter {
     }
 
     private static QueryBuilder convertSingularWhereClause(SingularWhereClause clause) {
-        if(Arrays.asList("<", ">", "<=", ">=").contains(clause.getOperator())) {
+        if (Arrays.asList("<", ">", "<=", ">=").contains(clause.getOperator())) {
             Object rhs = clause.isDate() ? DateUtil.transformDateToString(clause.getRhsDate()) : clause.getRhs();
 
             UnaryOperator<RangeQueryBuilder> outputRqb = inputRqb -> {
@@ -217,16 +217,16 @@ public class ElasticsearchQueryConverter {
             return outputRqb.apply(QueryBuilders.rangeQuery(clause.getLhs()));
         };
 
-        if(Arrays.asList("contains", "not contains", "notcontains").contains(clause.getOperator())) {
+        if (Arrays.asList("contains", "not contains", "notcontains").contains(clause.getOperator())) {
             RegexpQueryBuilder regexFilter = QueryBuilders.regexpQuery(clause.getLhs(), ".*" + clause.getRhs() + ".*");
             return clause.getOperator().equals("contains") ? regexFilter : QueryBuilders.boolQuery().mustNot(regexFilter);
         };
 
-        if(Arrays.asList("=", "!=").contains(clause.getOperator())) {
+        if (Arrays.asList("=", "!=").contains(clause.getOperator())) {
             boolean hasValue = !(clause.isNull());
 
             // Do not create a NOT EQUALS filter on the _id field and an empty string or else ES will throw an error.
-            if(clause.getLhs().equals("_id") && clause.isString() && clause.getRhsString().equals("")) {
+            if (clause.getLhs().equals("_id") && clause.isString() && clause.getRhsString().equals("")) {
                 return null;
             }
 
@@ -238,7 +238,7 @@ public class ElasticsearchQueryConverter {
         };
 
         // TODO Should the "in" and "notin" operators be deprecated?
-        if(Arrays.asList("in", "notin").contains(clause.getOperator())) {
+        if (Arrays.asList("in", "notin").contains(clause.getOperator())) {
             TermsQueryBuilder filter = QueryBuilders.termsQuery(clause.getLhs(), Arrays.asList(clause.getRhs()));
             return (clause.getOperator().equals("in")) ? filter : QueryBuilders.boolQuery().mustNot(filter);
         };
@@ -303,7 +303,7 @@ public class ElasticsearchQueryConverter {
                 source.aggregation(metricAgg);
             });
 
-            if(query.getSortClauses() != null) {
+            if (query.getSortClauses() != null) {
                 query.getSortClauses().stream().map(ElasticsearchQueryConverter::convertSortClause).forEach(clause -> {
                     source.sort(clause);
                 });
@@ -314,7 +314,7 @@ public class ElasticsearchQueryConverter {
     private static List<StatsAggregationBuilder> getMetricAggregations(Query query) {
         List<StatsAggregationBuilder> aggregates = new ArrayList<StatsAggregationBuilder>();
 
-        if(query.getAggregates() != null) {
+        if (query.getAggregates() != null) {
             aggregates = query.getAggregates().stream()
             .filter(clause -> {
                 return !isTotalCountAggregation(clause) && !isCountFieldAggregation(clause);
@@ -334,7 +334,7 @@ public class ElasticsearchQueryConverter {
         if (query.getFilter() != null && query.getFilter().getTableName() != null) {
             String indexType = query.getFilter().getTableName();
             // Assumes ES7 if type="properties"
-            if(indexType.equals("properties")) {
+            if (indexType.equals("properties")) {
                 indexType = "_doc";
             }
             String[] indexTypeArray = {indexType};
@@ -394,7 +394,7 @@ public class ElasticsearchQueryConverter {
             ? params.getFilter().getTableName() : "_all";
 
         // Assumes ES7 if type="properties"
-        if(indexType.equals("properties")) {
+        if (indexType.equals("properties")) {
             indexType = "_doc";
         }
 
@@ -441,7 +441,7 @@ public class ElasticsearchQueryConverter {
             .field(clause.getField()).dateHistogramInterval(interval).format(format);
 
         // TODO: is this needed?
-        if(clause.getOperation().equals("dayOfWeek")) {
+        if (clause.getOperation().equals("dayOfWeek")) {
             dateHist.offset("1d");
         }
 
@@ -449,12 +449,12 @@ public class ElasticsearchQueryConverter {
     }
 
     private static AggregationBuilder convertGroupByClause(Query query, GroupByClause clause) {
-        if(clause instanceof GroupByFieldClause) {
+        if (clause instanceof GroupByFieldClause) {
             GroupByFieldClause fieldClause = (GroupByFieldClause) clause;
             TermsAggregationBuilder termsAggBuilder = AggregationBuilders.terms(fieldClause.getField()).field(fieldClause.getField()).size(getLimit(query));
             SortClause sortClause = findMatchingSortClause(query, fieldClause);
 
-            if(sortClause != null) {
+            if (sortClause != null) {
                 boolean sortOrder = sortClause.getSortOrder().getDirection() == SortClauseOrder.ASCENDING.getDirection();
                 termsAggBuilder.order(BucketOrder.key(sortOrder));
             }
@@ -462,9 +462,9 @@ public class ElasticsearchQueryConverter {
             return termsAggBuilder;
         }
 
-        if(clause instanceof GroupByFunctionClause) {
+        if (clause instanceof GroupByFunctionClause) {
             GroupByFunctionClause funcClause = (GroupByFunctionClause) clause;
-            if(Arrays.asList(DATE_OPERATIONS).contains(funcClause.getOperation())) {
+            if (Arrays.asList(DATE_OPERATIONS).contains(funcClause.getOperation())) {
                 switch (funcClause.getOperation()) {
                     case "year": return createDateHistAggBuilder(funcClause, DateHistogramInterval.YEAR, "yyyy");
                     case "month": return createDateHistAggBuilder(funcClause, DateHistogramInterval.MONTH, "M");
