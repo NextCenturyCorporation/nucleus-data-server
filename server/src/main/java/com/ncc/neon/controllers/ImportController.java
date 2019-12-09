@@ -46,7 +46,7 @@ public class ImportController {
             importQuery.getHostName(), 
             importQuery.getDatabase(), 
             importQuery.getTable(), 
-            importQuery.getSource().size()
+            importQuery.getSource() != null ? importQuery.getSource().size() : 0
         ));
 
         if (StringUtils.isBlank(importQuery.getDataStoreType()) || 
