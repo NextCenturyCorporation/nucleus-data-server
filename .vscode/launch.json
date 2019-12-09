@@ -16,7 +16,7 @@
             "request": "launch",
             "cwd": "${workspaceFolder}/server",
             "console": "internalConsole",
-            "mainClass": "com.ncc.neon.server.NeonServerApplication",
+            "mainClass": "com.ncc.neon.NeonServerApplication",
             "projectName": "server",
             "args": ""
         },

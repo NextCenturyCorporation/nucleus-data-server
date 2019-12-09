@@ -2,6 +2,7 @@ package com.ncc.neon.adapters.es;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -10,6 +11,7 @@ import java.util.stream.Collectors;
 import com.ncc.neon.adapters.QueryAdapter;
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.results.FieldTypePair;
+import com.ncc.neon.models.results.ImportResult;
 import com.ncc.neon.models.results.TableWithFields;
 import com.ncc.neon.models.results.TabularQueryResult;
 
@@ -25,6 +27,11 @@ import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
+import org.elasticsearch.action.admin.indices.shards.IndicesShardStoresResponse.Failure;
+import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -32,19 +39,20 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.common.xcontent.XContentType;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import lombok.extern.slf4j.Slf4j;
-
 @Slf4j
 public class ElasticsearchAdapter implements QueryAdapter {
     RestHighLevelClient client;
 
     public ElasticsearchAdapter(String host, int port, String username, String password) {
         RestClientBuilder builder = RestClient.builder(new HttpHost(host, port));
-        if(username != null && password != null) {
+        if (username != null && password != null) {
             final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
             credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
             builder.setHttpClientConfigCallback(new HttpClientConfigCallback() {
@@ -81,7 +89,7 @@ public class ElasticsearchAdapter implements QueryAdapter {
             e.printStackTrace();
         }
 
-        if(response != null) {
+        if (response != null) {
             results = ElasticsearchResultsConverter.convertResults(query, response);
         }
 
@@ -95,7 +103,7 @@ public class ElasticsearchAdapter implements QueryAdapter {
      * behavior of index searches.
      */
     private void checkDatabaseAndTableExists(Query query) {
-        if(query == null || query.getFilter() == null) {
+        if (query == null || query.getFilter() == null) {
             throw new ResourceNotFoundException("Query does not exist");
         }
 
@@ -150,7 +158,7 @@ public class ElasticsearchAdapter implements QueryAdapter {
     }
 
     @Override
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Flux<TableWithFields> getTableAndFieldNames(String databaseName) {
         GetMappingsRequest request = new GetMappingsRequest();
         request.indices(databaseName);
@@ -159,7 +167,7 @@ public class ElasticsearchAdapter implements QueryAdapter {
             response.getMappings().get(databaseName).keysIt().forEachRemaining(tableName -> {
                 Map<String, Map> mappingProperties = getPropertiesFromMapping(response, databaseName, tableName);
                 List<String> fieldNames = getFieldNamesFromMapping(mappingProperties, null);
-                if(!fieldNames.contains("_id")) {
+                if (!fieldNames.contains("_id")) {
                     fieldNames.add("_id");
                 }
                 sink.next(new TableWithFields(tableName, fieldNames));
@@ -174,7 +182,7 @@ public class ElasticsearchAdapter implements QueryAdapter {
         // This won't work on an ES6 index with a tableName="properties"
         if (tableName.equals("properties")) {
             return (Map<String, Map>) mappingTable.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                entry -> (Map) entry.getValue()));
+                    entry -> (Map) entry.getValue()));
         }
         return (Map<String, Map>) mappingTable.get("properties");
     }
@@ -190,9 +198,9 @@ public class ElasticsearchAdapter implements QueryAdapter {
     /*
      * Helper function for getfieldname and getfieldtypes as they are the same
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private <T> Flux<T> getMappings(String databaseName, String tableName,
-            BiConsumer<FluxSink<T>, Map<String, Map>> mappingConsumer) {
+                                    BiConsumer<FluxSink<T>, Map<String, Map>> mappingConsumer) {
         GetMappingsRequest request = new GetMappingsRequest();
         request.indices(databaseName);
 
@@ -203,7 +211,7 @@ public class ElasticsearchAdapter implements QueryAdapter {
     }
 
     /* Recursive function to get all the properties */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private List<FieldTypePair> getFieldsFromMapping(Map<String, Map> mappingProperties, String parentFieldName) {
         List<FieldTypePair> fieldTypePairs = new ArrayList<>();
         mappingProperties.forEach((fieldName, value) -> {
@@ -223,7 +231,7 @@ public class ElasticsearchAdapter implements QueryAdapter {
     }
 
     /* Recursive function to get all the field names */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private List<String> getFieldNamesFromMapping(Map<String, Map> mappingProperties, String parentFieldName) {
         List<String> fields = new ArrayList<>();
         mappingProperties.forEach((fieldName, value) -> {
@@ -251,7 +259,7 @@ public class ElasticsearchAdapter implements QueryAdapter {
 
     /* Every method need to convert into a flux */
     private <T> Flux<T> getMappingRequestToFlux(GetMappingsRequest request,
-            BiConsumer<FluxSink<T>, GetMappingsResponse> responseHandler) {
+                                                BiConsumer<FluxSink<T>, GetMappingsResponse> responseHandler) {
         return Flux.create(sink -> {
             client.indices().getMappingAsync(request, RequestOptions.DEFAULT,
                     new ActionListener<GetMappingsResponse>() {
@@ -267,6 +275,42 @@ public class ElasticsearchAdapter implements QueryAdapter {
                             sink.error(e);
                         }
                     });
+        });
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public Mono<ImportResult> addData(String databaseName, String tableName, List<String> sourceData) {
+
+        BulkRequest bulkRequest = new BulkRequest();
+        bulkRequest.timeout(TimeValue.timeValueMinutes(1));
+        sourceData.forEach((String record) -> {
+            bulkRequest.add(new IndexRequest(databaseName, tableName).source(record, XContentType.JSON));
+        });
+
+        return Mono.create(sink -> {
+        client.bulkAsync(bulkRequest, new ActionListener<BulkResponse>() {
+                @Override
+                public void onResponse(BulkResponse bulkResponse) {
+                    List<String> recordErrors = new ArrayList<>();
+
+                    if (bulkResponse.hasFailures())
+                    {
+                        recordErrors = Arrays.stream(bulkResponse.getItems())
+                        .filter(item -> item.isFailed()).map((BulkItemResponse item) -> {
+                            return String.format("%d,%s", item.getFailure().getSeqNo(), item.getFailure().getMessage());
+                        }).collect(Collectors.toList());
+                    }
+
+                    sink.success(new ImportResult(recordErrors));
+
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    sink.error(e);
+                }
+            });
         });
     }
 

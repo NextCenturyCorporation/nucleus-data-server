@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
+import com.ncc.neon.NeonServerApplication;
 import com.ncc.neon.models.queries.AggregateClause;
 import com.ncc.neon.models.queries.Filter;
 import com.ncc.neon.models.queries.GroupByClause;
@@ -19,9 +20,11 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import org.springframework.boot.test.json.JacksonTester;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
+@ContextConfiguration(classes = NeonServerApplication.class)
 @JsonTest
 public class QueryJsonTest {
 
