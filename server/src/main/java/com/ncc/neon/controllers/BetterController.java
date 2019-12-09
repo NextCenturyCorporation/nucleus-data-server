@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -19,14 +20,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.ResponseBody;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @CrossOrigin(origins = "*")
@@ -36,7 +40,7 @@ import java.util.UUID;
 public class BetterController {
     OkHttpClient client = new OkHttpClient();
     ObjectMapper objectMapper = new ObjectMapper();
-    RestHighLevelClient rhlc = new RestHighLevelClient(RestClient.builder(new HttpHost("localhost", 9200, "http")));
+    RestHighLevelClient rhlc = new RestHighLevelClient(RestClient.builder(new HttpHost("elasticsearch", 9200, "http")));
 
     @GetMapping(path = "willOverwrite")
     public boolean willOverwrite(@RequestParam("file") String file) {
@@ -45,8 +49,8 @@ public class BetterController {
     }
 
     @PostMapping(path = "upload")
-    Mono<ResponseEntity> upload(@RequestPart("file") Mono<FilePart> file) {
-        // TODO: Return message if file is not provided.
+    ResponseEntity<Flux<?>> upload(@RequestPart("file") Mono<FilePart> file) {
+        // TODO: Return error message if file is not provided.
 
         String shareDir = System.getenv("SHARE_DIR");
 
@@ -56,10 +60,13 @@ public class BetterController {
         }
 
         final String finalShareDir = Paths.get(".").resolve(shareDir).toString();
+        File temp = new File("temp");
 
-        return file.flatMap(it -> it.transferTo(Paths.get(finalShareDir)
-                .resolve(Objects.requireNonNull(it.filename()))))
-                .then(Mono.just(ResponseEntity.ok().body("Ok")));
+        Mono<Void> writeFileMono = file.flatMap(it -> it.transferTo(Paths.get(finalShareDir).resolve(Objects.requireNonNull(it.filename()))));
+        Mono<Void> fileRefMono = file.flatMap(it -> it.transferTo(temp));
+        Mono<Object> storeInEsMono = file.flatMap(it -> storeInES(new BetterFile[] {new BetterFile(Math.toIntExact(temp.length()), it.filename())}));
+
+        return ResponseEntity.ok().body(Flux.merge(writeFileMono, fileRefMono, storeInEsMono));
     }
 
     @GetMapping(path = "download")
@@ -143,19 +150,23 @@ public class BetterController {
         }
     }
 
-    private void storeInES(BetterFile[] bf) {
+    private Mono<RestStatus> storeInES(BetterFile[] bf) {
         for (BetterFile file: bf) {
             UUID uuid = UUID.randomUUID();
             file.setId(uuid.toString());
             Map<String, Object> bfMapper = objectMapper.convertValue(file, Map.class);
             IndexRequest indexRequest = new IndexRequest("files", "filedata", file.getId()).source(bfMapper);
-            try {
-                IndexResponse indexResponse = rhlc.index(indexRequest, RequestOptions.DEFAULT);
-                System.out.println(indexResponse.getResult().name());
-            } catch(IOException ioe) {
-                ioe.printStackTrace();
-            }
+            return Mono.create(sink -> {
+                try {
+                    IndexResponse response = rhlc.index(indexRequest, RequestOptions.DEFAULT);
+                    sink.success(response.status());
+                } catch (IOException e) {
+                    sink.error(e);
+                }
+            });
         }
+
+        return Mono.justOrEmpty(Optional.empty());
     }
 
 }
