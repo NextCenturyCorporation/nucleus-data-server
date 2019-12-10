@@ -91,18 +91,27 @@ public class BetterController {
         // Variable used in lambda should be final.
         final String finalShareDir = Paths.get(".").resolve(shareDir).toString();
 
+        // First, delete the file from disk.
         Mono<Boolean> deleteFileMono =  Mono.create(sink -> {
             try {
+                // Get the file doc by id.
                 GetRequest gr = new GetRequest("files", "filedata", id);
                 GetResponse response = rhlc.get(gr, RequestOptions.DEFAULT);
+
+                // Get the filename from the doc map.
                 final String filename = response.getSource().get("filename").toString();
+
+                // Append filename to share directory.
                 String filepath = Paths.get(finalShareDir).resolve(filename).toString();
+
+                // Delete the document.
                 sink.success(new File(filepath).delete());
             } catch (IOException e) {
                 sink.error(e);
             }
         });
 
+        // Delete the doc from elasticsearch.
         Mono<RestStatus> deleteDocMono =  Mono.create(sink -> {
             try {
                 DeleteRequest dr = new DeleteRequest("files", "filedata", id);
