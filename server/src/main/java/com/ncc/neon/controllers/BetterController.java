@@ -59,13 +59,18 @@ public class BetterController {
             shareDir = "share";
         }
 
+        // Variable used in lambda should be final.
         final String finalShareDir = Paths.get(".").resolve(shareDir).toString();
+
+        // Placeholder so we can get the size of the file.
         File temp = new File("temp");
 
+        // Set up monos for async operations.
         Mono<Void> writeFileMono = file.flatMap(it -> it.transferTo(Paths.get(finalShareDir).resolve(Objects.requireNonNull(it.filename()))));
         Mono<Void> fileRefMono = file.flatMap(it -> it.transferTo(temp));
         Mono<Object> storeInEsMono = file.flatMap(it -> storeInES(new BetterFile[] {new BetterFile(Math.toIntExact(temp.length()), it.filename())}));
 
+        // Perform a merge so each operation is run sequentially.
         return ResponseEntity.ok().body(Flux.merge(writeFileMono, fileRefMono, storeInEsMono));
     }
 
@@ -156,6 +161,8 @@ public class BetterController {
             file.setId(uuid.toString());
             Map<String, Object> bfMapper = objectMapper.convertValue(file, Map.class);
             IndexRequest indexRequest = new IndexRequest("files", "filedata", file.getId()).source(bfMapper);
+
+            // Wrap the async part in a mono.
             return Mono.create(sink -> {
                 try {
                     IndexResponse response = rhlc.index(indexRequest, RequestOptions.DEFAULT);
