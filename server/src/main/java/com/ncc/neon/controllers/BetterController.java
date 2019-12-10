@@ -5,6 +5,10 @@ import com.ncc.neon.models.BetterFile;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.http.HttpHost;
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.io.Resource;
@@ -66,12 +70,50 @@ public class BetterController {
         File temp = new File("temp");
 
         // Set up monos for async operations.
+        // TODO: Handle intermediate operation failure.
         Mono<Void> writeFileMono = file.flatMap(it -> it.transferTo(Paths.get(finalShareDir).resolve(Objects.requireNonNull(it.filename()))));
         Mono<Void> fileRefMono = file.flatMap(it -> it.transferTo(temp));
         Mono<Object> storeInEsMono = file.flatMap(it -> storeInES(new BetterFile[] {new BetterFile(Math.toIntExact(temp.length()), it.filename())}));
 
         // Perform a merge so each operation is run sequentially.
         return ResponseEntity.ok().body(Flux.merge(writeFileMono, fileRefMono, storeInEsMono));
+    }
+
+    @DeleteMapping(path = "file/{id}")
+    ResponseEntity<Flux<?>> delete(@PathVariable("id") String id) {
+        String shareDir = System.getenv("SHARE_DIR");
+
+        // Default to a known directory.
+        if (shareDir == null) {
+            shareDir = "share";
+        }
+
+        // Variable used in lambda should be final.
+        final String finalShareDir = Paths.get(".").resolve(shareDir).toString();
+
+        Mono<Boolean> deleteFileMono =  Mono.create(sink -> {
+            try {
+                GetRequest gr = new GetRequest("files", "filedata", id);
+                GetResponse response = rhlc.get(gr, RequestOptions.DEFAULT);
+                final String filename = response.getSource().get("filename").toString();
+                String filepath = Paths.get(finalShareDir).resolve(filename).toString();
+                sink.success(new File(filepath).delete());
+            } catch (IOException e) {
+                sink.error(e);
+            }
+        });
+
+        Mono<RestStatus> deleteDocMono =  Mono.create(sink -> {
+            try {
+                DeleteRequest dr = new DeleteRequest("files", "filedata", id);
+                DeleteResponse response = rhlc.delete(dr, RequestOptions.DEFAULT);
+                sink.success(response.status());
+            } catch (IOException e) {
+                sink.error(e);
+            }
+        });
+
+        return ResponseEntity.ok().body(Flux.merge(deleteFileMono, deleteDocMono));
     }
 
     @GetMapping(path = "download")
