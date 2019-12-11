@@ -1,32 +1,10 @@
 package com.ncc.neon.models;
 
+import lombok.Data;
+
+@Data
 public class BetterFile {
-    int bytes;
-    String filename;
+    private final String filename;
+    private final int bytes;
     String id;
-
-    public BetterFile() {
-        super();
-    }
-
-    public BetterFile(int bytes, String filename) {
-        this.bytes = bytes;
-        this.filename = filename;
-    }
-
-    public int getBytes() {
-        return bytes;
-    }
-
-    public String getFilename() {
-        return filename;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getId() {
-        return id;
-    }
 }

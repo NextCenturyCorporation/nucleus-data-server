@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -52,6 +53,31 @@ public class BetterController {
 
     BetterController(DatasetService datasetService) {
         this.datasetService = datasetService;
+    }
+
+    @GetMapping(path = "test")
+    public ResponseEntity<?> test() {
+        Mono<?> shortMono = Mono.create(sink -> {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+                log.debug("short mono");
+                sink.success();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        Mono<?> longMono = Mono.create(sink -> {
+            try {
+                TimeUnit.SECONDS.sleep(5);
+                log.debug("long mono");
+                sink.success();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        return ResponseEntity.ok().body(Flux.merge(shortMono, longMono));
     }
 
     @GetMapping(path = "willOverwrite")
@@ -81,56 +107,18 @@ public class BetterController {
         // TODO: Handle intermediate operation failure.
         Mono<Void> writeFileMono = file.flatMap(it -> it.transferTo(Paths.get(finalShareDir).resolve(Objects.requireNonNull(it.filename()))));
         Mono<Void> fileRefMono = file.flatMap(it -> it.transferTo(temp));
-        Mono<Object> storeInEsMono = file.flatMap(it -> storeInES(new BetterFile[] {new BetterFile(Math.toIntExact(temp.length()), it.filename())}));
+        Mono<Object> storeInEsMono = file.flatMap(it -> storeInES(new BetterFile[] {new BetterFile(it.filename(), Math.toIntExact(temp.length()))}));
 
         // Perform a merge so each operation is run sequentially.
         return ResponseEntity.ok().body(Flux.merge(writeFileMono, fileRefMono, storeInEsMono));
     }
 
     @DeleteMapping(path = "file/{id}")
-    ResponseEntity<Flux<?>> delete(@PathVariable("id") String id) {
-        String shareDir = System.getenv("SHARE_DIR");
-
-        // Default to a known directory.
-        if (shareDir == null) {
-            shareDir = "share";
-        }
-
-        // Variable used in lambda should be final.
-        final String finalShareDir = Paths.get(".").resolve(shareDir).toString();
-
-        // First, delete the file from disk.
-        Mono<Boolean> deleteFileMono =  Mono.create(sink -> {
-            try {
-                // Get the file doc by id.
-                GetRequest gr = new GetRequest("files", "filedata", id);
-                GetResponse response = rhlc.get(gr, RequestOptions.DEFAULT);
-
-                // Get the filename from the doc map.
-                final String filename = response.getSource().get("filename").toString();
-
-                // Append filename to share directory.
-                String filepath = Paths.get(finalShareDir).resolve(filename).toString();
-
-                // Delete the document.
-                sink.success(new File(filepath).delete());
-            } catch (IOException e) {
-                sink.error(e);
-            }
-        });
-
-        // Delete the doc from elasticsearch.
-        Mono<RestStatus> deleteDocMono =  Mono.create(sink -> {
-            try {
-                DeleteRequest dr = new DeleteRequest("files", "filedata", id);
-                DeleteResponse response = rhlc.delete(dr, RequestOptions.DEFAULT);
-                sink.success(response.status());
-            } catch (IOException e) {
-                sink.error(e);
-            }
-        });
-
-        return ResponseEntity.ok().body(Flux.concat(deleteFileMono, deleteDocMono, datasetService.notify(new DataNotification())));
+    Mono<?> delete(@PathVariable("id") String id) {
+        return getFileById(id)
+                .flatMap(betterFile -> deleteShareFile(betterFile.getFilename()))
+                .then(deleteFileById(id))
+                .then(datasetService.notify(new DataNotification()));
     }
 
     @GetMapping(path = "download")
@@ -233,6 +221,53 @@ public class BetterController {
         }
 
         return Mono.justOrEmpty(Optional.empty());
+    }
+
+    private Mono<BetterFile> getFileById(String id) {
+        // Get the file doc by id.
+        GetRequest gr = new GetRequest("files", "filedata", id);
+
+        return Mono.create(sink -> {
+            try {
+                GetResponse response = rhlc.get(gr, RequestOptions.DEFAULT);
+                BetterFile res = new ObjectMapper().readValue(response.getSourceAsString(), BetterFile.class);
+                sink.success(res);
+            } catch (IOException e) {
+                sink.error(e);
+            }
+        });
+    }
+
+    private Mono<RestStatus> deleteFileById(String id) {
+        DeleteRequest dr = new DeleteRequest("files", "filedata", id);
+
+        return Mono.create(sink -> {
+            try {
+                DeleteResponse response = rhlc.delete(dr, RequestOptions.DEFAULT);
+                sink.success(response.status());
+            } catch (IOException e) {
+                sink.error(e);
+            }
+        });
+    }
+
+    private Mono<Boolean> deleteShareFile(String filename) {
+        String shareDir = System.getenv("SHARE_DIR");
+
+        // Default to a known directory.
+        if (shareDir == null) {
+            shareDir = "share";
+        }
+
+        // Variable used in lambda should be final.
+        final String finalShareDir = Paths.get(".").resolve(shareDir).toString();
+
+        // Append filename to share directory.
+        String filepath = Paths.get(finalShareDir).resolve(filename).toString();
+
+        return Mono.create(sink -> {
+            sink.success(new File(filepath).delete());
+        });
     }
 
 }
