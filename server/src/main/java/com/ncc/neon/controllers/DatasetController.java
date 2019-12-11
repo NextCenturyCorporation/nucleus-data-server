@@ -1,10 +1,7 @@
 package com.ncc.neon.controllers;
 
-import java.time.Duration;
-import java.time.ZonedDateTime;
-
 import com.ncc.neon.models.DataNotification;
-import com.ncc.neon.util.DateUtil;
+import com.ncc.neon.services.DatasetService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,54 +15,34 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxProcessor;
-import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
 @CrossOrigin(origins="*")
 @RestController
 @RequestMapping("dataset")
-@Slf4j
 public class DatasetController {
 
-    final private FluxProcessor<DataNotification, DataNotification> processor;
-    final private FluxSink<DataNotification> sink;
+    private DatasetService datasetService;
 
-    DatasetController() {
-        processor = DirectProcessor.<DataNotification>create().serialize();
-        sink = processor.sink();
+    DatasetController(DatasetService datasetService) {
+        this.datasetService = datasetService;
     }
 
     /**
-     * Endpoint to be used to notify any listeners, that the datasets have been
-     * updated
-     */
-    @PostMapping(path = "notify")
-    @ResponseStatus(code = HttpStatus.ACCEPTED)
-    public ResponseEntity<Mono<String>> notifyChange(@RequestBody() DataNotification notification) {
-        if (notification.getTimestamp() == null)  {
-            notification.setTimestamp(DateUtil.transformDateToString(ZonedDateTime.now()));
-        }
-        sink.next(notification);
-        return ResponseEntity.ok().body(Mono.just(notification.getTimestamp()));
-    }
-
-    private Flux<ServerSentEvent<DataNotification>> getHeartbeatStream() {
-        return Flux.interval(Duration.ofSeconds(30))
-            .map(i -> ServerSentEvent.<DataNotification>builder().build());
-    }
-
-    /**
-     * Subscribe to data set change notifications
+     * Subscribes to data notifications and returns the ServerSentEvent listener object.
      */
     @GetMapping(path = "listen", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public ResponseEntity<Flux<ServerSentEvent<DataNotification>>> listen() {
-        return ResponseEntity.ok().header("X-Accel-Buffering", "no").body(Flux.merge(
-            getHeartbeatStream(),
-            processor.map(e -> ServerSentEvent.<DataNotification>builder(e).build())
-        ));
+        return ResponseEntity.ok().header("X-Accel-Buffering", "no").body(datasetService.listen());
+    }
+
+    /**
+     * Sends the given data notification object to all its listeners and returns the timestamp.
+     */
+    @PostMapping(path = "notify")
+    @ResponseStatus(code = HttpStatus.ACCEPTED)
+    public ResponseEntity<Mono<String>> notify(@RequestBody() DataNotification notification) {
+        return ResponseEntity.ok().body(datasetService.notify(notification));
     }
 }
