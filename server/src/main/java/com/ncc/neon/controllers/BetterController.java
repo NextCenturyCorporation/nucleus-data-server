@@ -2,6 +2,8 @@ package com.ncc.neon.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.models.BetterFile;
+import com.ncc.neon.models.DataNotification;
+import com.ncc.neon.services.DatasetService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.http.HttpHost;
@@ -45,6 +47,12 @@ public class BetterController {
     OkHttpClient client = new OkHttpClient();
     ObjectMapper objectMapper = new ObjectMapper();
     RestHighLevelClient rhlc = new RestHighLevelClient(RestClient.builder(new HttpHost("elasticsearch", 9200, "http")));
+
+    private DatasetService datasetService;
+
+    BetterController(DatasetService datasetService) {
+        this.datasetService = datasetService;
+    }
 
     @GetMapping(path = "willOverwrite")
     public boolean willOverwrite(@RequestParam("file") String file) {
@@ -122,7 +130,7 @@ public class BetterController {
             }
         });
 
-        return ResponseEntity.ok().body(Flux.merge(deleteFileMono, deleteDocMono));
+        return ResponseEntity.ok().body(Flux.concat(deleteFileMono, deleteDocMono, datasetService.notify(new DataNotification())));
     }
 
     @GetMapping(path = "download")
