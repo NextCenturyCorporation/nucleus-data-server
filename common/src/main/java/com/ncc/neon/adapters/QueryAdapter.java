@@ -56,7 +56,7 @@ public abstract class QueryAdapter {
      * Returns whether all the tables in the given query exist.
      */
     protected void verifyQueryTablesExist(Query query) {
-        if (query == null || query.getFilter() == null) {
+        if(query == null || query.getSelectClause() == null) {
             throw new RuntimeException("Query does not exist");
         }
 

@@ -6,14 +6,13 @@ import java.util.List;
 
 import com.ncc.neon.NeonServerApplication;
 import com.ncc.neon.models.queries.AggregateClause;
-import com.ncc.neon.models.queries.Filter;
 import com.ncc.neon.models.queries.GroupByClause;
 import com.ncc.neon.models.queries.GroupByFieldClause;
 import com.ncc.neon.models.queries.LimitClause;
 import com.ncc.neon.models.queries.OffsetClause;
 import com.ncc.neon.models.queries.SingularWhereClause;
-import com.ncc.neon.models.queries.SortClause;
-import com.ncc.neon.models.queries.SortClauseOrder;
+import com.ncc.neon.models.queries.OrderByClause;
+import com.ncc.neon.models.queries.Order;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,7 +32,7 @@ public class QueryJsonTest {
 
     @Test
     public void testSerializeQuery() throws Exception {
-        assertThat(this.json.write(getQuery())).isEqualToJson("/json/serializedQuery.json");
+        assertThat(this.json.write(getQuery())).isEqualToJson("/json/queryPost.json");
     }
 
     @Test
@@ -43,54 +42,57 @@ public class QueryJsonTest {
 
     @Test
     public void testDeserializeNegativeDoubleQuery() throws Exception {
-        Filter filter = new Filter("testDatabase", "testTable", null, SingularWhereClause.fromDouble("testField", "!=", -1234.5678));
-        List<String> fields = List.of("*");
-        boolean aggregateArraysByElement = false;
+        SelectClause selectClause = new SelectClause("testDatabase", "testTable");
+        WhereClause whereClause = SingularWhereClause.fromDouble(
+            new FieldClause("testDatabase", "testTable", "testField"), "!=", -1234.5678);
+        List<AggregateClause> aggregateClauses = List.of();
         List<GroupByClause> groupByClauses = List.of();
-        boolean isDistinct = false;
-        List<AggregateClause> aggregates = List.of();
-        List<SortClause> sortClauses = List.of();
+        List<OrderByClause> orderByClauses = List.of();
         LimitClause limitClause = new LimitClause(10);
         OffsetClause offsetClause = new OffsetClause(0);
+        boolean isDistinct = false;
 
-        Query query = new Query(filter, aggregateArraysByElement, isDistinct, fields, aggregates, groupByClauses,
-                sortClauses, limitClause, offsetClause);
+        Query query = new Query(selectClause, whereClause, aggregateClauses, groupByClauses, orderByClauses,
+            limitClause, offsetClause, List.of(), isDistinct);
 
         assertThat(this.json.read("/json/queryWithNegativeDouble.json")).isEqualTo(query);
     }
 
     @Test
     public void testDeserializeNegativeIntQuery() throws Exception {
-        Filter filter = new Filter("testDatabase", "testTable", null, SingularWhereClause.fromDouble("testField", "!=", -1234));
-        List<String> fields = List.of("*");
-        boolean aggregateArraysByElement = false;
+        SelectClause selectClause = new SelectClause("testDatabase", "testTable");
+        WhereClause whereClause = SingularWhereClause.fromDouble(
+            new FieldClause("testDatabase", "testTable", "testField"), "!=", -1234);
+        List<AggregateClause> aggregateClauses = List.of();
         List<GroupByClause> groupByClauses = List.of();
-        boolean isDistinct = false;
-        List<AggregateClause> aggregates = List.of();
-        List<SortClause> sortClauses = List.of();
+        List<OrderByClause> orderByClauses = List.of();
         LimitClause limitClause = new LimitClause(10);
         OffsetClause offsetClause = new OffsetClause(0);
+        boolean isDistinct = false;
 
-        Query query = new Query(filter, aggregateArraysByElement, isDistinct, fields, aggregates, groupByClauses,
-                sortClauses, limitClause, offsetClause);
+        Query query = new Query(selectClause, whereClause, aggregateClauses, groupByClauses, orderByClauses,
+            limitClause, offsetClause, List.of(), isDistinct);
 
         assertThat(this.json.read("/json/queryWithNegativeInt.json")).isEqualTo(query);
     }
 
     private Query getQuery() {
-        Filter filter = new Filter("ldc_uyg_jul_18", "ui_out", null, SingularWhereClause.fromNull("topic", "!="));
-        List<String> fields = List.of("*");
-        boolean aggregateArraysByElement = false;
-        List<GroupByClause> groupByClauses = List.of(new GroupByFieldClause("topic", "topic"),
-                new GroupByFieldClause("topic", "topic"));
+        SelectClause selectClause = new SelectClause("testDatabase", "testTable");
+        WhereClause whereClause = SingularWhereClause.fromNull(
+            new FieldClause("testDatabase", "testTable", "testWhereField"), "!=");
+        List<AggregateClause> aggregateClauses = List.of(new AggregateByFieldClause(
+            new FieldClause("testDatabase", "testTable", "testAggregateField"), "testAggregateLabel", "count"));
+        List<GroupByClause> groupByClauses = List.of(new GroupByFieldClause(
+            new FieldClause("testDatabase", "testTable", "testGroupField")));
+        List<OrderByClause> orderByClauses = List.of(new OrderByFieldClause(
+            new FieldClause("testDatabase", "testTable", "testOrderField"), Order.DESCENDING));
+        LimitClause limitClause = new LimitClause(12);
+        OffsetClause offsetClause = new OffsetClause(34);
         boolean isDistinct = false;
-        List<AggregateClause> aggregates = List.of(new AggregateClause("_aggregation", "count", "*"));
-        List<SortClause> sortClauses = List.of(new SortClause("_aggregation", SortClauseOrder.DESCENDING));
-        LimitClause limitClause = new LimitClause(11);
-        OffsetClause offsetClause = new OffsetClause(10);
 
-        Query query = new Query(filter, aggregateArraysByElement, isDistinct, fields, aggregates, groupByClauses,
-                sortClauses, limitClause, offsetClause);
+        Query query = new Query(selectClause, whereClause, aggregateClauses, groupByClauses, orderByClauses,
+            limitClause, offsetClause, List.of(), isDistinct);
+
         return query;
     }
 
