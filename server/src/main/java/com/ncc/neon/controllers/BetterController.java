@@ -157,7 +157,7 @@ public class BetterController {
     ResponseEntity<Mono<?>> tokenize(@RequestParam("file") String file, @RequestParam("language") String language) {
         Mono<?> preprocessMono = Mono.just("Language not supported");
 
-        if (language.equals("EN")) {
+        if (language.equals("en")) {
             preprocessMono = performEnPreprocessing(file)
                     .flatMap(tokenFile -> storeInES(new BetterFile[]{tokenFile}))
                     .doOnSuccess(status -> datasetService.notify(new DataNotification()));
