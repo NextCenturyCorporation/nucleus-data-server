@@ -63,9 +63,9 @@ public interface QueryAdapter {
 
     /**
      *
-     * @param databaseName
-     * @param tableName
-     * @param sourceData
+     * @param databaseName destination database name
+     * @param tableName destination table name
+     * @param sourceData data to import
      * @return import result containing total and failed counts
      */
     Mono<ImportResult> addData(String databaseName, String tableName, List<String> sourceData);

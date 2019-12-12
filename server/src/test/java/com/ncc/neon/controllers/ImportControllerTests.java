@@ -21,6 +21,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RunWith(SpringRunner.class)
@@ -50,11 +51,14 @@ public class ImportControllerTests {
     public void importFromCSV_shouldReturnDataForValidInput()
     {
         List<String> source = List.of("record1", "record2");       
-        ImportQuery importQuery = new ImportQuery("testHost", "testDataStoreType", "tesetDatabase", "testTable", source);
+        ImportQuery importQuery = new ImportQuery("testHost", "testDataStoreType", "testDatabase", "testTable", source, false);
 
-        ImportResult importResult = new ImportResult("On record failed to import");
+        ImportResult importResult = new ImportResult("One record failed to import");
 
         ConnectionInfo ci = new ConnectionInfo(importQuery.getDataStoreType(), importQuery.getHostName());
+
+        when(queryService.getDatabaseNames(ci)).thenReturn(Flux.just("testDatabase"));
+        when(queryService.getTableNames(ci, "testDatabase")).thenReturn(Flux.just("testTable"));
         when(queryService.addData(ci, importQuery.getDatabase(), importQuery.getTable(), importQuery.getSource())).thenReturn(Mono.just(importResult));
 
         webTestClient.post()

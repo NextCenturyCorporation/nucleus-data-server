@@ -1,6 +1,7 @@
 package com.ncc.neon.controllers;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import com.ncc.neon.models.ConnectionInfo;
 import com.ncc.neon.models.queries.ImportQuery;
@@ -9,6 +10,7 @@ import com.ncc.neon.services.QueryService;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.cluster.routing.allocation.decider.Decision.Single;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -46,7 +48,7 @@ public class ImportController {
             importQuery.getHostName(), 
             importQuery.getDatabase(), 
             importQuery.getTable(), 
-            importQuery.getSource().size()
+            importQuery.getSource() == null ? null : importQuery.getSource().size()
         ));
 
         if (StringUtils.isBlank(importQuery.getDataStoreType()) || 
@@ -62,8 +64,26 @@ public class ImportController {
 
         ConnectionInfo ci = new ConnectionInfo(importQuery.getDataStoreType(), importQuery.getHostName());
 
-        Mono<ImportResult> response = queryService.addData(ci, importQuery.getDatabase(), importQuery.getTable(), importQuery.getSource());
 
-        return ResponseEntity.ok().body(response);
+        Mono<ImportResult> response = Mono.create(sink -> {
+            queryService.getDatabaseNames(ci).collectList().subscribe(databases -> {
+                if (databases.contains(importQuery.getDatabase()) && importQuery.isNew())
+                {
+                    sink.success(new ImportResult(String.format("A database with the same name '%s' already exists.", importQuery.getDatabase())));
+                }
+                else if (!databases.contains(importQuery.getDatabase()) && !importQuery.isNew())
+                {
+                    sink.success(new ImportResult(String.format("Database '%s' does not exist.", importQuery.getDatabase())));
+                }
+                else
+                {
+                    queryService.addData(ci, importQuery.getDatabase(), importQuery.getTable(), importQuery.getSource()).subscribe(result -> {
+                        sink.success(result);
+                    });
+                }
+            });          
+        });
+        
+        return ResponseEntity.ok().body(response);    
     }    
 }

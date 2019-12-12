@@ -280,12 +280,12 @@ public class ElasticsearchAdapter implements QueryAdapter {
 
     @SuppressWarnings("deprecation")
     @Override
-    public Mono<ImportResult> addData(String databaseName, String tableName, List<String> sourceData) {
+    public Mono<ImportResult> addData(String indexName, String mappingName, List<String> sourceData) {        
 
         BulkRequest bulkRequest = new BulkRequest();
         bulkRequest.timeout(TimeValue.timeValueMinutes(1));
         sourceData.forEach((String record) -> {
-            bulkRequest.add(new IndexRequest(databaseName, tableName).source(record, XContentType.JSON));
+            bulkRequest.add(new IndexRequest(indexName, mappingName).source(record, XContentType.JSON));
         });
 
         return Mono.create(sink -> {

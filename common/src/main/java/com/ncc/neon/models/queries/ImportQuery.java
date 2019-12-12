@@ -14,4 +14,5 @@ public class ImportQuery {
     String database;
     String table;
     List<String> source;
+    boolean isNew;
 }
