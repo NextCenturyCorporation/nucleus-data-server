@@ -24,10 +24,12 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -50,6 +52,9 @@ public class BetterController {
     OkHttpClient client = new OkHttpClient();
     ObjectMapper objectMapper = new ObjectMapper();
     RestHighLevelClient rhlc = new RestHighLevelClient(RestClient.builder(new HttpHost("elasticsearch", 9200, "http")));
+    WebClient enPreprocessorClient = WebClient.create("http://en-preprocessor:5000");
+    WebClient arPreprocessorClient = WebClient.create("http://ar-preprocessor:5003");
+
 
     private DatasetService datasetService;
 
@@ -149,15 +154,16 @@ public class BetterController {
     }
 
     @GetMapping(path = "tokenize")
-    ResponseEntity<?> tokenize(@RequestParam("file") String file, @RequestParam("language") String language) throws IOException{
-        String url;
+    ResponseEntity<Mono<?>> tokenize(@RequestParam("file") String file, @RequestParam("language") String language) {
+        Mono<?> preprocessMono = Mono.just("Language not supported");
+
         if (language.equals("EN")) {
-            url = "http://localhost:5000?file=" + file;
-        } else {
-            url = "http://localhost:5003?file=" + file;
+            preprocessMono = performEnPreprocessing(file)
+                    .flatMap(tokenFile -> storeInES(new BetterFile[]{tokenFile}))
+                    .doOnSuccess(status -> datasetService.notify(new DataNotification()));
         }
-        ResponseEntity<?> responseEntity = executeGETRequest(url);
-        return responseEntity;
+
+        return ResponseEntity.ok().body(preprocessMono);
     }
 
     @GetMapping(path = "bpe")
@@ -192,6 +198,15 @@ public class BetterController {
         } catch (IOException ioe) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private Mono<BetterFile> performEnPreprocessing(String filename) {
+        return enPreprocessorClient.get()
+                .uri(uriBuilder ->
+                        uriBuilder.queryParam("file", filename).build())
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(BetterFile.class);
     }
 
     private Mono<RestStatus> storeInES(BetterFile[] bf) {
