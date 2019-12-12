@@ -105,10 +105,10 @@ public class BetterController {
 
     @DeleteMapping(path = "file/{id}")
     ResponseEntity<Mono<?>> delete(@PathVariable("id") String id) {
-        Mono<String> deleteFileMono = getFileById(id)
+        Mono<?> deleteFileMono = getFileById(id)
                 .flatMap(betterFile -> deleteShareFile(betterFile.getFilename()))
                 .then(deleteFileById(id))
-                .then(datasetService.notify(new DataNotification()));
+                .doOnSuccess(status -> datasetService.notify(new DataNotification()));
 
         return ResponseEntity.ok().body(deleteFileMono);
     }
@@ -237,7 +237,8 @@ public class BetterController {
         return Mono.create(sink -> {
             try {
                 DeleteResponse response = rhlc.delete(dr, RequestOptions.DEFAULT);
-                sink.success(response.status());
+                RefreshResponse refResponse = rhlc.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
+                sink.success(refResponse.getStatus());
             } catch (IOException e) {
                 sink.error(e);
             }
