@@ -40,7 +40,7 @@ Update the runtime properties of your NUCLEUS Data Server installation by editin
 
 ### Basic Auth
 
-In the [server/src/main/resources/server.properties](./server/src/main/resources/server.properties) file, add the following property, replacing `my_datastore_type` with your datastore type (`elasticsearch`, `mysql`, `postgresql`):
+In the [server/src/main/resources/application.properties](./server/src/main/resources/application.properties) file, add the following property, replacing `my_datastore_type` with your datastore type (`elasticsearch`, `mysql`, `postgresql`):
 
 ```
 my_datastore_type.auth={'hostname':'username:password'}
