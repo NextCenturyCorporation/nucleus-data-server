@@ -54,7 +54,7 @@ public class BetterController {
     RestHighLevelClient rhlc = new RestHighLevelClient(RestClient.builder(new HttpHost("elasticsearch", 9200, "http")));
     WebClient enPreprocessorClient = WebClient.create("http://en-preprocessor:5000");
     WebClient arPreprocessorClient = WebClient.create("http://ar-preprocessor:5003");
-    WebClient bpeClient = WebClient.create("http://bpe:5004");
+    WebClient bpeClient = WebClient.create("http://bpe:5000");
 
 
     private DatasetService datasetService;
