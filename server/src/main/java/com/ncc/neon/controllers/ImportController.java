@@ -1,8 +1,5 @@
 package com.ncc.neon.controllers;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.ncc.neon.models.ConnectionInfo;
 import com.ncc.neon.models.queries.ImportQuery;
 import com.ncc.neon.models.results.ImportResult;
@@ -10,7 +7,6 @@ import com.ncc.neon.services.QueryService;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.cluster.routing.allocation.decider.Decision.Single;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
