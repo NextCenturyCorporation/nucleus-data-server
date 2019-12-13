@@ -6,5 +6,4 @@ import lombok.Data;
 public class BetterFile {
     private final String filename;
     private final int bytes;
-    String id;
 }

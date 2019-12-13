@@ -97,13 +97,9 @@ public class BetterController {
     ResponseEntity<Mono<?>> upload(@RequestPart("file") Mono<FilePart> file) {
         // TODO: Return error message if file is not provided.
 
-        // Placeholder so we can get the size of the file.
-        File temp = new File("temp");
-
         Mono<?> uploadFileMono = writeFileToShare(file)
-                .then(file.flatMap(filePart -> filePart.transferTo(temp)))
-                .then(file.flatMap(filePart -> storeInES(new BetterFile[] {new BetterFile(filePart.filename(), (int)temp.length())}))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification())));
+                .flatMap(fileRef -> storeInES(new BetterFile[] {new BetterFile(fileRef.getName(), (int)fileRef.length())}))
+                .doOnSuccess(status -> datasetService.notify(new DataNotification()));
 
         return ResponseEntity.ok().body(uploadFileMono);
     }
@@ -211,10 +207,8 @@ public class BetterController {
 
     private Mono<RestStatus> storeInES(BetterFile[] bf) {
         for (BetterFile file: bf) {
-            UUID uuid = UUID.randomUUID();
-            file.setId(uuid.toString());
             Map<String, Object> bfMapper = objectMapper.convertValue(file, Map.class);
-            IndexRequest indexRequest = new IndexRequest("files", "filedata", file.getId()).source(bfMapper);
+            IndexRequest indexRequest = new IndexRequest("files", "filedata").source(bfMapper);
 
             // Wrap the async part in a mono.
             return Mono.create(sink -> {
@@ -260,10 +254,14 @@ public class BetterController {
         });
     }
 
-    private Mono<?> writeFileToShare(Mono<FilePart> fileMono) {
+    private Mono<File> writeFileToShare(Mono<FilePart> fileMono) {
         Path sharePath = getRelativeSharePath();
 
-        return fileMono.flatMap(file -> file.transferTo(sharePath.resolve(Objects.requireNonNull(file.filename()))));
+        return fileMono.flatMap(file -> {
+            Path filePath = sharePath.resolve(Objects.requireNonNull(file.filename()));
+            file.transferTo(filePath);
+            return Mono.just(new File(filePath.toString()));
+        });
     }
 
     private Mono<Boolean> deleteShareFile(String filename) {
