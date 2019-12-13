@@ -53,7 +53,7 @@ public class BetterController {
     ObjectMapper objectMapper = new ObjectMapper();
     RestHighLevelClient rhlc = new RestHighLevelClient(RestClient.builder(new HttpHost("elasticsearch", 9200, "http")));
     WebClient enPreprocessorClient = WebClient.create("http://en-preprocessor:5000");
-    WebClient arPreprocessorClient = WebClient.create("http://ar-preprocessor:5003");
+    WebClient arPreprocessorClient = WebClient.create("http://ar-preprocessor:5000");
     WebClient bpeClient = WebClient.create("http://bpe:5000");
 
 
@@ -158,6 +158,10 @@ public class BetterController {
             preprocessMono = performEnPreprocessing(file)
                     .flatMap(tokenFile -> storeInES(new BetterFile[]{tokenFile}))
                     .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+        } else if (language.equals("ar")) {
+            preprocessMono = performArPreprocessing(file)
+                    .flatMap(tokenFile -> storeInES(new BetterFile[]{tokenFile}))
+                    .doOnSuccess(status -> datasetService.notify(new DataNotification()));
         }
 
         return ResponseEntity.ok().body(preprocessMono);
@@ -200,6 +204,15 @@ public class BetterController {
 
     private Mono<BetterFile> performEnPreprocessing(String filename) {
         return enPreprocessorClient.get()
+                .uri(uriBuilder ->
+                        uriBuilder.queryParam("file", filename).build())
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(BetterFile.class);
+    }
+
+    private Mono<BetterFile> performArPreprocessing(String filename) {
+        return arPreprocessorClient.get()
                 .uri(uriBuilder ->
                         uriBuilder.queryParam("file", filename).build())
                 .accept(MediaType.APPLICATION_JSON)
