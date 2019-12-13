@@ -54,6 +54,7 @@ public class BetterController {
     RestHighLevelClient rhlc = new RestHighLevelClient(RestClient.builder(new HttpHost("elasticsearch", 9200, "http")));
     WebClient enPreprocessorClient = WebClient.create("http://en-preprocessor:5000");
     WebClient arPreprocessorClient = WebClient.create("http://ar-preprocessor:5003");
+    WebClient bpeClient = WebClient.create("http://bpe:5004");
 
 
     private DatasetService datasetService;
@@ -168,9 +169,10 @@ public class BetterController {
 
     @GetMapping(path = "bpe")
     ResponseEntity<?> bpe(@RequestParam("file") String file) {
-        String url = "http://localhost:5004?file=" + file;
-        ResponseEntity<?> responseEntity = executeGETRequest(url);
-        return responseEntity;
+        Mono<?> bpeMono = performBPE(file)
+                .flatMap(bpeFile -> storeInES(new BetterFile[]{bpeFile}))
+                .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+        return ResponseEntity.ok().body(bpeMono);
     }
 
     @GetMapping(path = "train-mt")
@@ -202,6 +204,15 @@ public class BetterController {
 
     private Mono<BetterFile> performEnPreprocessing(String filename) {
         return enPreprocessorClient.get()
+                .uri(uriBuilder ->
+                        uriBuilder.queryParam("file", filename).build())
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(BetterFile.class);
+    }
+
+    private Mono<BetterFile> performBPE(String filename) {
+        return bpeClient.get()
                 .uri(uriBuilder ->
                         uriBuilder.queryParam("file", filename).build())
                 .accept(MediaType.APPLICATION_JSON)
