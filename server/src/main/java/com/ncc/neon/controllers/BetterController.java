@@ -99,7 +99,7 @@ public class BetterController {
         // TODO: Return error message if file is not provided.
 
         Mono<?> uploadFileMono = writeFileToShare(file)
-                .flatMap(fileRef -> storeInES(new BetterFile[] {new BetterFile(fileRef.getName(), (int)fileRef.length())}))
+                .flatMap(fileRef -> addToElasticSearchFilesIndex(new BetterFile(fileRef.getName(), fileRef.length())))
                 // TODO: Add a doOnError.
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
 
@@ -157,11 +157,11 @@ public class BetterController {
 
         if (language.equals("en")) {
             preprocessMono = performEnPreprocessing(file)
-                    .flatMap(tokenFile -> storeInES(new BetterFile[]{tokenFile}))
+                    .flatMap(this::addToElasticSearchFilesIndex)
                     .doOnSuccess(status -> datasetService.notify(new DataNotification()));
         } else if (language.equals("ar")) {
             preprocessMono = performArPreprocessing(file)
-                    .flatMap(tokenFile -> storeInES(new BetterFile[]{tokenFile}))
+                    .flatMap(this::addManyToElasticSearchFilesIndex)
                     .doOnSuccess(status -> datasetService.notify(new DataNotification()));
         }
 
@@ -171,7 +171,7 @@ public class BetterController {
     @GetMapping(path = "bpe")
     ResponseEntity<?> bpe(@RequestParam("file") String file) {
         Mono<?> bpeMono = performBPE(file)
-                .flatMap(bpeFile -> storeInES(new BetterFile[]{bpeFile}))
+                .flatMap(this::addToElasticSearchFilesIndex)
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
         return ResponseEntity.ok().body(bpeMono);
     }
@@ -212,13 +212,13 @@ public class BetterController {
                 .bodyToMono(BetterFile.class);
     }
 
-    private Mono<BetterFile> performArPreprocessing(String filename) {
+    private Mono<BetterFile[]> performArPreprocessing(String filename) {
         return arPreprocessorClient.get()
                 .uri(uriBuilder ->
                         uriBuilder.queryParam("file", filename).build())
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToMono(BetterFile.class);
+                .bodyToMono(BetterFile[].class);
     }
 
     private Mono<BetterFile> performBPE(String filename) {
@@ -248,6 +248,31 @@ public class BetterController {
         }
 
         return Mono.justOrEmpty(Optional.empty());
+    }
+
+    private Mono<RestStatus> addManyToElasticSearchFilesIndex(BetterFile[] filesToAdd) {
+        return Flux.fromArray(filesToAdd)
+                .flatMap(this::addToElasticSearchFilesIndex)
+                .next();
+    }
+
+    private Mono<RestStatus> addToElasticSearchFilesIndex(BetterFile fileToAdd) {
+        // Serialize file to json map.
+        Map<String, Object> bfMapper = objectMapper.convertValue(fileToAdd, Map.class);
+
+        // Build the elasticsearch request.
+        IndexRequest indexRequest = new IndexRequest("files", "filedata").source(bfMapper);
+
+        // Wrap the async part in a mono.
+        return Mono.create(sink -> {
+            try {
+                IndexResponse response = rhlc.index(indexRequest, RequestOptions.DEFAULT);
+                RefreshResponse refResponse = rhlc.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
+                sink.success(refResponse.getStatus());
+            } catch (IOException e) {
+                sink.error(e);
+            }
+        });
     }
 
     private Mono<BetterFile> getFileById(String id) {
