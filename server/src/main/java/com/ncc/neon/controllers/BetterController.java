@@ -100,6 +100,7 @@ public class BetterController {
 
         Mono<?> uploadFileMono = writeFileToShare(file)
                 .flatMap(fileRef -> storeInES(new BetterFile[] {new BetterFile(fileRef.getName(), (int)fileRef.length())}))
+                // TODO: Add a doOnError.
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
 
         return ResponseEntity.ok().body(uploadFileMono);
