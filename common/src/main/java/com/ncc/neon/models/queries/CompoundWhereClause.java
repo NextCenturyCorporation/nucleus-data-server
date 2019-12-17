@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 @NoArgsConstructor
-public class BooleanWhereClause implements WhereClause {
+public abstract class CompoundWhereClause implements WhereClause {
     List<WhereClause> whereClauses;
 }

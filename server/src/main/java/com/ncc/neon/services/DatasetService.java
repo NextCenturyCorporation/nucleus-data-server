@@ -6,7 +6,6 @@ import java.time.ZonedDateTime;
 import com.ncc.neon.models.DataNotification;
 import com.ncc.neon.util.DateUtil;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +16,6 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
 @Component
-@Slf4j
 public class DatasetService {
 
     final private FluxProcessor<DataNotification, DataNotification> processor;
@@ -45,7 +43,6 @@ public class DatasetService {
         if (notification.getTimestamp() == null)  {
             notification.setTimestamp(DateUtil.transformDateToString(ZonedDateTime.now()));
         }
-        log.debug("sending notification");
         sink.next(notification);
         return Mono.just(notification.getTimestamp());
     }

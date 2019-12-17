@@ -8,12 +8,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.ncc.neon.models.queries.AggregateByFieldClause;
 import com.ncc.neon.models.queries.AggregateClause;
+import com.ncc.neon.models.queries.AggregateByGroupCountClause;
+import com.ncc.neon.models.queries.AggregateByTotalCountClause;
 import com.ncc.neon.models.queries.GroupByClause;
 import com.ncc.neon.models.queries.GroupByFieldClause;
-import com.ncc.neon.models.queries.GroupByFunctionClause;
+import com.ncc.neon.models.queries.GroupByOperationClause;
 import com.ncc.neon.models.queries.Query;
-import com.ncc.neon.models.queries.SortClause;
+import com.ncc.neon.models.queries.OrderByClause;
+import com.ncc.neon.models.queries.OrderByFieldClause;
 import com.ncc.neon.models.results.TabularQueryResult;
 
 import org.elasticsearch.action.search.SearchResponse;
@@ -62,7 +66,7 @@ public class ElasticsearchResultsConverter {
     }
 
     public static TabularQueryResult convertResults(Query query, SearchResponse response) {
-        List<AggregateClause> aggregateClauses = query.getAggregates();
+        List<AggregateClause> aggregateClauses = query.getAggregateClauses();
         List<GroupByClause> groupByClauses = query.getGroupByClauses();
 
         Aggregations aggregationResults = response.getAggregations();
@@ -78,7 +82,7 @@ public class ElasticsearchResultsConverter {
                 (MultiBucketsAggregation) aggregationResults.asList().get(0));
             buckets = combineDuplicateBuckets(buckets);
             List<Map<String, Object>> extractedMetrics = extractMetricsFromBuckets(aggregateClauses, buckets, response.getHits().getTotalHits());
-            extractedMetrics = sortBuckets(query.getSortClauses(), extractedMetrics);
+            extractedMetrics = sortBuckets(query.getOrderByClauses(), extractedMetrics);
             extractedMetrics = limitBuckets(extractedMetrics, query);
             results = new TabularQueryResult(extractedMetrics);
         } else if (query.isDistinct()) {
@@ -103,7 +107,7 @@ public class ElasticsearchResultsConverter {
     }
 
     private static List<Map<String, Object>> extractDistinct(Query query, MultiBucketsAggregation aggResult) {
-        String field = query.getFields().get(0);
+        String field = query.getSelectClause().getFieldClauses().get(0).getField();
 
         final List<Map<String, Object>> unsortedDistinctValues = new ArrayList<>();
         aggResult.getBuckets().forEach(a -> {
@@ -129,25 +133,28 @@ public class ElasticsearchResultsConverter {
     }
 
     private static List<Map<String, Object>> sortDistinct(Query query, List<Map<String, Object>> values) {
-        String field = query.getFields().get(0);
+        String field = query.getSelectClause().getFieldClauses().get(0).getField();
 
-        List<SortClause> sorts = query.getSortClauses().stream().filter(sort -> sort.getFieldName() == field)
-            .collect(Collectors.toList());
+        List<OrderByFieldClause> orderByFieldClauses = query.getOrderByClauses().stream().filter(orderClause ->
+            orderClause instanceof OrderByFieldClause && orderClause.getFieldOrOperation().equals(field)
+        ).map(orderClause -> (OrderByFieldClause) orderClause).collect(Collectors.toList());
 
-        if (sorts.size() > 0) {
-            SortClause sort = sorts.get(0);
+        if (orderByFieldClauses.size() > 0) {
+            OrderByFieldClause orderByFieldClause = orderByFieldClauses.get(0);
             values.sort(new Comparator<Map<String, Object>>() {
                 @Override
                 @SuppressWarnings({"rawtypes", "unchecked"})
                 public int compare(Map<String, Object> a, Map<String, Object> b) {
-                    if(a instanceof Comparable && b instanceof Comparable) {
-                        return sort.getSortDirection() * ((Comparable) a.get(field)).compareTo(((Comparable) b.get(field)));
+                    if (a instanceof Comparable && b instanceof Comparable) {
+                        return orderByFieldClause.getOrder().getDirection() *
+                            ((Comparable) a.get(field)).compareTo(((Comparable) b.get(field)));
                     }
-                    if(isNumeric(a.get(field).toString()) && isNumeric(b.get(field).toString())) {
-                        return sort.getSortDirection() * (Double.valueOf(a.get(field).toString())).compareTo(
-                            Double.valueOf(b.get(field).toString()));
+                    if (isNumeric(a.get(field).toString()) && isNumeric(b.get(field).toString())) {
+                        return orderByFieldClause.getOrder().getDirection() * (Double.valueOf(a.get(field).toString()))
+                            .compareTo(Double.valueOf(b.get(field).toString()));
                     }
-                    return sort.getSortDirection() * a.get(field).toString().compareTo(b.get(field).toString());
+                    return orderByFieldClause.getOrder().getDirection() *
+                        a.get(field).toString().compareTo(b.get(field).toString());
                 }
             });
         }
@@ -162,44 +169,40 @@ public class ElasticsearchResultsConverter {
     private static Map<String, Object> extractMetrics(List<AggregateClause> clauses, Map<String, Aggregation> results,
             Map<String, TransformedAggregationData> groupResults, long totalCount) {
 
-        List<AggregateClause> metricsClauses = clauses.stream().filter(it ->
-            !ElasticsearchQueryConverter.isTotalCountAggregation(it) &&
-            !ElasticsearchQueryConverter.isCountFieldAggregation(it)).collect(Collectors.toList());
+        Map<String, Object> metrics = clauses.stream().filter(aggClause -> !aggClause.getOperation().equals("count") &&
+            aggClause instanceof AggregateByFieldClause).map(aggClause -> (AggregateByFieldClause) aggClause)
+            .collect(Collectors.toMap(aggClause -> aggClause.getLabel(), aggClause -> {
+                Stats result = (Stats) results.get(ElasticsearchQueryConverter.STATS_AGG_PREFIX +
+                    aggClause.getField());
+                Double metric = 0.0;
+                switch (aggClause.getOperation()) {
+                    case "avg":
+                        metric = result.getAvg();
+                        break;
+                    case "max":
+                        metric = result.getMax();
+                        break;
+                    case "min":
+                        metric = result.getMin();
+                        break;
+                    case "sum":
+                        metric = result.getSum();
+                        break;
+                }
+                return metric;
+            }));
 
-        List<AggregateClause> countFieldClauses = clauses.stream().filter(it ->
-            ElasticsearchQueryConverter.isCountFieldAggregation(it)).collect(Collectors.toList());
+        metrics.putAll(clauses.stream().filter(aggClause -> aggClause instanceof AggregateByTotalCountClause)
+            .collect(Collectors.toMap(aggClause -> aggClause.getLabel(), aggClause -> totalCount)));
 
-        List<AggregateClause> totalCountClauses = clauses.stream().filter(it ->
-            ElasticsearchQueryConverter.isTotalCountAggregation(it)).collect(Collectors.toList());
-
-        Map<String, Object> metrics = metricsClauses.stream().collect(Collectors.toMap(clause -> clause.getName(), clause -> {
-            Stats result = (Stats) results.get(ElasticsearchQueryConverter.STATS_AGG_PREFIX + clause.getField());
-            Double metric = 0.0;
-            switch (clause.getOperation()) {
-            case "avg":
-                metric = result.getAvg();
-                break;
-            case "max":
-                metric = result.getMax();
-                break;
-            case "min":
-                metric = result.getMin();
-                break;
-            case "sum":
-                metric = result.getSum();
-                break;
-            }
-            return metric;
-        }));
-
-        if (!totalCountClauses.isEmpty()) {
-            metrics.putAll(totalCountClauses.stream().collect(Collectors.toMap(clause -> clause.getName(), clause -> totalCount)));
-        }
-
-        metrics.putAll(countFieldClauses.stream().collect(Collectors.toMap(clause -> clause.getName(), clause -> {
-            TransformedAggregationData data = groupResults.get(clause.getField());
-            return data != null ? data.getCount() : totalCount;
-        })));
+        metrics.putAll(clauses.stream().filter(aggClause -> !(aggClause instanceof AggregateByTotalCountClause) &&
+            aggClause.getOperation().equals("count")).collect(Collectors.toMap(aggClause -> aggClause.getLabel(),
+            aggClause -> {
+                TransformedAggregationData data = groupResults.get(aggClause instanceof AggregateByGroupCountClause ?
+                    ((AggregateByGroupCountClause) aggClause).getGroup() :
+                    ((AggregateByFieldClause) aggClause).getField());
+                return data != null ? data.getCount() : totalCount;
+            })));
 
         return metrics;
     }
@@ -250,16 +253,16 @@ public class ElasticsearchResultsConverter {
         GroupByClause currentClause = groupByClauses.get(0);
 
         if (currentClause instanceof GroupByFieldClause) {
-            accumulator.put(((GroupByFieldClause) currentClause).getField(), new TransformedAggregationData(
-                bucket.getDocCount(), bucket.getKey()));
-        } else if (currentClause instanceof GroupByFunctionClause) {
+            accumulator.put(currentClause.getField(), new TransformedAggregationData(bucket.getDocCount(),
+                bucket.getKey()));
+        } else if (currentClause instanceof GroupByOperationClause) {
             // Date groups will return numbers (year=2018, month=12, day=30, etc.)
             String key = bucket.getKeyAsString();
 
             boolean isDateClause = Arrays.asList(ElasticsearchQueryConverter.DATE_OPERATIONS)
-                    .indexOf(((GroupByFunctionClause) currentClause).getOperation()) >= 0 && isNumeric(key);
+                    .indexOf(((GroupByOperationClause) currentClause).getOperation()) >= 0 && isNumeric(key);
 
-            accumulator.put(((GroupByFunctionClause) currentClause).getName(), new TransformedAggregationData(
+            accumulator.put(((GroupByOperationClause) currentClause).getLabel(), new TransformedAggregationData(
                     bucket.getDocCount(), isDateClause ? Float.parseFloat(key) : key));
         } else {
             throw new RuntimeException("Bad implementation - ${currentClause.getClass()} is not a valid groupByClause");
@@ -343,22 +346,22 @@ public class ElasticsearchResultsConverter {
         }).collect(Collectors.toList());
     }
 
-    private static List<Map<String, Object>> sortBuckets(List<SortClause> sortClauses,
+    private static List<Map<String, Object>> sortBuckets(List<OrderByClause> orderClauses,
             List<Map<String, Object>> buckets) {
-        if (sortClauses != null && sortClauses.size() > 0) {
+        if (orderClauses != null && orderClauses.size() > 0) {
             buckets.sort((a, b) -> {
-                for (SortClause sortClause : sortClauses) {
-                    Object aField = a.get(sortClause.getFieldName());
-                    Object bField = b.get(sortClause.getFieldName());
+                for (OrderByClause orderClause : orderClauses) {
+                    Object aField = a.get(orderClause.getFieldOrOperation());
+                    Object bField = b.get(orderClause.getFieldOrOperation());
                     int order = 0;
 
-                    if(isFieldDouble(aField.toString()) && isFieldDouble(bField.toString())) {
+                    if (isFieldDouble(aField.toString()) && isFieldDouble(bField.toString())) {
                         Double aFieldAsDouble = Double.parseDouble(aField.toString());
                         Double bFieldAsDouble = Double.parseDouble(bField.toString());
 
-                        order = sortClause.getSortDirection() * (aFieldAsDouble.compareTo(bFieldAsDouble));
+                        order = orderClause.getOrder().getDirection() * (aFieldAsDouble.compareTo(bFieldAsDouble));
                     } else {
-                        order = sortClause.getSortDirection() * (aField.toString().compareTo(bField.toString()));
+                        order = orderClause.getOrder().getDirection() * (aField.toString().compareTo(bField.toString()));
                     }
 
                     if (order != 0) {

@@ -45,22 +45,12 @@ public class QueryController {
      * 
      * @param host             The host the database is running on
      * @param databaseType     the type of database
-     * @param includeFilters   If filters should be ignored and all data should be
-     *                         returned. Defaults to false.
-     * @param selectionOnly    If only data that is currently selected should be
-     *                         returned. Defaults to false.
-     * @param ignoredFilterIds If any specific filters should be ignored (only used
-     *                         if includeFilters is false)
      * @param query            The query being executed
      * @return The result of the query
      */
     @PostMapping(path = "query/{host}/{databaseType}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     Mono<TabularQueryResult> executeQuery(@PathVariable String host, @PathVariable String databaseType,
-            @RequestParam(value = "ignoreFilters", defaultValue = "false") boolean ignoreFilters,
-            @RequestParam(value = "selectionOnly", defaultValue = "false") boolean selectionOnly,
-            @RequestParam(value = "ignoreFilterIds", defaultValue = "false") Set<String> ignoreFilterIds,
             @RequestBody Query query) {
-        // TODO THOR-1088 Remove unused request parameters!
         ConnectionInfo ci = new ConnectionInfo(databaseType, host);
         return queryService.executeQuery(ci, query);
     }
@@ -84,7 +74,7 @@ public class QueryController {
      * @param host         The host the database is running on
      * @param databaseType the type of database
      * @param databaseName The database containing the data
-     * @param tableName    The table containing the data
+     * @param table    The table containing the data
      * @return The field names and their types.
      */
     @GetMapping(path = "tablenames/{host}/{databaseType}/{databaseName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
@@ -122,7 +112,7 @@ public class QueryController {
     Mono<Map<String, String>> getFieldTypes(@PathVariable String host, @PathVariable String databaseType,
             @PathVariable String databaseName, @PathVariable String tableName) {
         ConnectionInfo ci = new ConnectionInfo(databaseType, host);
-        return queryService.getFieldTypes(ci, databaseName, tableName).collectMap(p -> p.getField(), p -> p.getType());
+        return queryService.getFieldTypes(ci, databaseName, tableName).collectMap(p -> p.getField(), p -> p.getType().name);
     }
 
     /**
