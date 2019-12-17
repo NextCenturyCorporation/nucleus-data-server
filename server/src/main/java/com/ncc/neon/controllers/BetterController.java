@@ -55,12 +55,15 @@ public class BetterController {
     RestHighLevelClient elasticSearchClient;
     WebClient enPreprocessorClient;
     WebClient arPreprocessorClient;
-    WebClient bpeClient = WebClient.create("http://bpe:5000");
+    WebClient bpeClient;
 
 
     private DatasetService datasetService;
 
-    BetterController(DatasetService datasetService, @Value("${en.preprocessor.port}") String enPreprocessorPort, @Value("${ar.preprocessor.port}") String arPreprocessorPort) {
+    BetterController(DatasetService datasetService,
+                     @Value("${en.preprocessor.port}") String enPreprocessorPort,
+                     @Value("${ar.preprocessor.port}") String arPreprocessorPort,
+                     @Value("${bpe.port}") String bpePort) {
         this.datasetService = datasetService;
 
         String enPreprocessorUrl = "http://" +
@@ -71,10 +74,15 @@ public class BetterController {
                 this.getEnv("AR_PREPROCESSOR_HOST", "localhost") +
                 ":" +
                 this.getEnv("AR_PREPROCESSOR_PORT", arPreprocessorPort);
+        String bpeHost = "http://" +
+                this.getEnv("BPE_HOST", "localhost") +
+                ":" +
+                this.getEnv("BPE_PORT", bpePort);
         String elasticHost = getEnv("ELASTIC_HOST", "localhost");
 
         this.enPreprocessorClient = WebClient.create(enPreprocessorUrl);
         this.arPreprocessorClient = WebClient.create(arPreprocessorUrl);
+        this.bpeClient = WebClient.create(bpeHost);
         this.elasticSearchClient = new RestHighLevelClient(RestClient.builder(new HttpHost(elasticHost, 9200, "http")));
     }
 
@@ -156,11 +164,10 @@ public class BetterController {
     }
 
     @GetMapping(path = "bpe")
-    ResponseEntity<?> bpe(@RequestParam("file") String file) {
-        Mono<?> bpeMono = performBPE(file)
+    Mono<Tuple2<String, RestStatus>> bpe(@RequestParam("file") String file) {
+        return performBPE(file)
                 .flatMap(this::addToElasticSearchFilesIndex)
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
-        return ResponseEntity.ok().body(bpeMono);
     }
 
     @GetMapping(path = "train-mt")
