@@ -15,6 +15,9 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.rest.RestStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -57,17 +60,20 @@ public class BetterController {
 
     private DatasetService datasetService;
 
-    BetterController(DatasetService datasetService) {
+    @Autowired
+    private Environment env;
+
+    BetterController(DatasetService datasetService, @Value("${en.preprocessor.port}") String enPreprocessorPort, @Value("${ar.preprocessor.port}") String arPreprocessorPort) {
         this.datasetService = datasetService;
 
         String enPreprocessorUrl = "http://" +
                 this.getEnv("EN_PREPROCESSOR_HOST", "localhost") +
                 ":" +
-                this.getEnv("EN_PREPROCESSOR_PORT", "5000");
+                this.getEnv("EN_PREPROCESSOR_PORT", enPreprocessorPort);
         String arPreprocessorUrl = "http://" +
                 this.getEnv("AR_PREPROCESSOR_HOST", "localhost") +
                 ":" +
-                this.getEnv("AR_PREPROCESSOR_PORT", "5003");
+                this.getEnv("AR_PREPROCESSOR_PORT", arPreprocessorPort);
         String elasticHost = getEnv("ELASTIC_HOST", "localhost");
 
         this.enPreprocessorClient = WebClient.create(enPreprocessorUrl);
