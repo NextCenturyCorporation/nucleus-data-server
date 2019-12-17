@@ -60,9 +60,6 @@ public class BetterController {
 
     private DatasetService datasetService;
 
-    @Autowired
-    private Environment env;
-
     BetterController(DatasetService datasetService, @Value("${en.preprocessor.port}") String enPreprocessorPort, @Value("${ar.preprocessor.port}") String arPreprocessorPort) {
         this.datasetService = datasetService;
 
