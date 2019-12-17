@@ -36,10 +36,22 @@ task unpack(type: Copy) {
 
 dependencies {
     compile project(':common')
-    compile 'org.elasticsearch.client:elasticsearch-rest-high-level-client:6.4.0'
-    //TODO: figure this out. How do you take the version from the server project and keep them in sync
-    compileOnly 'io.projectreactor:reactor-core:3.2.4.RELEASE'
-    compileOnly('org.projectlombok:lombok')
-    compileOnly('org.springframework.boot:spring-boot-starter:2.1.1.RELEASE')
-    testCompile('org.springframework.boot:spring-boot-starter-test:2.1.1.RELEASE')
+    compile 'org.elasticsearch:elasticsearch:6.4.3'
+    compile 'org.elasticsearch.client:elasticsearch-rest-client:6.4.3'
+    compile 'org.elasticsearch.client:elasticsearch-rest-high-level-client:6.4.3'
+    compileLibraries.each {
+        compileOnly it
+    }
+    implementationLibraries.each {
+        implementation it
+    }
+    runtimeLibraries.each {
+        runtimeOnly it
+    }
+    testCompileLibraries.each {
+        testCompile it
+    }
+    testImplementationLibraries.each {
+        testImplementation it
+    }
 }

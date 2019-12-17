@@ -6,6 +6,15 @@ import lombok.Data;
 @AllArgsConstructor
 @Data
 public class GroupByFieldClause implements GroupByClause {
-    String field;
-    String prettyField;
+    FieldClause fieldClause;
+
+    @Override
+    public String getCompleteField() {
+        return this.fieldClause.getComplete();
+    }
+
+    @Override
+    public String getField() {
+        return this.fieldClause.getField();
+    }
 }

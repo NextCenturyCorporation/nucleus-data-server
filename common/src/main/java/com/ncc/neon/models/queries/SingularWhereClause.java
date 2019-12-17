@@ -12,7 +12,7 @@ import lombok.Data;
 @JsonSerialize(using = SingularWhereClauseSerializer.class)
 @JsonDeserialize(using = SingularWhereClauseDeserializer.class)
 public class SingularWhereClause implements WhereClause {
-    String lhs;
+    FieldClause lhs;
     String operator;
 
     Boolean rhsBoolean;
@@ -36,52 +36,52 @@ public class SingularWhereClause implements WhereClause {
         return null;
     }
 
-    private SingularWhereClause(String lhs, String operator) {
+    private SingularWhereClause(FieldClause lhs, String operator) {
         this.lhs = lhs;
         this.operator = operator;
     }
 
-    private SingularWhereClause(String lhs, String operator, boolean rhs) {
+    private SingularWhereClause(FieldClause lhs, String operator, boolean rhs) {
         this.lhs = lhs;
         this.operator = operator;
         this.rhsBoolean = Boolean.valueOf(rhs);
     }
 
-    private SingularWhereClause(String lhs, String operator, ZonedDateTime rhs) {
+    private SingularWhereClause(FieldClause lhs, String operator, ZonedDateTime rhs) {
         this.lhs = lhs;
         this.operator = operator;
         this.rhsDate = rhs;
     }
 
-    private SingularWhereClause(String lhs, String operator, double rhs) {
+    private SingularWhereClause(FieldClause lhs, String operator, double rhs) {
         this.lhs = lhs;
         this.operator = operator;
         this.rhsDouble = Double.valueOf(rhs);
     }
 
-    private SingularWhereClause(String lhs, String operator, String rhs) {
+    private SingularWhereClause(FieldClause lhs, String operator, String rhs) {
         this.lhs = lhs;
         this.operator = operator;
         this.rhsString = rhs;
     }
 
-    public static SingularWhereClause fromBoolean(String lhs, String operator, boolean rhs) {
+    public static SingularWhereClause fromBoolean(FieldClause lhs, String operator, boolean rhs) {
         return new SingularWhereClause(lhs, operator, rhs);
     }
 
-    public static SingularWhereClause fromDate(String lhs, String operator, ZonedDateTime rhs) {
+    public static SingularWhereClause fromDate(FieldClause lhs, String operator, ZonedDateTime rhs) {
         return new SingularWhereClause(lhs, operator, rhs);
     }
 
-    public static SingularWhereClause fromDouble(String lhs, String operator, double rhs) {
+    public static SingularWhereClause fromDouble(FieldClause lhs, String operator, double rhs) {
         return new SingularWhereClause(lhs, operator, rhs);
     }
 
-    public static SingularWhereClause fromNull(String lhs, String operator) {
+    public static SingularWhereClause fromNull(FieldClause lhs, String operator) {
         return new SingularWhereClause(lhs, operator);
     }
 
-    public static SingularWhereClause fromString(String lhs, String operator, String rhs) {
+    public static SingularWhereClause fromString(FieldClause lhs, String operator, String rhs) {
         return new SingularWhereClause(lhs, operator, rhs);
     }
 

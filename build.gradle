@@ -1,19 +1,51 @@
 group = 'com.ncc.neon'
 
+// Override default Elasticsearch version from Spring BOM to continue support of 6.4
+ext['elasticsearch.version'] = '6.4.3';
+
 buildscript {
     ext {
-        springBootVersion = '2.1.0.RELEASE'
+        springBootVersion = '2.2.1.RELEASE'
+        compileLibraries = [
+            'org.projectlombok:lombok',
+            'io.projectreactor:reactor-core',
+            'org.springframework.boot:spring-boot-starter:' + springBootVersion
+        ]
+        implementationLibraries = [
+            'org.springframework.boot:spring-boot-starter-actuator:' + springBootVersion,
+            'org.springframework.boot:spring-boot-starter-webflux:' + springBootVersion,
+            'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+        ]
+        runtimeLibraries = [
+            'org.springframework.boot:spring-boot-devtools:' + springBootVersion
+        ]
+        testCompileLibraries = [
+            'org.springframework.boot:spring-boot-starter-test:' + springBootVersion
+        ]
+        testImplementationLibraries = [
+            'org.springframework.boot:spring-boot-starter-test:' + springBootVersion,
+            'io.projectreactor:reactor-test'
+        ]
     }
     repositories {
         mavenCentral()
         maven {
           url "https://plugins.gradle.org/m2/"
         }
+        maven {
+          url "https://repo.spring.io/release"
+        }
+        maven {
+          url "https://repo.spring.io/milestone"
+        }
+        maven {
+          url "https://repo.spring.io/snapshot"
+        }
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-        classpath("gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.13.0")
-        classpath("gradle.plugin.com.gorylenko.gradle-git-properties:gradle-git-properties:2.1.0")
+        classpath("gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.22.0")
+        classpath("gradle.plugin.com.gorylenko.gradle-git-properties:gradle-git-properties:2.2.0")
     }
 }
 
@@ -28,7 +60,7 @@ subprojects {
     version = '0.0.1-SNAPSHOT'
 }
 
-task dockerCopy(dependsOn: ['dockerPrepare', 'esadapter:unpack', 'server:unpack', 'common:unpack']) << {
+task dockerCopy(dependsOn: ['dockerPrepare', 'esadapter:unpack', 'sqladapter:unpack', 'server:unpack', 'common:unpack']) << {
     copy {
         from fileTree(".").include("*/build/dependency/BOOT-INF/lib/*").files
         into "build/docker/libs"
@@ -47,6 +79,10 @@ task dockerCopy(dependsOn: ['dockerPrepare', 'esadapter:unpack', 'server:unpack'
     }
     copy {
         from "esadapter/build/dependency/BOOT-INF/classes"
+        into "build/docker/classes"
+    }
+    copy {
+        from "sqladapter/build/dependency/BOOT-INF/classes"
         into "build/docker/classes"
     }
 }

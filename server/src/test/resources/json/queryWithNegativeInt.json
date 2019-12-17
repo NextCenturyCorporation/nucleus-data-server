@@ -1,23 +1,20 @@
 {
-  "filter": {
-    "databaseName": "testDatabase",
-    "tableName": "testTable",
-    "whereClause": {
-      "type": "where",
-      "lhs": "testField",
-      "operator": "!=",
-      "rhs": -1234
-    }
+  "selectClause": {
+    "database": "testDatabase",
+    "table": "testTable",
+    "fieldClauses": []
   },
-  "fields": ["*"],
-  "aggregateArraysByElement": false,
-  "ignoreFilters_": false,
-  "selectionOnly_": false,
-  "ignoredFilterIds_": [],
+  "whereClause": {
+    "type": "where",
+    "lhs": { "database": "testDatabase", "table": "testTable", "field": "testField" },
+    "operator": "!=",
+    "rhs": -1234
+  },
+  "aggregateClauses": [],
   "groupByClauses": [],
-  "isDistinct": false,
-  "aggregates": [],
-  "sortClauses": [],
+  "orderByClauses": [],
   "limitClause": { "limit": 10 },
-  "offsetClause": { "offset": 0 }
+  "offsetClause": { "offset": 0 },
+  "joinClauses": [],
+  "isDistinct": false
 }

@@ -1,4 +1,5 @@
 rootProject.name = 'neon-server'
 include ':common'
 include ':server'
+include ':sqladapter'
 include ':esadapter'

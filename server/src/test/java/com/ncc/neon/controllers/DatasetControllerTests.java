@@ -4,9 +4,9 @@ import static org.junit.Assert.*;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Map;
 
+import com.ncc.neon.NeonServerApplication;
 import com.ncc.neon.models.DataNotification;
 import com.ncc.neon.util.DateUtil;
 
@@ -20,6 +20,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.FluxExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -29,6 +30,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 @RunWith(SpringRunner.class)
+@ContextConfiguration(classes = NeonServerApplication.class)
 @SpringBootTest(webEnvironment =  WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
 public class DatasetControllerTests {
