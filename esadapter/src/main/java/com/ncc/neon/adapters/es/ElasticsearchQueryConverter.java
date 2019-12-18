@@ -358,11 +358,6 @@ public class ElasticsearchQueryConverter {
 
         String indexType = params.getSelectClause().getTable() != null ? params.getSelectClause().getTable() : "_all";
 
-        // Assumes ES7 if type="properties"
-        if (indexType.equals("properties")) {
-            indexType = "_doc";
-        }
-
         req.searchType(SearchType.DFS_QUERY_THEN_FETCH)
                 .source(source)
                 .indices(indexName)

@@ -164,13 +164,6 @@ public class ElasticsearchAdapter extends QueryAdapter {
 
     private Map<String, Map> getPropertiesFromMapping(GetMappingsResponse response, String databaseName, String tableName) {
         Map<String, Object> mappingTable = response.mappings().get(databaseName).get(tableName).sourceAsMap();
-
-        // ES6 indexes have databaseName->tableName->"properties" but ES7 indexes have databaseName->"properties"
-        // This won't work on an ES6 index with a tableName="properties"
-        if (tableName.equals("properties")) {
-            return (Map<String, Map>) mappingTable.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                    entry -> (Map) entry.getValue()));
-        }
         return (Map<String, Map>) mappingTable.get("properties");
     }
 

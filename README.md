@@ -97,7 +97,7 @@ Run `docker images` to verify that you have created a docker image with the repo
 
 The NUCLEUS Data Server supports the following datastores:
 
-- [Elasticsearch 6.4 - 6.8](https://www.elastic.co/downloads/past-releases/elasticsearch-6-8-1)
+- [Elasticsearch 6.7 - 6.8](https://www.elastic.co/downloads/past-releases/elasticsearch-6-8-1)
 - [Elasticsearch 7](https://www.elastic.co/downloads/elasticsearch)
 - [MySQL](https://www.mysql.com/downloads/)
 - [PostgreSQL](https://www.postgresql.org/download/)
@@ -117,10 +117,6 @@ If you have previously installed elasticdump, we recommend that you rerun the co
 #### Elasticsearch Data Format
 
 If your data is spread across multiple indexes, we recommend that you [denormalize](https://www.elastic.co/guide/en/elasticsearch/guide/current/denormalization.html) any fields that you want to use as filters.
-
-#### Elasticsearch Index Types (6.X Only)
-
-Please do not name your index type `properties`.
 
 #### Elasticsearch Mapping Files
 

@@ -1,8 +1,5 @@
 group = 'com.ncc.neon'
 
-// Override default Elasticsearch version from Spring BOM to continue support of 6.4
-ext['elasticsearch.version'] = '6.4.3';
-
 buildscript {
     ext {
         springBootVersion = '2.2.1.RELEASE'
