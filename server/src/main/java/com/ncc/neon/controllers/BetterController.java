@@ -1,5 +1,6 @@
 package com.ncc.neon.controllers;
 
+import ch.qos.logback.core.net.SyslogOutputStream;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.DataNotification;
@@ -15,9 +16,7 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.rest.RestStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +32,7 @@ import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
@@ -40,6 +40,7 @@ import reactor.util.function.Tuples;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -93,21 +94,23 @@ public class BetterController {
     }
 
     @PostMapping(path = "upload")
-    ResponseEntity<Mono<?>> upload(@RequestPart("file") Mono<FilePart> file) {
+    @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR, reason = "")
+    Mono<Tuple2<String, RestStatus>> upload(@RequestPart("file") Mono<FilePart> filePartMono) {
         // TODO: Return error message if file is not provided.
 
-        Mono<?> uploadFileMono = writeFileToShare(file)
-                .flatMap(fileRef -> addToElasticSearchFilesIndex(new BetterFile(fileRef.getName(), fileRef.length())))
-                // TODO: Add a doOnError.
+        return filePartMono.flatMap(this::writeFilePartToShare)
+                .doOnError(onError -> {
+                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error writing file to share.");
+                })
+                .flatMap(file -> this.addToElasticSearchFilesIndex(file))
+                .doOnError(onError -> deleteShareFile(file))
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
-
-        return ResponseEntity.ok().body(uploadFileMono);
     }
 
     @DeleteMapping(path = "file/{id}")
     ResponseEntity<Mono<?>> delete(@PathVariable("id") String id) {
         Mono<?> deleteFileMono = getFileById(id)
-                .flatMap(betterFile -> deleteShareFile(betterFile.getFilename()))
+                .flatMap(this::deleteShareFile)
                 .then(deleteFileById(id))
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
 
@@ -259,11 +262,13 @@ public class BetterController {
         // Wrap the async part in a mono.
         return Mono.create(sink -> {
             try {
-                IndexResponse response = elasticSearchClient.index(indexRequest, RequestOptions.DEFAULT);
+                elasticSearchClient.index(indexRequest, RequestOptions.DEFAULT);
                 RefreshResponse refResponse = elasticSearchClient.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
                 sink.success(Tuples.of(fileToAdd.getFilename(), refResponse.getStatus()));
+            } catch (ConnectException e) {
+                sink.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not connect to database."));
             } catch (IOException e) {
-                sink.error(e);
+                sink.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to add file to database."));
             }
         });
     }
@@ -297,6 +302,20 @@ public class BetterController {
         });
     }
 
+    private Mono<BetterFile> writeFilePartToShare(FilePart filePart) {
+        Path sharePath = getRelativeSharePath();
+        File dir = new File(sharePath.toString());
+
+        if (!dir.exists()) {
+            dir.mkdir();
+        }
+
+        Path filePath = sharePath.resolve(Objects.requireNonNull(filePart.filename()));
+
+        return filePart.transferTo(filePath)
+                .thenReturn(new BetterFile(new File(filePath.toString())));
+    }
+
     private Mono<File> writeFileToShare(Mono<FilePart> fileMono) {
         Path sharePath = getRelativeSharePath();
 
@@ -307,9 +326,9 @@ public class BetterController {
         });
     }
 
-    private Mono<Boolean> deleteShareFile(String filename) {
+    private Mono<Boolean> deleteShareFile(BetterFile fileToDelete) {
         // Append filename to share directory.
-        String filepath = getRelativeSharePath().resolve(filename).toString();
+        String filepath = getRelativeSharePath().resolve(fileToDelete.getFilename()).toString();
 
         return Mono.create(sink -> {
             sink.success(new File(filepath).delete());
