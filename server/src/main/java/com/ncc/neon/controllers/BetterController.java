@@ -69,16 +69,13 @@ public class BetterController {
 
         String enPreprocessorUrl = "http://" +
                 this.getEnv("EN_PREPROCESSOR_HOST", "localhost") +
-                ":" +
-                this.getEnv("EN_PREPROCESSOR_PORT", enPreprocessorPort);
+                ":" + enPreprocessorPort;
         String arPreprocessorUrl = "http://" +
                 this.getEnv("AR_PREPROCESSOR_HOST", "localhost") +
-                ":" +
-                this.getEnv("AR_PREPROCESSOR_PORT", arPreprocessorPort);
+                ":" + arPreprocessorPort;
         String bpeHost = "http://" +
                 this.getEnv("BPE_HOST", "localhost") +
-                ":" +
-                this.getEnv("BPE_PORT", bpePort);
+                ":" + bpePort;
         String elasticHost = getEnv("ELASTIC_HOST", "localhost");
 
         this.enPreprocessorClient = WebClient.create(enPreprocessorUrl);
