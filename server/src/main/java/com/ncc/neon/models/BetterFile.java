@@ -8,9 +8,4 @@ import java.io.File;
 public class BetterFile {
     private final String filename;
     private final long bytes;
-
-    public BetterFile(File fileRef) {
-        this.filename = fileRef.getName();
-        this.bytes = fileRef.length();
-    }
 }
