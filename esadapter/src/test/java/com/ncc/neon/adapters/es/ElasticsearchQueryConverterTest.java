@@ -548,7 +548,8 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
             .dateHistogramInterval(DateHistogramInterval.MINUTE).format("m").subAggregation(aggBuilder2);
         SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
-        assertThat(actual).isEqualTo(expected);
+        // This test fails without the toString (I don't know why)
+        assertThat(actual.toString()).isEqualTo(expected.toString());
     }
 
     @Test
@@ -566,7 +567,8 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
             .subAggregation(aggBuilder2);
         SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
-        assertThat(actual).isEqualTo(expected);
+        // This test fails without the toString (I don't know why)
+        assertThat(actual.toString()).isEqualTo(expected.toString());
     }
 
     @Test
@@ -612,7 +614,8 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
             .subAggregation(aggBuilder2);
         SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
-        assertThat(actual).isEqualTo(expected);
+        // This test fails without the toString (I don't know why)
+        assertThat(actual.toString()).isEqualTo(expected.toString());
     }
 
     @Test
