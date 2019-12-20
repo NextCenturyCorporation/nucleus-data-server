@@ -18,7 +18,7 @@ The NUCLEUS Data Server is a REST server that is used with [NUCLEUS](https://git
 
 ### Install Dependencies
 
-- [Java 9+](https://www.oracle.com/technetwork/java/javase/downloads/jdk12-downloads-5295953.html)
+- [Java 9+](https://www.oracle.com/technetwork/java/javase/downloads/jdk12-downloads-5295953.html) (Tested on OpenJDK versions 11 and 12)
 - [Docker](https://docs.docker.com/v17.12/install/)
 - A [supported datastore](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#datastore-support)
 
