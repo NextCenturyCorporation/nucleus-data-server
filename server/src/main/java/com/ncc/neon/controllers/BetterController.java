@@ -31,6 +31,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ResponseStatusException;
@@ -106,13 +107,12 @@ public class BetterController {
     }
 
     @DeleteMapping(path = "file/{id}")
-    ResponseEntity<Mono<?>> delete(@PathVariable("id") String id) {
-        Mono<?> deleteFileMono = getFileById(id)
+    Mono<ServerResponse> delete(@PathVariable("id") String id) {
+        return getFileById(id)
                 .flatMap(this::deleteShareFile)
                 .then(deleteFileById(id))
+                .then(ServerResponse.ok().build())
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
-
-        return ResponseEntity.ok().body(deleteFileMono);
     }
 
     @GetMapping(path = "download")
