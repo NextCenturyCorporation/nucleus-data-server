@@ -5,8 +5,9 @@ import lombok.Data;
 
 @AllArgsConstructor
 @Data
-public class GroupByFunctionClause implements GroupByClause {
-    String name;
-    String operation;
-    String field;
+public class JoinClause {
+    String type;
+    String database;
+    String table;
+    WhereClause onClause;
 }

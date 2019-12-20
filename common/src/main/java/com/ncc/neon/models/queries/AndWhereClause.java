@@ -9,7 +9,7 @@ import lombok.EqualsAndHashCode;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper=false)
-public class AndWhereClause extends BooleanWhereClause {
+public class AndWhereClause extends CompoundWhereClause {
     public AndWhereClause(List<WhereClause> whereClauses) {
         super(whereClauses);
     }

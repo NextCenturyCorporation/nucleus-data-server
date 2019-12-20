@@ -69,11 +69,11 @@ public class StateService {
     public void deleteState(String stateName) throws StateServiceFailureException, StateServiceMissingFileException {
         File stateDirectory = findStateDirectory();
         File stateFile = retrieveStateFile(stateDirectory, this.validateName(stateName));
-        if(stateFile == null) {
+        if (stateFile == null) {
             throw new StateServiceMissingFileException("State " + stateName + " does not exist");
         }
         stateFile.delete();
-        if(stateFile.exists()) {
+        if (stateFile.exists()) {
             log.error("Cannot delete state from " + stateFile.getAbsolutePath());
             throw new StateServiceFailureException("State " + stateName + " was not deleted");
         }
@@ -88,10 +88,10 @@ public class StateService {
         try {
             File stateDirectory = ResourceUtils.getFile(stateDirectoryPath);
             log.debug("State Directory Path = " + stateDirectory.getAbsolutePath());
-            if(!stateDirectory.exists()) {
+            if (!stateDirectory.exists()) {
                 stateDirectory.mkdir();
             }
-            if(!stateDirectory.isDirectory()) {
+            if (!stateDirectory.isDirectory()) {
                 throw new IllegalArgumentException("stateDirectoryPath is not a directory!");
             }
             return stateDirectory;

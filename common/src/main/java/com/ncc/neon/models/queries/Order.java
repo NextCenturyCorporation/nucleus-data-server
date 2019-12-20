@@ -9,16 +9,16 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @AllArgsConstructor
-@JsonDeserialize(using = SortClauseOrderDeserializer.class)
-public enum SortClauseOrder {
-    
+@JsonDeserialize(using = OrderDeserializer.class)
+public enum Order {
+
     ASCENDING(1), DESCENDING(-1);
 
     @JsonValue
     @Getter
     private final int direction;
 
-    public static SortClauseOrder fromDirection(int direction) {
-        return Arrays.stream(SortClauseOrder.values()).filter(sortOrder -> sortOrder.direction == direction).findAny().get();
+    public static Order fromDirection(int direction) {
+        return Arrays.stream(Order.values()).filter(sortOrder -> sortOrder.direction == direction).findAny().get();
     }
 }

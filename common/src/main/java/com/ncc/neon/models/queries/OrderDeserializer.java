@@ -7,21 +7,21 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
-public class SortClauseOrderDeserializer extends StdDeserializer<SortClauseOrder> {
+public class OrderDeserializer extends StdDeserializer<Order> {
 
     private static final long serialVersionUID = 1428331383389586619L;
 
-    public SortClauseOrderDeserializer() {
+    public OrderDeserializer() {
         this(null);
     }
 
-    public SortClauseOrderDeserializer(Class<?> vc) {
+    public OrderDeserializer(Class<?> vc) {
         super(vc);
     }
 
     @Override
-    public SortClauseOrder deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-        return SortClauseOrder.fromDirection(p.getIntValue());
+    public Order deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+        return Order.fromDirection(p.getIntValue());
     }
 }
 

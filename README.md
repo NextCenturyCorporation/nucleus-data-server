@@ -1,6 +1,6 @@
-# Neon Server
+# NUCLEUS Data Server
 
-The Neon Server is a REST server that is used with the [Neon Middleware](https://github.com/NextCenturyCorporation/neon-framework) to provide datastore adapters, run datastore queries, transform query results, and perform data processing.  The [Neon Dashboard](https://github.com/NextCenturyCorporation/neon-dash-internal) is a UI that interacts with the Neon Server.
+The NUCLEUS Data Server is a REST server that is used with [NUCLEUS](https://github.com/NextCenturyCorporation/nucleus) to provide datastore adapters, run datastore queries, transform query results, and perform data processing.  The [Neon Dashboard](https://github.com/NextCenturyCorporation/neon-dash-internal) is a UI that interacts with the NUCLEUS Data Server.
 
 ## Table of Content
 
@@ -28,30 +28,28 @@ The Neon Server is a REST server that is used with the [Neon Middleware](https:/
 
 ### Load Data
 
-If you were given a sample data bundle by the Neon Development Team, please download it and follow its specific README instructions.
+If you were given a sample data bundle by the Neon / NUCLEUS Development Team, please download it and follow the specific instructions in its README file.
 
 If you want to use your own data, please see the [Datastore Configuration](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#datastore-configuration) for more information.
 
 ### Customize Build (Optional)
 
-Update the runtime properties of your Neon Server installation in the [server/src/main/resources/application.properties](./server/src/main/resources/application.properties) file.  See the [Spring Boot Configuration Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html) for details.
+Update the runtime properties of your NUCLEUS Data Server installation by editing the [server/src/main/resources/application.properties](./server/src/main/resources/application.properties) file.  See the [Spring Boot Configuration Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html) for details.
 
 ## Datastore Authentication
 
 ### Basic Auth
 
-#### Elasticsearch
-
-In the [server/src/main/resources/server.properties](./server/src/main/resources/server.properties) file, add the following property:
+In the [server/src/main/resources/application.properties](./server/src/main/resources/application.properties) file, add the following property, replacing `my_datastore_type` with your datastore type (`elasticsearch`, `mysql`, `postgresql`):
 
 ```
-elasticsearch.auth={'hostname':'username:password'}
+my_datastore_type.auth={'hostname':'username:password'}
 ```
 
 Replace the `hostname`, `username`, and `password` as needed.  The `hostname` can be an IP address or a CNAME and can optionally have a port.  If you need multiple authentication entries, separate them with commas:
 
 ```
-elasticsearch.auth={'hostname1':'username1:password1','hostname2':'username2:password2'}
+my_datastore_type.auth={'hostname1':'username1:password1','hostname2':'username2:password2'}
 ```
 
 ## Local Development Instructions
@@ -68,7 +66,7 @@ This will run `bootRun` from the [Spring Boot Gradle plugin](https://docs.spring
 
 ## Production Deployment Instructions
 
-The Neon Server is deployed as an independent docker container.
+The NUCLEUS Data Server is deployed as an docker container independent from other applications (like the Neon Dashboard).
 
 ### Deploy as Docker Container
 
@@ -76,9 +74,9 @@ The Neon Server is deployed as an independent docker container.
 
 Follow the [Initial Setup Instructions](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#initial-setup-instructions) above.
 
-#### 2. (Optional) Update the Neon Server's Port
+#### 2. (Optional) Update the NUCLEUS Data Server's Port
 
-By default, the Neon Server runs on port `8090`.  If you want to use a different port:
+By default, the NUCLEUS Data Server runs on port `8090`.  If you want to use a different port:
 
 - In `<neon-server>/server/src/main/resources/application.properties`, change the line `server.port=8090` to use your port
 - In `Dockerfile`, change the line `EXPOSE 8090` to use your port
@@ -97,10 +95,14 @@ Run `docker images` to verify that you have created a docker image with the repo
 
 ## Datastore Support
 
-The Neon Server currently supports the following datastores:
+The NUCLEUS Data Server supports the following datastores:
 
-- [Elasticsearch 6.4 - 6.8](https://www.elastic.co/downloads/past-releases/elasticsearch-6-8-1)
-- Elasticsearch 7 (*limited testing*)
+- [Elasticsearch 6.7 - 6.8](https://www.elastic.co/downloads/past-releases/elasticsearch-6-8-1)
+- [Elasticsearch 7](https://www.elastic.co/downloads/elasticsearch)
+- [MySQL](https://www.mysql.com/downloads/)
+- [PostgreSQL](https://www.postgresql.org/download/)
+
+Elasticsearch support provided by the official [Java High Level REST Client](https://www.elastic.co/guide/en/elasticsearch/client/java-rest/master/java-rest-high.html).  SQL support provided by [R2DBC drivers](https://r2dbc.io).
 
 *Want us to support another datastore?  [Please let us know!](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#contact-us)*
 
@@ -115,10 +117,6 @@ If you have previously installed elasticdump, we recommend that you rerun the co
 #### Elasticsearch Data Format
 
 If your data is spread across multiple indexes, we recommend that you [denormalize](https://www.elastic.co/guide/en/elasticsearch/guide/current/denormalization.html) any fields that you want to use as filters.
-
-#### Elasticsearch Index Types (6.X Only)
-
-Please do not name your index type `properties`.
 
 #### Elasticsearch Mapping Files
 
@@ -171,9 +169,16 @@ Text fields should have the `fielddata` property set to `true`.  For example:
 }
 ```
 
-#### Elasticsearch Curl and Elasticdump Tips
+#### Elasticsearch Data Ingest Tips
 
-Mapping file format:  start with the "properties".  Example:
+Data file format:  define individual JSON objects on separate lines in the file.  Example:
+
+```json
+{ "_index": "index_name", "_type": "index_mapping_type", "_source": { "whatever_field": "whatever values" }}
+{ "_index": "index_name", "_type": "index_mapping_type", "_source": { "whatever_field": "more values" }}
+```
+
+**CURL** Mapping file format:  start with the "properties".  Example:
 
 ```json
 {
@@ -185,54 +190,66 @@ Mapping file format:  start with the "properties".  Example:
 }
 ```
 
-Data file format:  define individual JSON objects on separate lines in the file.  Example:
-
-```json
-{ "_index": "index_name", "_type": "index_mapping_type", "_source": { "whatever_field": "whatever values" }}
-{ "_index": "index_name", "_type": "index_mapping_type", "_source": { "whatever_field": "more values" }}
-```
-
-Create an index (with elasticdump):
-
-```
-elasticdump --type=mapping --input=mapping_file.json --output=hostname:port/index_name
-```
-
-[ES6] Create an index (with curl):
+**CURL** [ES6] Create an index:
 
 ```
 curl -XPUT hostname:port/index_name
 curl -XPUT hostname:port/index_name/_mapping/index_mapping_type -H "Content-Type: application/json" -d @mapping_file.json
 ```
 
-[ES7] Create an index (with curl):
+**CURL** [ES7] Create an index:
 
 ```
 curl -XPUT hostname:port/index_name
 curl -XPUT hostname:port/index_name/_mapping -H "Content-Type: application/json" -d @mapping_file.json
 ```
 
-Ingest data into an index (with elasticdump):
-
-```
-elasticdump --type=data --limit=10000 --input=data_file.json --output=hostname:port/index_name
-```
-
-Delete an index:
+**CURL** Delete an index:
 
 ```
 curl -XDELETE hostname:port/index_name
 ```
 
+**ELASTICDUMP** Mapping file format:  start with the index name.  Example:
+
+```json
+{
+  "index_name": {
+    "mappings": {
+      "index_mapping_type": {
+        "properties": {
+          "whatever_field": {
+            "type": "whatever_type"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**ELASTICDUMP** Create an index:
+
+```
+elasticdump --type=mapping --input=mapping_file.json --output=hostname:port/index_name
+```
+
+**ELASTICDUMP** Ingest data into an index:
+
+```
+elasticdump --type=data --limit=10000 --input=data_file.json --output=hostname:port/index_name
+```
+
 ## Technical Stack
 
-The Neon Server is a [Spring Boot](https://spring.io/projects/spring-boot) WebFlux Java application built using Gradle plugins.
+The NUCLEUS Data Server is a [Spring Boot](https://spring.io/projects/spring-boot) WebFlux Java application built using the Gradle plugins.
 
 ### Modules
 
 The application is built using multiple custom modules:
 
-* The **server** module contains the core Neon Server code.
+* The **server** module contains the core Data Server code.
+* The **sqladapter** module contains the SQL JDBC datastore adapter that currently supports MySQL and PostgreSQL.
 * The **esadapter** module contains the Elasticsearch REST datastore adapter.
 * The **common** module contains the common adapter and model classes.
 
@@ -247,7 +264,7 @@ Change the modules included in your build (to add or remove adapter dependencies
 
 ## Apache 2 Open Source License
 
-Neon is made available by [Next Century](http://www.nextcentury.com) under the [Apache 2 Open Source License](http://www.apache.org/licenses/LICENSE-2.0.txt). You may freely download, use, and modify, in whole or in part, the source code or release packages. Any restrictions or attribution requirements are spelled out in the license file. Neon attribution information can be found in the [LICENSE](./LICENSE) file. For more information about the Apache license, please visit the [The Apache Software Foundation’s License FAQ](http://www.apache.org/foundation/license-faq.html).
+NUCLEUS is made available by [Next Century](http://www.nextcentury.com) under the [Apache 2 Open Source License](http://www.apache.org/licenses/LICENSE-2.0.txt). You may freely download, use, and modify, in whole or in part, the source code or release packages. Any restrictions or attribution requirements are spelled out in the license file. NUCLEUS attribution information can be found in the [LICENSE](./LICENSE) file. For more information about the Apache license, please visit the [The Apache Software Foundation’s License FAQ](http://www.apache.org/foundation/license-faq.html).
 
 ## Contact Us
 
