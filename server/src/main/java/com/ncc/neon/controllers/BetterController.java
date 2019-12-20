@@ -95,7 +95,8 @@ public class BetterController {
     Mono<Tuple2<String, RestStatus>> upload(@RequestPart("file") Mono<FilePart> filePartMono) {
         // TODO: Return error message if file is not provided.
 
-        return filePartMono.flatMap(this::writeFilePartToShare)
+        return filePartMono
+                .flatMap(this::writeFilePartToShare)
                 .doOnError(onError -> {
                     throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error writing file to share.");
                 })
@@ -277,8 +278,17 @@ public class BetterController {
         return Mono.create(sink -> {
             try {
                 GetResponse response = elasticSearchClient.get(gr, RequestOptions.DEFAULT);
+
+                // Send 404 if file does not exist in database.
+                if (response.getSource() == null) {
+                    sink.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found."));
+                }
+
                 BetterFile res = new ObjectMapper().readValue(response.getSourceAsString(), BetterFile.class);
+
                 sink.success(res);
+            } catch (ConnectException e) {
+                sink.error(new Exception("Could not connect to database."));
             } catch (IOException e) {
                 sink.error(e);
             }
@@ -293,8 +303,10 @@ public class BetterController {
                 DeleteResponse response = elasticSearchClient.delete(dr, RequestOptions.DEFAULT);
                 RefreshResponse refResponse = elasticSearchClient.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
                 sink.success(refResponse.getStatus());
+            } catch (ConnectException e) {
+                sink.error(new Exception("Could not connect to database."));
             } catch (IOException e) {
-                sink.error(e);
+                sink.error(new Exception("Failed to delete file from database."));
             }
         });
     }
