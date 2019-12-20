@@ -147,7 +147,23 @@ public class BetterController {
             fileList = performArPreprocessing(file);
         }
 
-        return fileList.flatMapMany(this::addManyToElasticSearchFilesIndex)
+        return fileList
+                .doOnError(onError -> {
+                    if (onError instanceof ConnectException) {
+                        String message = "Failed to connect to " + language.toUpperCase() + " preprocessor.";
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, message);
+                    }
+                })
+                .flatMapMany(files -> addManyToElasticSearchFilesIndex(files)
+                .any(outputFile -> outputFile.getT2() != RestStatus.OK)
+                .flatMap(anyFailed -> {
+                    if (anyFailed) {
+                        Flux.fromArray(files).flatMap(this::deleteShareFile);
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error performing operation.");
+                    }
+
+
+                }))
                 .doOnComplete(() -> datasetService.notify(new DataNotification()));
     }
 
