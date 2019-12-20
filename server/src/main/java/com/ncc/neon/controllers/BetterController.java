@@ -99,14 +99,14 @@ public class BetterController {
                     throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error writing file to share.");
                 })
                 .flatMap(file -> this.addToElasticSearchFilesIndex(new BetterFile(file.getName(), file.length()))
-                .doOnError(onError -> deleteShareFile(new BetterFile(file.getName(), file.length())))
+                .doOnError(onError -> deleteShareFile(file.getName()))
                 .doOnSuccess(status -> datasetService.notify(new DataNotification())));
     }
 
     @DeleteMapping(path = "file/{id}")
     Mono<ServerResponse> delete(@PathVariable("id") String id) {
         return getFileById(id)
-                .flatMap(this::deleteShareFile)
+                .map(fileToDelete -> deleteShareFile(fileToDelete.getFilename()))
                 .then(deleteFileById(id))
                 .then(ServerResponse.ok().build())
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
@@ -138,7 +138,7 @@ public class BetterController {
     }
 
     @GetMapping(path = "tokenize")
-    Flux<Tuple2<String, RestStatus>> tokenize(@RequestParam("file") String file, @RequestParam("language") String language) {
+    Flux<?> tokenize(@RequestParam("file") String file, @RequestParam("language") String language) {
         Mono<BetterFile[]> fileList = Mono.empty();
 
         if (language.equals("en")) {
@@ -147,24 +147,39 @@ public class BetterController {
             fileList = performArPreprocessing(file);
         }
 
-        return fileList
+        Flux<Tuple2<String, RestStatus>> fileListRes = fileList
                 .doOnError(onError -> {
                     if (onError instanceof ConnectException) {
                         String message = "Failed to connect to " + language.toUpperCase() + " preprocessor.";
                         throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, message);
                     }
                 })
-                .flatMapMany(files -> addManyToElasticSearchFilesIndex(files)
-                .any(outputFile -> outputFile.getT2() != RestStatus.OK)
-                .flatMap(anyFailed -> {
-                    if (anyFailed) {
-                        Flux.fromArray(files).flatMap(this::deleteShareFile);
-                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error performing operation.");
-                    }
+                .flatMapMany(this::addManyToElasticSearchFilesIndex);
 
+        return Flux.zip(fileListRes.collectList(), fileListRes.any(outputFile -> outputFile.getT2() != RestStatus.OK)).log()
+            .flatMap(res -> {
+                Flux<Tuple2<String, RestStatus>> fluxRes = Flux.fromIterable(res.getT1());
+                if (res.getT2()) {
+                    return fluxRes.map(data -> deleteShareFile(data.getT1()))
+                    .doOnComplete(() -> {
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "something bad.");
+                    });
+                }
+                else {
+                    return fluxRes;
+                }
+            });
 
-                }))
-                .doOnComplete(() -> datasetService.notify(new DataNotification()));
+//                        .any(outputFile -> outputFile.getT2() != RestStatus.OK)
+//                        .flatMap(anyFailed -> {
+//                            if (anyFailed) {
+//                                Flux.fromArray(files).flatMap(this::deleteShareFile);
+//                                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error performing operation.");
+//                            }
+//
+//
+//                        }))
+//                .doOnComplete(() -> datasetService.notify(new DataNotification()));
     }
 
     @GetMapping(path = "bpe")
@@ -265,7 +280,8 @@ public class BetterController {
             try {
                 elasticSearchClient.index(indexRequest, RequestOptions.DEFAULT);
                 RefreshResponse refResponse = elasticSearchClient.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
-                sink.success(Tuples.of(fileToAdd.getFilename(), refResponse.getStatus()));
+//                sink.error(new Exception("test"));
+                sink.success(Tuples.of(fileToAdd.getFilename(), RestStatus.BAD_REQUEST));
             } catch (ConnectException e) {
                 sink.error(new Exception("Could not connect to database."));
             } catch (IOException e) {
@@ -328,9 +344,9 @@ public class BetterController {
                 .thenReturn(new File(filePath.toString()));
     }
 
-    private Mono<Boolean> deleteShareFile(BetterFile fileToDelete) {
+    private Mono<Boolean> deleteShareFile(String fileToDelete) {
         // Append filename to share directory.
-        String filepath = getRelativeSharePath().resolve(fileToDelete.getFilename()).toString();
+        String filepath = getRelativeSharePath().resolve(fileToDelete).toString();
         return Mono.just(new File(filepath).delete());
     }
 
