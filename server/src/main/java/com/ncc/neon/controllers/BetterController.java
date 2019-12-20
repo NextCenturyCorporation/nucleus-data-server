@@ -1,6 +1,5 @@
 package com.ncc.neon.controllers;
 
-import ch.qos.logback.core.net.SyslogOutputStream;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.DataNotification;
@@ -30,8 +29,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ResponseStatusException;
@@ -116,22 +113,13 @@ public class BetterController {
     }
 
     @GetMapping(path = "download")
-    @ResponseBody
     ResponseEntity<?> download(@RequestParam("file") String file) {
-        ResponseEntity res;
+        ResponseEntity<?> res;
         // TODO: don't allow relative paths.
-        String shareDir = System.getenv("SHARE_DIR");
-
-        // Default to a known directory.
-        if (shareDir == null) {
-            shareDir = "share";
-        }
-
-        Path fileRef = Paths.get(shareDir).resolve(file);
-        Resource resource = null;
+        Path filePath = getRelativeSharePath().resolve(file);
 
         try {
-            resource = new UrlResource(fileRef.toUri());
+            Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() || resource.isReadable()) {
                 res = ResponseEntity.ok()
@@ -143,7 +131,6 @@ public class BetterController {
                 res = ResponseEntity.notFound().build();
             }
         } catch (MalformedURLException e) {
-            e.printStackTrace();
             res = ResponseEntity.badRequest().build();
         }
 
