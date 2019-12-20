@@ -325,16 +325,6 @@ public class BetterController {
                 .thenReturn(new File(filePath.toString()));
     }
 
-    private Mono<File> writeFileToShare(Mono<FilePart> fileMono) {
-        Path sharePath = getRelativeSharePath();
-
-        return fileMono.flatMap(file -> {
-            Path filePath = sharePath.resolve(Objects.requireNonNull(file.filename()));
-            file.transferTo(filePath);
-            return Mono.just(new File(filePath.toString()));
-        });
-    }
-
     private Mono<Boolean> deleteShareFile(BetterFile fileToDelete) {
         // Append filename to share directory.
         String filepath = getRelativeSharePath().resolve(fileToDelete.getFilename()).toString();
