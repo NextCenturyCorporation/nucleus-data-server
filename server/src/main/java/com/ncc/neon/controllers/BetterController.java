@@ -44,6 +44,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -163,7 +164,7 @@ public class BetterController {
 
         return fileList
                 .doOnError(onError -> {
-                    if (onError instanceof ConnectException) {
+                    if (onError instanceof ConnectException || onError instanceof UnknownHostException) {
                         String message = "Failed to connect to " + language.toUpperCase() + " preprocessor.";
                         throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, message);
                     }
