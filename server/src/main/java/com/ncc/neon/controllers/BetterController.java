@@ -90,7 +90,7 @@ public class BetterController {
     }
 
     @PostMapping(path = "upload")
-    Mono<Tuple2<String, RestStatus>> upload(@RequestPart("file") Mono<FilePart> filePartMono) {
+    Mono<RestStatus> upload(@RequestPart("file") Mono<FilePart> filePartMono) {
         // TODO: Return error message if file is not provided.
 
         return filePartMono
@@ -100,6 +100,7 @@ public class BetterController {
                 })
                 .flatMap(file -> this.addToElasticSearchFilesIndex(new BetterFile(file.getName(), file.length()))
                 .doOnError(onError -> deleteShareFile(file.getName()))
+                .then(refreshFilesIndex().retry(3))
                 .doOnSuccess(status -> datasetService.notify(new DataNotification())));
     }
 
@@ -108,6 +109,7 @@ public class BetterController {
         return getFileById(id)
                 .map(fileToDelete -> deleteShareFile(fileToDelete.getFilename()))
                 .then(deleteFileById(id))
+                .then(refreshFilesIndex().retry(3))
                 .then(ServerResponse.ok().build())
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
     }
@@ -160,9 +162,10 @@ public class BetterController {
     }
 
     @GetMapping(path = "bpe")
-    Mono<Tuple2<String, RestStatus>> bpe(@RequestParam("file") String file) {
+    Mono<RestStatus> bpe(@RequestParam("file") String file) {
         return performBPE(file)
                 .flatMap(this::addToElasticSearchFilesIndex)
+                .then(refreshFilesIndex().retry(3))
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
     }
 
@@ -315,8 +318,7 @@ public class BetterController {
         return Mono.create(sink -> {
             try {
                 DeleteResponse response = elasticSearchClient.delete(dr, RequestOptions.DEFAULT);
-                RefreshResponse refResponse = elasticSearchClient.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
-                sink.success(refResponse.getStatus());
+                sink.success(response.status());
             } catch (ConnectException e) {
                 sink.error(new Exception("Could not connect to database."));
             } catch (IOException e) {
