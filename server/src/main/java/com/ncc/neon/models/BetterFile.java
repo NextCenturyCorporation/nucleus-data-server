@@ -8,4 +8,5 @@ import java.io.File;
 public class BetterFile {
     private final String filename;
     private final long bytes;
+    private FileStatus status = FileStatus.PENDING;
 }

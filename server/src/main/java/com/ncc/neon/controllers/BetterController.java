@@ -3,6 +3,7 @@ package com.ncc.neon.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.DataNotification;
+import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.DatasetService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
@@ -13,6 +14,8 @@ import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Value;
@@ -98,10 +101,15 @@ public class BetterController {
                 .doOnError(onError -> {
                     throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error writing file to share.");
                 })
-                .flatMap(file -> this.addToElasticSearchFilesIndex(new BetterFile(file.getName(), file.length()))
-                .doOnError(onError -> deleteShareFile(file.getName()))
-                .then(refreshFilesIndex().retry(3))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification())));
+                .flatMap(file -> {
+                    BetterFile fileToAdd = new BetterFile(file.getName(), file.length());
+                    fileToAdd.setStatus(FileStatus.READY);
+
+                    return this.addToElasticSearchFilesIndex(fileToAdd)
+                            .doOnError(onError -> deleteShareFile(file.getName()))
+                            .then(refreshFilesIndex().retry(3))
+                            .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+                });
     }
 
     @DeleteMapping(path = "file/{id}")
@@ -144,7 +152,11 @@ public class BetterController {
         Mono<BetterFile[]> fileList = Mono.empty();
 
         if (language.equals("en")) {
-            fileList = performEnPreprocessing(file);
+            fileList = getEnPreprocessingList(file)
+                    .flatMapMany(this::addManyToElasticSearchFilesIndex)
+                    .then(refreshFilesIndex().retry(3))
+                    .doOnSuccess(status -> datasetService.notify(new DataNotification()))
+                    .then(performEnPreprocessing(file));
         } else if (language.equals("ar")) {
             fileList = performArPreprocessing(file);
         }
@@ -156,7 +168,13 @@ public class BetterController {
                         throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, message);
                     }
                 })
-                .flatMapMany(this::addManyToElasticSearchFilesIndex)
+                .map(readyFiles -> {
+                    for (BetterFile readyFile : readyFiles) {
+                        readyFile.setStatus(FileStatus.READY);
+                    }
+                    return readyFiles;
+                })
+                .flatMapMany(this::updateManyElasticSearchFile)
                 .then(refreshFilesIndex().retry(3))
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
     }
@@ -194,6 +212,18 @@ public class BetterController {
         } catch (IOException ioe) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private Mono<String[]> getEnPreprocessingList(String filename) {
+        return enPreprocessorClient.get()
+                .uri(uriBuilder -> {
+                    uriBuilder.pathSegment("list");
+                    uriBuilder.queryParam("file", filename);
+                    return uriBuilder.build();
+                })
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(String[].class);
     }
 
     private Mono<BetterFile[]> performEnPreprocessing(String filename) {
@@ -248,12 +278,17 @@ public class BetterController {
                 .flatMap(this::addToElasticSearchFilesIndex);
     }
 
+    private Flux<Tuple2<String, RestStatus>> addManyToElasticSearchFilesIndex(String[] filesToAdd) {
+        return Flux.fromArray(filesToAdd)
+                .flatMap(fileToAdd -> addToElasticSearchFilesIndex(new BetterFile(fileToAdd, 0)));
+    }
+
     private Mono<Tuple2<String, RestStatus>> addToElasticSearchFilesIndex(BetterFile fileToAdd) {
         // Serialize file to json map.
         Map<String, Object> bfMapper = objectMapper.convertValue(fileToAdd, Map.class);
 
         // Build the elasticsearch request.
-        IndexRequest indexRequest = new IndexRequest("files", "filedata").source(bfMapper);
+        IndexRequest indexRequest = new IndexRequest("files", "filedata").source(bfMapper).id(fileToAdd.getFilename());
 
         // Wrap the async part in a mono.
         return Mono.create(sink -> {
@@ -272,6 +307,30 @@ public class BetterController {
                 deleteShareFile(fileToAdd.getFilename());
                 sink.error(new Exception("Failed to add file to database."));
             }
+        });
+    }
+
+    private Flux<Tuple2<String, RestStatus>> updateManyElasticSearchFile(BetterFile[] filesToUpdate) {
+        return Flux.fromArray(filesToUpdate)
+                .flatMap(this::updateElasticSearchFile);
+    }
+
+    private Mono<Tuple2<String, RestStatus>> updateElasticSearchFile(BetterFile fileToUpdate) {
+        // Serialize file to json map.
+        Map<String, Object> bfMapper = objectMapper.convertValue(fileToUpdate, Map.class);
+
+        // Build the elasticsearch request.
+        UpdateRequest updateRequest = new UpdateRequest("files", "filedata", fileToUpdate.getFilename()).doc(bfMapper);
+
+        return Mono.create(sink -> {
+           try {
+               UpdateResponse updateResponse = elasticSearchClient.update(updateRequest, RequestOptions.DEFAULT);
+               sink.success(Tuples.of(fileToUpdate.getFilename(), updateResponse.status()));
+           } catch (ConnectException e) {
+               sink.error(new Exception("Could not connect to database."));
+           } catch (IOException e) {
+               sink.error(new Exception("Failed to refresh files index."));
+           }
         });
     }
 
