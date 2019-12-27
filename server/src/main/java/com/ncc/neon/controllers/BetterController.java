@@ -138,7 +138,7 @@ public class BetterController {
     }
 
     @GetMapping(path = "tokenize")
-    Flux<?> tokenize(@RequestParam("file") String file, @RequestParam("language") String language) {
+    Mono<RestStatus> tokenize(@RequestParam("file") String file, @RequestParam("language") String language) {
         Mono<BetterFile[]> fileList = Mono.empty();
 
         if (language.equals("en")) {
@@ -147,39 +147,16 @@ public class BetterController {
             fileList = performArPreprocessing(file);
         }
 
-        Flux<Tuple2<String, RestStatus>> fileListRes = fileList
+        return fileList
                 .doOnError(onError -> {
                     if (onError instanceof ConnectException) {
                         String message = "Failed to connect to " + language.toUpperCase() + " preprocessor.";
                         throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, message);
                     }
                 })
-                .flatMapMany(this::addManyToElasticSearchFilesIndex);
-
-        return Flux.zip(fileListRes.collectList(), fileListRes.any(outputFile -> outputFile.getT2() != RestStatus.OK)).log()
-            .flatMap(res -> {
-                Flux<Tuple2<String, RestStatus>> fluxRes = Flux.fromIterable(res.getT1());
-                if (res.getT2()) {
-                    return fluxRes.map(data -> deleteShareFile(data.getT1()))
-                    .doOnComplete(() -> {
-                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "something bad.");
-                    });
-                }
-                else {
-                    return fluxRes;
-                }
-            });
-
-//                        .any(outputFile -> outputFile.getT2() != RestStatus.OK)
-//                        .flatMap(anyFailed -> {
-//                            if (anyFailed) {
-//                                Flux.fromArray(files).flatMap(this::deleteShareFile);
-//                                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error performing operation.");
-//                            }
-//
-//
-//                        }))
-//                .doOnComplete(() -> datasetService.notify(new DataNotification()));
+                .flatMapMany(this::addManyToElasticSearchFilesIndex)
+                .then(refreshFilesIndex().retry(3))
+                .doOnSuccess(status -> datasetService.notify(new DataNotification()));
     }
 
     @GetMapping(path = "bpe")
@@ -278,14 +255,32 @@ public class BetterController {
         // Wrap the async part in a mono.
         return Mono.create(sink -> {
             try {
-                elasticSearchClient.index(indexRequest, RequestOptions.DEFAULT);
-                RefreshResponse refResponse = elasticSearchClient.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
-//                sink.error(new Exception("test"));
-                sink.success(Tuples.of(fileToAdd.getFilename(), RestStatus.BAD_REQUEST));
+                IndexResponse indexResponse = elasticSearchClient.index(indexRequest, RequestOptions.DEFAULT);
+
+                if (indexResponse.status() != RestStatus.CREATED) {
+                    deleteShareFile(fileToAdd.getFilename());
+                }
+
+                sink.success(Tuples.of(fileToAdd.getFilename(), indexResponse.status()));
+            } catch (ConnectException e) {
+                deleteShareFile(fileToAdd.getFilename());
+                sink.error(new Exception("Could not connect to database."));
+            } catch (IOException e) {
+                deleteShareFile(fileToAdd.getFilename());
+                sink.error(new Exception("Failed to add file to database."));
+            }
+        });
+    }
+
+    private Mono<RestStatus> refreshFilesIndex() {
+        return Mono.create(sink -> {
+            try {
+                RefreshResponse refreshResponse = elasticSearchClient.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
+                sink.success(refreshResponse.getStatus());
             } catch (ConnectException e) {
                 sink.error(new Exception("Could not connect to database."));
             } catch (IOException e) {
-                sink.error(new Exception("Failed to add file to database."));
+                sink.error(new Exception("Failed to refresh files index."));
             }
         });
     }
