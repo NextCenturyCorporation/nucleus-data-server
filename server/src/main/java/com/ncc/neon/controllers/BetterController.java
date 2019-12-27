@@ -98,7 +98,13 @@ public class BetterController {
         // TODO: Return error message if file is not provided.
 
         return filePartMono
-                .flatMap(this::writeFilePartToShare)
+                .flatMap(filePart -> {
+                    BetterFile pendingFile = new BetterFile(filePart.filename(), 0);
+                    return this.addToElasticSearchFilesIndex(pendingFile)
+                            .then(refreshFilesIndex().retry(3))
+                            .doOnSuccess(status -> datasetService.notify(new DataNotification()))
+                            .then(writeFilePartToShare(filePart));
+                })
                 .doOnError(onError -> {
                     throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error writing file to share.");
                 })
