@@ -120,12 +120,12 @@ public class BetterController {
     }
 
     @DeleteMapping(path = "file/{id}")
-    Mono<ServerResponse> delete(@PathVariable("id") String id) {
+    Mono<ResponseEntity<Object>> delete(@PathVariable("id") String id) {
         return getFileById(id)
                 .map(fileToDelete -> deleteShareFile(fileToDelete.getFilename()))
                 .then(deleteFileById(id))
                 .then(refreshFilesIndex().retry(3))
-                .then(ServerResponse.ok().build())
+                .then(Mono.just(ResponseEntity.ok().build()))
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
     }
 
@@ -302,7 +302,7 @@ public class BetterController {
             try {
                 IndexResponse indexResponse = elasticSearchClient.index(indexRequest, RequestOptions.DEFAULT);
 
-                if (indexResponse.status() != RestStatus.CREATED) {
+                if (indexResponse.status() != RestStatus.CREATED && indexResponse.status() != RestStatus.OK) {
                     deleteShareFile(fileToAdd.getFilename());
                 }
 
