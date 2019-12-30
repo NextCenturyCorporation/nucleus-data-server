@@ -1,10 +1,15 @@
 package com.ncc.neon.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ncc.neon.common.BetterFileOperationHandler;
+import com.ncc.neon.common.BetterFileTokenizer;
+import com.ncc.neon.common.LanguageCode;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.DataNotification;
 import com.ncc.neon.models.FileStatus;
+import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.DatasetService;
+import com.ncc.neon.services.FileShareService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.http.HttpHost;
@@ -63,12 +68,18 @@ public class BetterController {
 
 
     private DatasetService datasetService;
+    private FileShareService fileShareService;
+    private BetterFileService betterFileService;
 
     BetterController(DatasetService datasetService,
+                     FileShareService fileShareService,
+                     BetterFileService betterFileService,
                      @Value("${en.preprocessor.port}") String enPreprocessorPort,
                      @Value("${ar.preprocessor.port}") String arPreprocessorPort,
                      @Value("${bpe.port}") String bpePort) {
         this.datasetService = datasetService;
+        this.fileShareService = fileShareService;
+        this.betterFileService = betterFileService;
 
         String enPreprocessorUrl = "http://" +
                 this.getEnv("EN_PREPROCESSOR_HOST", "localhost") +
@@ -87,34 +98,33 @@ public class BetterController {
         this.elasticSearchClient = new RestHighLevelClient(RestClient.builder(new HttpHost(elasticHost, 9200, "http")));
     }
 
-    @GetMapping(path = "willOverwrite")
-    public boolean willOverwrite(@RequestParam("file") String file) {
-        System.out.println(file);
-        return true;
-    }
-
     @PostMapping(path = "upload")
     Mono<RestStatus> upload(@RequestPart("file") Mono<FilePart> filePartMono) {
         // TODO: Return error message if file is not provided.
 
         return filePartMono
                 .flatMap(filePart -> {
+                    // Create pending file in ES.
                     BetterFile pendingFile = new BetterFile(filePart.filename(), 0);
-                    return this.addToElasticSearchFilesIndex(pendingFile)
-                            .then(refreshFilesIndex().retry(3))
+                    return betterFileService.upsert(pendingFile)
+                            .then(betterFileService.refreshFilesIndex().retry(3))
                             .doOnSuccess(status -> datasetService.notify(new DataNotification()))
-                            .then(writeFilePartToShare(filePart));
+                            // Write file part to share.
+                            .then(fileShareService.writeFilePart(filePart));
                 })
                 .doOnError(onError -> {
                     throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error writing file to share.");
                 })
                 .flatMap(file -> {
+                    // File successfully written.  Set file status to ready.
                     BetterFile fileToAdd = new BetterFile(file.getName(), file.length());
                     fileToAdd.setStatus(FileStatus.READY);
 
-                    return this.addToElasticSearchFilesIndex(fileToAdd)
-                            .doOnError(onError -> deleteShareFile(file.getName()))
-                            .then(refreshFilesIndex().retry(3))
+                    // Update entries in ES.
+                    return betterFileService.upsert(fileToAdd)
+                            // Delete file if update fails.
+                            .doOnError(onError -> fileShareService.delete(file.getName()))
+                            .then(betterFileService.refreshFilesIndex().retry(3))
                             .doOnSuccess(status -> datasetService.notify(new DataNotification()));
                 });
     }
@@ -122,9 +132,9 @@ public class BetterController {
     @DeleteMapping(path = "file/{id}")
     Mono<ResponseEntity<Object>> delete(@PathVariable("id") String id) {
         return getFileById(id)
-                .map(fileToDelete -> deleteShareFile(fileToDelete.getFilename()))
-                .then(deleteFileById(id))
-                .then(refreshFilesIndex().retry(3))
+                .map(fileToDelete -> fileShareService.delete(fileToDelete.getFilename()))
+                .then(betterFileService.deleteById(id))
+                .then(betterFileService.refreshFilesIndex().retry(3))
                 .then(Mono.just(ResponseEntity.ok().build()))
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
     }
@@ -155,33 +165,46 @@ public class BetterController {
     }
 
     @GetMapping(path = "tokenize")
-    Mono<RestStatus> tokenize(@RequestParam("file") String file, @RequestParam("language") String language) {
-        Mono<BetterFile[]> fileList = Mono.empty();
+    Mono<RestStatus> tokenize(@RequestParam("file") String file, @RequestParam("language") LanguageCode languageCode) {
+        BetterFileOperationHandler tokenizer = null;
 
-        if (language.equals("en")) {
-            fileList = getEnPreprocessingList(file)
-                    .flatMapMany(this::addManyToElasticSearchFilesIndex)
-                    .then(refreshFilesIndex().retry(3))
-                    .doOnSuccess(status -> datasetService.notify(new DataNotification()))
-                    .then(performEnPreprocessing(file));
-        } else if (language.equals("ar")) {
-            fileList = performArPreprocessing(file);
+        if (languageCode == LanguageCode.AR) {
+            tokenizer = new BetterFileTokenizer(arPreprocessorClient);
+        } else {
+            tokenizer = new BetterFileTokenizer(enPreprocessorClient);
         }
 
-        return fileList
+        BetterFileOperationHandler finalTokenizer = tokenizer;
+        return tokenizer.getOutputFileList(file)
+                // Add pending files.
+                .flatMapMany(fileList -> addManyToElasticSearchFilesIndex(fileList)
+                .then(refreshFilesIndex().retry(3))
+                .doOnSuccess(status -> datasetService.notify(new DataNotification()))
+                // Perform tokenization.
+                .then(finalTokenizer.performFileOperation(file))
                 .doOnError(onError -> {
-                    if (onError instanceof ConnectException || onError instanceof UnknownHostException) {
-                        String message = "Failed to connect to " + language.toUpperCase() + " preprocessor.";
-                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, message);
-                    }
-                })
-                .map(readyFiles -> {
+                    Flux.fromArray(fileList)
+                            // Remove any generated files from share.
+                            .flatMap(filename -> fileShareService.delete(filename)
+                            .then(betterFileService.getById(filename))
+                            .flatMap(fileToUpdate -> {
+                                // Set status of files to error.
+                                fileToUpdate.setStatus(FileStatus.ERROR);
+                                fileToUpdate.setStatus_message(onError.getMessage());
+                                return betterFileService.upsert(fileToUpdate);
+                            }))
+                    .then(refreshFilesIndex().retry(3))
+                    .doOnSuccess(status -> datasetService.notify(new DataNotification()))
+                    .subscribe();
+                }))
+                .flatMap(readyFiles -> {
+                    // Set status to ready.
                     for (BetterFile readyFile : readyFiles) {
                         readyFile.setStatus(FileStatus.READY);
                     }
-                    return readyFiles;
+
+                    return betterFileService.upsertMany(readyFiles);
                 })
-                .flatMapMany(this::updateManyElasticSearchFile)
                 .then(refreshFilesIndex().retry(3))
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
     }
@@ -219,36 +242,6 @@ public class BetterController {
         } catch (IOException ioe) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private Mono<String[]> getEnPreprocessingList(String filename) {
-        return enPreprocessorClient.get()
-                .uri(uriBuilder -> {
-                    uriBuilder.pathSegment("list");
-                    uriBuilder.queryParam("file", filename);
-                    return uriBuilder.build();
-                })
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(String[].class);
-    }
-
-    private Mono<BetterFile[]> performEnPreprocessing(String filename) {
-        return enPreprocessorClient.get()
-                .uri(uriBuilder ->
-                        uriBuilder.queryParam("file", filename).build())
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(BetterFile[].class);
-    }
-
-    private Mono<BetterFile[]> performArPreprocessing(String filename) {
-        return arPreprocessorClient.get()
-                .uri(uriBuilder ->
-                        uriBuilder.queryParam("file", filename).build())
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(BetterFile[].class);
     }
 
     private Mono<BetterFile> performBPE(String filename) {
@@ -391,20 +384,6 @@ public class BetterController {
                 sink.error(new Exception("Failed to delete file from database."));
             }
         });
-    }
-
-    private Mono<File> writeFilePartToShare(FilePart filePart) {
-        Path sharePath = getRelativeSharePath();
-        File dir = new File(sharePath.toString());
-
-        if (!dir.exists()) {
-            dir.mkdir();
-        }
-
-        Path filePath = sharePath.resolve(Objects.requireNonNull(filePart.filename()));
-
-        return filePart.transferTo(filePath)
-                .thenReturn(new File(filePath.toString()));
     }
 
     private Mono<Boolean> deleteShareFile(String fileToDelete) {
