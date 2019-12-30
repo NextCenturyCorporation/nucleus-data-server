@@ -5,10 +5,10 @@ import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-public abstract class BetterFileOperationHandler {
+public class BetterFileOperationHandler {
     protected WebClient remoteClient;
 
-    BetterFileOperationHandler(WebClient remoteClient) {
+    public BetterFileOperationHandler(WebClient remoteClient) {
         this.remoteClient = remoteClient;
     }
 

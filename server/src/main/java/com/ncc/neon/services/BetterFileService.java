@@ -66,6 +66,11 @@ public class BetterFileService {
         });
     }
 
+    public Flux<Tuple2<String, RestStatus>> initMany(String[] filesToAdd) {
+        return Flux.fromArray(filesToAdd)
+                .flatMap(fileToAdd -> upsert(new BetterFile(fileToAdd, 0)));
+    }
+
     public Flux<Tuple2<String, RestStatus>> upsertMany(BetterFile[] filesToAdd) {
         return Flux.fromArray(filesToAdd).flatMap(this::upsert);
     }

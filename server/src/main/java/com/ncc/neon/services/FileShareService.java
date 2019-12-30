@@ -12,7 +12,7 @@ import java.util.Objects;
 
 @Component
 public class FileShareService {
-    private final Path sharePath;
+    public final Path sharePath;
 
     FileShareService() {
         String shareDir = System.getenv().getOrDefault("SHARE_DIR", "share");
