@@ -291,3 +291,4 @@ server/src/main/resources/server.properties
 
 # BETTER
 **/share
+**/.idea
