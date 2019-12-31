@@ -1,6 +1,5 @@
 package com.ncc.neon.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.common.BetterFileMachineTrainer;
 import com.ncc.neon.common.BetterFileOperationHandler;
 import com.ncc.neon.common.LanguageCode;
@@ -11,13 +10,11 @@ import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
-import org.elasticsearch.client.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
@@ -34,9 +31,6 @@ import java.nio.file.Path;
 @RequestMapping("better")
 @Slf4j
 public class BetterController {
-    OkHttpClient client = new OkHttpClient();
-    ObjectMapper objectMapper = new ObjectMapper();
-    RestHighLevelClient elasticSearchClient;
     WebClient enPreprocessorClient;
     WebClient arPreprocessorClient;
     WebClient bpeClient;
