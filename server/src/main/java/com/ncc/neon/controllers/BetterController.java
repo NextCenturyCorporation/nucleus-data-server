@@ -15,6 +15,9 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.rest.RestStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -32,17 +35,15 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -51,41 +52,35 @@ import java.util.concurrent.TimeUnit;
 public class BetterController {
     OkHttpClient client = new OkHttpClient();
     ObjectMapper objectMapper = new ObjectMapper();
-    RestHighLevelClient rhlc = new RestHighLevelClient(RestClient.builder(new HttpHost("elasticsearch", 9200, "http")));
-    WebClient enPreprocessorClient = WebClient.create("http://en-preprocessor:5000");
-    WebClient arPreprocessorClient = WebClient.create("http://ar-preprocessor:5000");
-    WebClient bpeClient = WebClient.create("http://bpe:5000");
+    RestHighLevelClient elasticSearchClient;
+    WebClient enPreprocessorClient;
+    WebClient arPreprocessorClient;
+    WebClient bpeClient;
 
 
     private DatasetService datasetService;
 
-    BetterController(DatasetService datasetService) {
+    BetterController(DatasetService datasetService,
+                     @Value("${en.preprocessor.port}") String enPreprocessorPort,
+                     @Value("${ar.preprocessor.port}") String arPreprocessorPort,
+                     @Value("${bpe.port}") String bpePort) {
         this.datasetService = datasetService;
-    }
 
-    @GetMapping(path = "test")
-    public ResponseEntity<?> test() {
-        Mono<?> shortMono = Mono.create(sink -> {
-            try {
-                TimeUnit.SECONDS.sleep(1);
-                log.debug("short mono");
-                sink.success();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        });
+        String enPreprocessorUrl = "http://" +
+                System.getenv().getOrDefault("EN_PREPROCESSOR_HOST", "localhost") +
+                ":" + enPreprocessorPort;
+        String arPreprocessorUrl = "http://" +
+                System.getenv().getOrDefault("AR_PREPROCESSOR_HOST", "localhost") +
+                ":" + arPreprocessorPort;
+        String bpeHost = "http://" +
+                System.getenv().getOrDefault("BPE_HOST", "localhost") +
+                ":" + bpePort;
+        String elasticHost = System.getenv().getOrDefault("ELASTIC_HOST", "localhost");
 
-        Mono<?> longMono = Mono.create(sink -> {
-            try {
-                TimeUnit.SECONDS.sleep(5);
-                log.debug("long mono");
-                sink.success();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        });
-
-        return ResponseEntity.ok().body(Flux.merge(shortMono, longMono));
+        this.enPreprocessorClient = WebClient.create(enPreprocessorUrl);
+        this.arPreprocessorClient = WebClient.create(arPreprocessorUrl);
+        this.bpeClient = WebClient.create(bpeHost);
+        this.elasticSearchClient = new RestHighLevelClient(RestClient.builder(new HttpHost(elasticHost, 9200, "http")));
     }
 
     @GetMapping(path = "willOverwrite")
@@ -99,7 +94,7 @@ public class BetterController {
         // TODO: Return error message if file is not provided.
 
         Mono<?> uploadFileMono = writeFileToShare(file)
-                .flatMap(fileRef -> storeInES(new BetterFile[] {new BetterFile(fileRef.getName(), (int)fileRef.length())}))
+                .flatMap(fileRef -> addToElasticSearchFilesIndex(new BetterFile(fileRef.getName(), fileRef.length())))
                 // TODO: Add a doOnError.
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
 
@@ -121,12 +116,7 @@ public class BetterController {
     ResponseEntity<?> download(@RequestParam("file") String file) {
         ResponseEntity res;
         // TODO: don't allow relative paths.
-        String shareDir = System.getenv("SHARE_DIR");
-
-        // Default to a known directory.
-        if (shareDir == null) {
-            shareDir = "share";
-        }
+        String shareDir = System.getenv().getOrDefault("SHARE_DIR", "share");
 
         Path fileRef = Paths.get(shareDir).resolve(file);
         Resource resource = null;
@@ -152,28 +142,24 @@ public class BetterController {
     }
 
     @GetMapping(path = "tokenize")
-    ResponseEntity<Mono<?>> tokenize(@RequestParam("file") String file, @RequestParam("language") String language) {
-        Mono<?> preprocessMono = Mono.just("Language not supported");
+    Flux<Tuple2<String, RestStatus>> tokenize(@RequestParam("file") String file, @RequestParam("language") String language) {
+        Mono<BetterFile[]> fileList = Mono.empty();
 
         if (language.equals("en")) {
-            preprocessMono = performEnPreprocessing(file)
-                    .flatMap(tokenFile -> storeInES(new BetterFile[]{tokenFile}))
-                    .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+            fileList = performEnPreprocessing(file);
         } else if (language.equals("ar")) {
-            preprocessMono = performArPreprocessing(file)
-                    .flatMap(tokenFile -> storeInES(new BetterFile[]{tokenFile}))
-                    .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+            fileList = performArPreprocessing(file);
         }
 
-        return ResponseEntity.ok().body(preprocessMono);
+        return fileList.flatMapMany(this::addManyToElasticSearchFilesIndex)
+                .doOnComplete(() -> datasetService.notify(new DataNotification()));
     }
 
     @GetMapping(path = "bpe")
-    ResponseEntity<?> bpe(@RequestParam("file") String file) {
-        Mono<?> bpeMono = performBPE(file)
-                .flatMap(bpeFile -> storeInES(new BetterFile[]{bpeFile}))
+    Mono<Tuple2<String, RestStatus>> bpe(@RequestParam("file") String file) {
+        return performBPE(file)
+                .flatMap(this::addToElasticSearchFilesIndex)
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
-        return ResponseEntity.ok().body(bpeMono);
     }
 
     @GetMapping(path = "train-mt")
@@ -203,22 +189,22 @@ public class BetterController {
         }
     }
 
-    private Mono<BetterFile> performEnPreprocessing(String filename) {
+    private Mono<BetterFile[]> performEnPreprocessing(String filename) {
         return enPreprocessorClient.get()
                 .uri(uriBuilder ->
                         uriBuilder.queryParam("file", filename).build())
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToMono(BetterFile.class);
+                .bodyToMono(BetterFile[].class);
     }
 
-    private Mono<BetterFile> performArPreprocessing(String filename) {
+    private Mono<BetterFile[]> performArPreprocessing(String filename) {
         return arPreprocessorClient.get()
                 .uri(uriBuilder ->
                         uriBuilder.queryParam("file", filename).build())
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToMono(BetterFile.class);
+                .bodyToMono(BetterFile[].class);
     }
 
     private Mono<BetterFile> performBPE(String filename) {
@@ -238,8 +224,8 @@ public class BetterController {
             // Wrap the async part in a mono.
             return Mono.create(sink -> {
                 try {
-                    IndexResponse response = rhlc.index(indexRequest, RequestOptions.DEFAULT);
-                    RefreshResponse refResponse = rhlc.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
+                    IndexResponse response = elasticSearchClient.index(indexRequest, RequestOptions.DEFAULT);
+                    RefreshResponse refResponse = elasticSearchClient.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
                     sink.success(refResponse.getStatus());
                 } catch (IOException e) {
                     sink.error(e);
@@ -250,13 +236,37 @@ public class BetterController {
         return Mono.justOrEmpty(Optional.empty());
     }
 
+    private Flux<Tuple2<String, RestStatus>> addManyToElasticSearchFilesIndex(BetterFile[] filesToAdd) {
+        return Flux.fromArray(filesToAdd)
+                .flatMap(this::addToElasticSearchFilesIndex);
+    }
+
+    private Mono<Tuple2<String, RestStatus>> addToElasticSearchFilesIndex(BetterFile fileToAdd) {
+        // Serialize file to json map.
+        Map<String, Object> bfMapper = objectMapper.convertValue(fileToAdd, Map.class);
+
+        // Build the elasticsearch request.
+        IndexRequest indexRequest = new IndexRequest("files", "filedata").source(bfMapper);
+
+        // Wrap the async part in a mono.
+        return Mono.create(sink -> {
+            try {
+                IndexResponse response = elasticSearchClient.index(indexRequest, RequestOptions.DEFAULT);
+                RefreshResponse refResponse = elasticSearchClient.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
+                sink.success(Tuples.of(fileToAdd.getFilename(), refResponse.getStatus()));
+            } catch (IOException e) {
+                sink.error(e);
+            }
+        });
+    }
+
     private Mono<BetterFile> getFileById(String id) {
         // Get the file doc by id.
         GetRequest gr = new GetRequest("files", "filedata", id);
 
         return Mono.create(sink -> {
             try {
-                GetResponse response = rhlc.get(gr, RequestOptions.DEFAULT);
+                GetResponse response = elasticSearchClient.get(gr, RequestOptions.DEFAULT);
                 BetterFile res = new ObjectMapper().readValue(response.getSourceAsString(), BetterFile.class);
                 sink.success(res);
             } catch (IOException e) {
@@ -270,8 +280,8 @@ public class BetterController {
 
         return Mono.create(sink -> {
             try {
-                DeleteResponse response = rhlc.delete(dr, RequestOptions.DEFAULT);
-                RefreshResponse refResponse = rhlc.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
+                DeleteResponse response = elasticSearchClient.delete(dr, RequestOptions.DEFAULT);
+                RefreshResponse refResponse = elasticSearchClient.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
                 sink.success(refResponse.getStatus());
             } catch (IOException e) {
                 sink.error(e);
@@ -299,14 +309,18 @@ public class BetterController {
     }
 
     private Path getRelativeSharePath() {
-        String shareDir = System.getenv("SHARE_DIR");
+        String shareDir = System.getenv().getOrDefault("SHARE_DIR", "share");
+        return Paths.get(".").resolve(shareDir);
+    }
 
-        // Default to a known directory.
-        if (shareDir == null) {
-            shareDir = "share";
+    private String getEnv(String key, String defaultVal) {
+        String val = System.getenv(key);
+
+        if (val == null) {
+            val = defaultVal;
         }
 
-        return Paths.get(".").resolve(shareDir);
+        return val;
     }
 
 }
