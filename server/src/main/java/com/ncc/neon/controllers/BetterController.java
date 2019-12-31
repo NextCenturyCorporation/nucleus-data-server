@@ -85,7 +85,16 @@ public class BetterController {
                             .then(fileShareService.writeFilePart(filePart));
                 })
                 .doOnError(onError -> {
-                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error writing file to share.");
+                    filePartMono.flatMap(errorFilePart -> betterFileService.getById(errorFilePart.filename())
+                        .flatMap(errorFile -> {
+                            errorFile.setStatus(FileStatus.ERROR);
+                            errorFile.setStatus_message(onError.getClass() + ": " + onError.getMessage());
+                            return betterFileService.upsert(errorFile);
+                        })
+                        .then(betterFileService.refreshFilesIndex().retry(3))
+                        .doOnSuccess(status -> datasetService.notify(new DataNotification())))
+                        .then(Mono.just(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error writing file to share.")))
+                        .subscribe();
                 })
                 .flatMap(file -> {
                     // File successfully written.  Set file status to ready.
