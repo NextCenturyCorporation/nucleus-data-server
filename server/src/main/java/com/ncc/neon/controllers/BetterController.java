@@ -67,15 +67,15 @@ public class BetterController {
         this.datasetService = datasetService;
 
         String enPreprocessorUrl = "http://" +
-                this.getEnv("EN_PREPROCESSOR_HOST", "localhost") +
+                System.getenv().getOrDefault("EN_PREPROCESSOR_HOST", "localhost") +
                 ":" + enPreprocessorPort;
         String arPreprocessorUrl = "http://" +
-                this.getEnv("AR_PREPROCESSOR_HOST", "localhost") +
+                System.getenv().getOrDefault("AR_PREPROCESSOR_HOST", "localhost") +
                 ":" + arPreprocessorPort;
         String bpeHost = "http://" +
-                this.getEnv("BPE_HOST", "localhost") +
+                System.getenv().getOrDefault("BPE_HOST", "localhost") +
                 ":" + bpePort;
-        String elasticHost = getEnv("ELASTIC_HOST", "localhost");
+        String elasticHost = System.getenv().getOrDefault("ELASTIC_HOST", "localhost");
 
         this.enPreprocessorClient = WebClient.create(enPreprocessorUrl);
         this.arPreprocessorClient = WebClient.create(arPreprocessorUrl);
@@ -348,13 +348,7 @@ public class BetterController {
     }
 
     private Path getRelativeSharePath() {
-        String shareDir = System.getenv("SHARE_DIR");
-
-        // Default to a known directory.
-        if (shareDir == null) {
-            shareDir = "share";
-        }
-
+        String shareDir = System.getenv().getOrDefault("SHARE_DIR", "share");
         return Paths.get(".").resolve(shareDir);
     }
 
