@@ -34,7 +34,7 @@ If you want to use your own data, please see the [Datastore Configuration](https
 
 ### Customize Build (Optional)
 
-Update the runtime properties of your NUCLEUS Data Server installation by editing the [server/src/main/resources/application.properties](./server/src/main/resources/application.properties) file.  See the [Spring Boot Configuration Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html) for details.
+Update the runtime properties of your NUCLEUS Data Server installation by editing the [server/src/main/resources/application.properties](./server/src/main/resources/application.properties) file.  See the [Spring Boot Configuration Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html) for details.  Please note that the `server.servlet.context-path` application property should always end with `/services` due to current assumptions made in NUCLEUS.
 
 ## Datastore Authentication
 
