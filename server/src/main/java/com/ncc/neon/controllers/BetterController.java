@@ -1,8 +1,8 @@
 package com.ncc.neon.controllers;
 
-import com.ncc.neon.common.BetterFileMachineTrainer;
-import com.ncc.neon.common.BetterFileOperationHandler;
 import com.ncc.neon.common.LanguageCode;
+import com.ncc.neon.common.NlpClientQueryBuilder;
+import com.ncc.neon.common.RemoteNlpClient;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.DataNotification;
 import com.ncc.neon.models.FileStatus;
@@ -21,8 +21,8 @@ import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 
@@ -35,6 +35,10 @@ public class BetterController {
     WebClient arPreprocessorClient;
     WebClient bpeClient;
     WebClient nmtClient;
+    RemoteNlpClient enPreprocessorRNC;
+    RemoteNlpClient arPreprocessorRNC;
+    RemoteNlpClient bpeRNC;
+    RemoteNlpClient nmtRNC;
 
     private DatasetService datasetService;
     private FileShareService fileShareService;
@@ -68,6 +72,10 @@ public class BetterController {
         this.arPreprocessorClient = WebClient.create(arPreprocessorUrl);
         this.bpeClient = WebClient.create(bpeHost);
         this.nmtClient = WebClient.create(nmtHost);
+        enPreprocessorRNC = new RemoteNlpClient(enPreprocessorClient, this.datasetService, this.fileShareService, this.betterFileService);
+        arPreprocessorRNC = new RemoteNlpClient(arPreprocessorClient, this.datasetService, this.fileShareService, this.betterFileService);
+        bpeRNC = new RemoteNlpClient(bpeClient, this.datasetService, this.fileShareService, this.betterFileService);
+        nmtRNC = new RemoteNlpClient(nmtClient, this.datasetService, this.fileShareService, this.betterFileService);
     }
 
     @PostMapping(path = "upload")
@@ -138,118 +146,26 @@ public class BetterController {
 
     @GetMapping(path = "tokenize")
     Mono<RestStatus> tokenize(@RequestParam("file") String file, @RequestParam("language") LanguageCode languageCode) {
-        BetterFileOperationHandler tokenizer = null;
-
+        HttpHeaders tokenizeParam = NlpClientQueryBuilder.buildFileOperationQuery(file);
         if (languageCode == LanguageCode.AR) {
-            tokenizer = new BetterFileOperationHandler(arPreprocessorClient);
+            return arPreprocessorRNC.performNlpOperation(tokenizeParam, arPreprocessorRNC.getOutputFileList(tokenizeParam));
         } else {
-            tokenizer = new BetterFileOperationHandler(enPreprocessorClient);
+            return enPreprocessorRNC.performNlpOperation(tokenizeParam, enPreprocessorRNC.getOutputFileList(tokenizeParam));
         }
-
-        BetterFileOperationHandler finalTokenizer = tokenizer;
-        return tokenizer.getOutputFileList(file)
-                // Add pending files.
-                .flatMapMany(fileList -> betterFileService.initMany(fileList)
-                .then(betterFileService.refreshFilesIndex().retry(3))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification()))
-                // Perform tokenization.
-                .then(finalTokenizer.performFileOperation(file))
-                .doOnError(onError -> {
-                    Flux.fromArray(fileList)
-                            // Remove any generated files from share.
-                            .flatMap(filename -> fileShareService.delete(filename)
-                            .then(betterFileService.getById(filename))
-                            .flatMap(fileToUpdate -> {
-                                // Set status of files to error.
-                                fileToUpdate.setStatus(FileStatus.ERROR);
-                                fileToUpdate.setStatus_message(onError.getMessage());
-                                return betterFileService.upsert(fileToUpdate);
-                            }))
-                    .then(betterFileService.refreshFilesIndex().retry(3))
-                    .doOnSuccess(status -> datasetService.notify(new DataNotification()))
-                    .subscribe();
-                }))
-                .flatMap(readyFiles -> {
-                    // Set status to ready.
-                    for (BetterFile readyFile : readyFiles) {
-                        readyFile.setStatus(FileStatus.READY);
-                    }
-
-                    return betterFileService.upsertMany(readyFiles);
-                })
-                .then(betterFileService.refreshFilesIndex().retry(3))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification()));
     }
 
     @GetMapping(path = "bpe")
     Mono<RestStatus> bpe(@RequestParam("file") String file) {
-        final BetterFileOperationHandler encoder = new BetterFileOperationHandler(bpeClient);
-
-        return encoder.getOutputFileList(file)
-                .flatMapMany(fileList -> betterFileService.initMany(fileList)
-                .then(betterFileService.refreshFilesIndex().retry(3))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification()))
-                .then(encoder.performFileOperation(file))
-                .doOnError(onError -> {
-                    Flux.fromArray(fileList)
-                            .flatMap(filename -> fileShareService.delete(filename)
-                            .then(betterFileService.getById(filename))
-                            .flatMap(fileToUpdate -> {
-                                // Set status of files to error.
-                                fileToUpdate.setStatus(FileStatus.ERROR);
-                                fileToUpdate.setStatus_message(onError.getMessage());
-                                return betterFileService.upsert(fileToUpdate);
-                            }))
-                            .then(betterFileService.refreshFilesIndex().retry(3))
-                            .doOnSuccess(status -> datasetService.notify(new DataNotification()))
-                            .subscribe();
-                }))
-                .flatMap(readyFiles -> {
-                    // Set status to ready.
-                    for (BetterFile readyFile : readyFiles) {
-                        readyFile.setStatus(FileStatus.READY);
-                    }
-
-                    return betterFileService.upsertMany(readyFiles);
-                })
-                .then(betterFileService.refreshFilesIndex().retry(3))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+        HttpHeaders bpeParam = NlpClientQueryBuilder.buildFileOperationQuery(file);
+        return bpeRNC.performNlpOperation(NlpClientQueryBuilder.buildFileOperationQuery(file), bpeRNC.getOutputFileList(bpeParam));
     }
 
     @GetMapping(path = "train-mt")
     Mono<RestStatus> train_mt(@RequestParam("tSource") String tSource, @RequestParam("tTarget") String tTarget,
                                @RequestParam("vSource") String vSource, @RequestParam("vTarget") String vTarget) {
         String basename = tSource.substring(0, tSource.length()-7);
-        final BetterFileMachineTrainer trainer = new BetterFileMachineTrainer(nmtClient);
-
-        return trainer.getOutputFileList(basename)
-                .flatMapMany(fileList -> betterFileService.initMany(fileList)
-                .then(betterFileService.refreshFilesIndex().retry(3))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification()))
-                .then(trainer.performTrainingPreprocessing(tSource, tTarget, vSource, vTarget, basename))
-                .doOnError(onError -> {
-                    Flux.fromArray(fileList)
-                            .flatMap(filename -> fileShareService.delete(filename)
-                                    .then(betterFileService.getById(filename))
-                                    .flatMap(fileToUpdate -> {
-                                        // Set status of files to error.
-                                        fileToUpdate.setStatus(FileStatus.ERROR);
-                                        fileToUpdate.setStatus_message(onError.getMessage());
-                                        return betterFileService.upsert(fileToUpdate);
-                                    }))
-                            .then(betterFileService.refreshFilesIndex().retry(3))
-                            .doOnSuccess(status -> datasetService.notify(new DataNotification()))
-                            .subscribe();
-                }))
-                .flatMap(readyFiles -> {
-                    // Set status to ready.
-                    for (BetterFile readyFile : readyFiles) {
-                        readyFile.setStatus(FileStatus.READY);
-                    }
-
-                    return betterFileService.upsertMany(readyFiles);
-                })
-                .then(betterFileService.refreshFilesIndex().retry(3))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+        HttpHeaders nmtFileParam = NlpClientQueryBuilder.buildFilePrefixQuery(basename);
+        HttpHeaders nmtOperationParam = NlpClientQueryBuilder.buildTrainingOperationQuery(tSource, tTarget, vSource, vTarget);
+        return nmtRNC.performNlpOperation(nmtOperationParam, nmtRNC.getOutputFileList(nmtFileParam));
     }
 }
