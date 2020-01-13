@@ -289,3 +289,6 @@ gradle-app.setting
 server/src/main/resources/autogenerate.properties
 server/src/main/resources/server.properties
 
+# BETTER
+**/share
+**/.idea
