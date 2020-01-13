@@ -1,6 +1,7 @@
 package com.ncc.neon.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.BetterFile;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -46,7 +47,7 @@ public class BetterFileService {
                 GetResponse response = elasticSearchClient.get(gr, RequestOptions.DEFAULT);
 
                 if (response.getSource() == null) {
-                    sink.success(null);
+                    sink.error(new Exception("File " + id + " not found."));
                 } else {
                     BetterFile res = new ObjectMapper().readValue(response.getSourceAsString(), BetterFile.class);
                     sink.success(res);
@@ -79,7 +80,7 @@ public class BetterFileService {
                 IndexResponse indexResponse = elasticSearchClient.index(indexRequest, RequestOptions.DEFAULT);
 
                 if (indexResponse.status() != RestStatus.CREATED && indexResponse.status() != RestStatus.OK) {
-                    sink.error(new Exception("Failed to add file to database " + fileToAdd.getFilename()));
+                    sink.error(new UpsertException(fileToAdd.getFilename()));
                 } else {
                     sink.success(Tuples.of(fileToAdd.getFilename(), indexResponse.status()));
                 }

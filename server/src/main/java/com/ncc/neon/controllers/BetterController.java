@@ -3,6 +3,7 @@ package com.ncc.neon.controllers;
 import com.ncc.neon.common.LanguageCode;
 import com.ncc.neon.common.NlpClientQueryBuilder;
 import com.ncc.neon.common.RemoteNlpClient;
+import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.DataNotification;
 import com.ncc.neon.models.FileStatus;
@@ -93,19 +94,21 @@ public class BetterController {
                             .then(fileShareService.writeFilePart(filePart));
                 })
                 .doOnError(onError -> {
-                    filePartMono.flatMap(errorFilePart -> betterFileService.getById(errorFilePart.filename())
-                        .flatMap(errorFile -> {
-                            if (errorFile == null) {
-                                return Mono.just(RestStatus.NOT_FOUND);
-                            }
-                            errorFile.setStatus(FileStatus.ERROR);
-                            errorFile.setStatus_message(onError.getClass() + ": " + onError.getMessage());
-                            return betterFileService.upsert(errorFile);
-                        })
-                        .then(betterFileService.refreshFilesIndex().retry(3))
-                        .doOnSuccess(status -> datasetService.notify(new DataNotification())))
-                        .then(Mono.just(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error writing file to share.")))
-                        .subscribe();
+                    if (onError instanceof UpsertException) {
+                        Mono.just(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage()));
+                    } else {
+                        filePartMono.flatMap(errorFilePart -> betterFileService.getById(errorFilePart.filename())
+                                .doOnError(getErr -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, getErr.getMessage()))
+                                .flatMap(errorFile -> {
+                                    errorFile.setStatus(FileStatus.ERROR);
+                                    errorFile.setStatus_message(onError.getClass() + ": " + onError.getMessage());
+                                    return betterFileService.upsert(errorFile);
+                                })
+                                .then(betterFileService.refreshFilesIndex().retry(3))
+                                .doOnSuccess(status -> datasetService.notify(new DataNotification())))
+                                .then(Mono.just(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error writing file to share.")))
+                                .subscribe();
+                    }
                 })
                 .flatMap(file -> {
                     // File successfully written.  Set file status to ready.
