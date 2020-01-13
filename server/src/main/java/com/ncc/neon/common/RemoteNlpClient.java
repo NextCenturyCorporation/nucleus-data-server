@@ -50,7 +50,7 @@ public class RemoteNlpClient {
                                 .accept(MediaType.APPLICATION_JSON)
                                 .retrieve()
                                 .bodyToMono(BetterFile[].class))
-                        .doOnError(onError -> {
+                        .doOnError(onError ->
                             Flux.fromArray(fileList)
                                     .flatMap(filename -> fileShareService.delete(filename)
                                             .then(betterFileService.getById(filename))
@@ -62,8 +62,8 @@ public class RemoteNlpClient {
                                             }))
                                     .then(betterFileService.refreshFilesIndex().retry(3))
                                     .doOnSuccess(status -> datasetService.notify(new DataNotification()))
-                                    .subscribe();
-                        }))
+                                    .subscribe()
+                        ))
                 .flatMap(readyFiles -> {
                     // Set status to ready.
                     for (BetterFile readyFile : readyFiles) {

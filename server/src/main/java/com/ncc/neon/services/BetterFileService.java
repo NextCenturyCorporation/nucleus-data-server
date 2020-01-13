@@ -23,9 +23,6 @@ import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import java.io.IOException;
-import java.net.ConnectException;
-import java.util.HashMap;
 import java.util.Map;
 
 @Component
@@ -50,17 +47,13 @@ public class BetterFileService {
             try {
                 GetResponse response = elasticSearchClient.get(gr, RequestOptions.DEFAULT);
 
-                // Send 404 if file does not exist in database.
                 if (response.getSource() == null) {
-                    sink.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found."));
+                    sink.success(null);
+                } else {
+                    BetterFile res = new ObjectMapper().readValue(response.getSourceAsString(), BetterFile.class);
+                    sink.success(res);
                 }
-
-                BetterFile res = new ObjectMapper().readValue(response.getSourceAsString(), BetterFile.class);
-
-                sink.success(res);
-            } catch (ConnectException e) {
-                sink.error(new Exception("Could not connect to database."));
-            } catch (IOException e) {
+            } catch (Exception e) {
                 sink.error(e);
             }
         });
@@ -89,13 +82,11 @@ public class BetterFileService {
 
                 if (indexResponse.status() != RestStatus.CREATED && indexResponse.status() != RestStatus.OK) {
                     sink.error(new Exception("Failed to add file to database " + fileToAdd.getFilename()));
+                } else {
+                    sink.success(Tuples.of(fileToAdd.getFilename(), indexResponse.status()));
                 }
-
-                sink.success(Tuples.of(fileToAdd.getFilename(), indexResponse.status()));
-            } catch (ConnectException e) {
-                sink.error(new Exception("Could not connect to database."));
-            } catch (IOException e) {
-                sink.error(new Exception("Failed to add file to database " + fileToAdd.getFilename()));
+            } catch (Exception e) {
+                sink.error(e);
             }
         });
     }
@@ -107,10 +98,8 @@ public class BetterFileService {
             try {
                 DeleteResponse response = elasticSearchClient.delete(dr, RequestOptions.DEFAULT);
                 sink.success(response.status());
-            } catch (ConnectException e) {
-                sink.error(new Exception("Could not connect to database."));
-            } catch (IOException e) {
-                sink.error(new Exception("Failed to delete file from database."));
+            } catch (Exception e) {
+                sink.error(e);
             }
         });
     }
@@ -120,10 +109,8 @@ public class BetterFileService {
             try {
                 RefreshResponse refreshResponse = elasticSearchClient.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
                 sink.success(refreshResponse.getStatus());
-            } catch (ConnectException e) {
-                sink.error(new Exception("Could not connect to database."));
-            } catch (IOException e) {
-                sink.error(new Exception("Failed to refresh files index."));
+            } catch (Exception e) {
+                sink.error(e);
             }
         });
     }

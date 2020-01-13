@@ -16,8 +16,7 @@ public class NlpClientQueryBuilder {
         return param;
     }
 
-    public static HttpHeaders buildTrainingOperationQuery(String trainSrc, String trainTgt, String validSrc, String validTgt) {
-        String basename = trainSrc.substring(0, trainSrc.length()-7);
+    public static HttpHeaders buildTrainingOperationQuery(String basename, String trainSrc, String trainTgt, String validSrc, String validTgt) {
         HttpHeaders params = new HttpHeaders();
         params.add("train_src", trainSrc);
         params.add("train_tgt", trainTgt);

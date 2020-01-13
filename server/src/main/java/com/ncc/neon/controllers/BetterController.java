@@ -95,6 +95,9 @@ public class BetterController {
                 .doOnError(onError -> {
                     filePartMono.flatMap(errorFilePart -> betterFileService.getById(errorFilePart.filename())
                         .flatMap(errorFile -> {
+                            if (errorFile == null) {
+                                return Mono.just(RestStatus.NOT_FOUND);
+                            }
                             errorFile.setStatus(FileStatus.ERROR);
                             errorFile.setStatus_message(onError.getClass() + ": " + onError.getMessage());
                             return betterFileService.upsert(errorFile);
@@ -121,7 +124,12 @@ public class BetterController {
     @DeleteMapping(path = "file/{id}")
     Mono<ResponseEntity<Object>> delete(@PathVariable("id") String id) {
         return betterFileService.getById(id)
-                .map(fileToDelete -> fileShareService.delete(fileToDelete.getFilename()))
+                .map(fileToDelete -> {
+                    if (fileToDelete == null) {
+                        return Mono.just(ResponseEntity.notFound().build());
+                    }
+                    return fileShareService.delete(fileToDelete.getFilename());
+                })
                 .then(betterFileService.deleteById(id))
                 .then(betterFileService.refreshFilesIndex().retry(3))
                 .then(Mono.just(ResponseEntity.ok().build()))
@@ -170,11 +178,10 @@ public class BetterController {
     }
 
     @GetMapping(path = "train-mt")
-    Mono<RestStatus> train_mt(@RequestParam("tSource") String tSource, @RequestParam("tTarget") String tTarget,
+    Mono<RestStatus> train_mt(@RequestParam("basename") String basename, @RequestParam("tSource") String tSource, @RequestParam("tTarget") String tTarget,
                                @RequestParam("vSource") String vSource, @RequestParam("vTarget") String vTarget) {
-        String basename = tSource.substring(0, tSource.length()-7);
         HttpHeaders nmtFileParam = NlpClientQueryBuilder.buildFilePrefixQuery(basename);
-        HttpHeaders nmtOperationParam = NlpClientQueryBuilder.buildTrainingOperationQuery(tSource, tTarget, vSource, vTarget);
+        HttpHeaders nmtOperationParam = NlpClientQueryBuilder.buildTrainingOperationQuery(basename, tSource, tTarget, vSource, vTarget);
         return nmtRNC.performNlpOperation(nmtOperationParam, nmtRNC.getOutputFileList(nmtFileParam));
     }
 }
