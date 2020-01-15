@@ -1,0 +1,40 @@
+[
+  {
+    "name": "mbert",
+    "type": "IE",
+    "trainEndpoint": {
+      "pathSegment": "train",
+      "method": "POST"
+    },
+    "trainListEndpoint": {
+      "pathSegment": "train/list",
+      "method": "POST"
+    },
+    "infEndpoint": {
+      "pathSegment": "inf",
+      "method": "POST"
+    },
+    "infListEndpoint": {
+      "pathSegment": "inf/list",
+      "method": "POST"
+    },
+    "preprocessEndpoint": {},
+    "listEndpoint": {}
+  },
+  {
+    "name": "en-preprocessor",
+    "type": "PREPROCESSOR",
+    "preprocessEndpoint": {
+      "pathSegment": "",
+      "method": "GET"
+    },
+    "listEndpoint": {
+      "pathSegment": "list",
+      "method": "GET"
+    },
+    "trainEndpoint": {},
+    "trainListEndpoint": {},
+    "infEndpoint": {},
+    "infListEndpoint": {}
+  }
+]

@@ -1,5 +1,7 @@
 package com.ncc.neon.controllers;
 
+import com.ncc.neon.better.NlpModuleDao;
+import com.ncc.neon.better.PreprocessorNlpModule;
 import com.ncc.neon.common.LanguageCode;
 import com.ncc.neon.common.NlpClientQueryBuilder;
 import com.ncc.neon.common.RemoteNlpClient;
@@ -22,8 +24,10 @@ import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 
@@ -165,12 +169,13 @@ public class BetterController {
     }
 
     @GetMapping(path = "tokenize")
-    Mono<RestStatus> tokenize(@RequestParam("file") String file, @RequestParam("language") LanguageCode languageCode) {
-        HttpHeaders tokenizeParam = NlpClientQueryBuilder.buildFileOperationQuery(file);
-        if (languageCode == LanguageCode.AR) {
-            return arPreprocessorRNC.performNlpOperation(tokenizeParam, arPreprocessorRNC.getOutputFileList(tokenizeParam));
-        } else {
-            return enPreprocessorRNC.performNlpOperation(tokenizeParam, enPreprocessorRNC.getOutputFileList(tokenizeParam));
+    Flux<RestStatus> tokenize(@RequestParam("file") String file, @RequestParam("language") LanguageCode languageCode) {
+        try {
+            PreprocessorNlpModule enModule = (PreprocessorNlpModule) NlpModuleDao.getInstance().getNlpModule("en-preprocessor");
+            return enModule.performPreprocessing(file);
+        }
+        catch (IOException e) {
+            return Flux.error(e);
         }
     }
 
@@ -187,4 +192,11 @@ public class BetterController {
         HttpHeaders nmtOperationParam = NlpClientQueryBuilder.buildTrainingOperationQuery(basename, tSource, tTarget, vSource, vTarget);
         return nmtRNC.performNlpOperation(nmtOperationParam, nmtRNC.getOutputFileList(nmtFileParam));
     }
+
+//    @GetMapping(path = "train-mbert")
+//    Mono<?> trainMbert(@RequestParam("configFile") String configFile) {
+//        // TODO: Validate configFile is a JSON file in the file share.
+//        // TODO: Serialize configFile to JSON string.
+//        // TODO: Send JSON string to NLP module in POST req body.
+//    }
 }
