@@ -20,12 +20,18 @@ public class PreprocessorNlpModule extends NlpModule {
         super(datasetService, fileShareService, betterFileService);
     }
 
-    public void setPreprocessEndpoint(HttpEndpoint preprocessEndpoint) {
-        this.preprocessEndpoint = preprocessEndpoint;
-    }
-
-    public void setListEndpoint(HttpEndpoint listEndpoint) {
-        this.listEndpoint = listEndpoint;
+    @Override
+    protected void setEndpoints(HttpEndpoint[] endpoints) {
+        for (HttpEndpoint endpoint : endpoints) {
+            switch (endpoint.getType()) {
+                case PREPROCESS:
+                    preprocessEndpoint = endpoint;
+                    break;
+                case LIST:
+                    listEndpoint = endpoint;
+                    break;
+            }
+        }
     }
 
     public Flux<RestStatus> performPreprocessing(String filename) {

@@ -7,10 +7,5 @@ import lombok.Data;
 public class NlpModuleModel {
     private final String name;
     private final NlpModuleType type;
-    private final HttpEndpoint preprocessEndpoint;
-    private final HttpEndpoint listEndpoint;
-    private final HttpEndpoint trainEndpoint;
-    private final HttpEndpoint trainListEndpoint;
-    private final HttpEndpoint infEndpoint;
-    private final HttpEndpoint infListEndpoint;
+    private final HttpEndpoint[] endpoints;
 }

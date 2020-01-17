@@ -168,21 +168,15 @@ public class BetterController {
         return res;
     }
 
-    @GetMapping(path = "tokenize")
-    Flux<RestStatus> tokenize(@RequestParam("file") String file, @RequestParam("language") LanguageCode languageCode) {
+    @GetMapping(path="preprocess")
+    Flux<RestStatus> preprocess(@RequestParam("file") String file, @RequestParam("module") String module) {
         try {
-            PreprocessorNlpModule enModule = (PreprocessorNlpModule) NlpModuleDao.getInstance().getNlpModule("en-preprocessor");
-            return enModule.performPreprocessing(file);
+            PreprocessorNlpModule preprocessorNlpModule = (PreprocessorNlpModule) NlpModuleDao.getInstance().getNlpModule(module);
+            return preprocessorNlpModule.performPreprocessing(file);
         }
         catch (IOException e) {
             return Flux.error(e);
         }
-    }
-
-    @GetMapping(path = "bpe")
-    Mono<RestStatus> bpe(@RequestParam("file") String file) {
-        HttpHeaders bpeParam = NlpClientQueryBuilder.buildFileOperationQuery(file);
-        return bpeRNC.performNlpOperation(NlpClientQueryBuilder.buildFileOperationQuery(file), bpeRNC.getOutputFileList(bpeParam));
     }
 
     @GetMapping(path = "train-mt")

@@ -57,20 +57,15 @@ public class NlpModuleDao {
             if (module.getName().equals(name)) {
                 // Build the concrete module based on the type.
                 if (module.getType() == NlpModuleType.PREPROCESSOR) {
-                    preprocessorNlpModule.setPreprocessEndpoint(module.getPreprocessEndpoint());
-                    preprocessorNlpModule.setListEndpoint(module.getListEndpoint());
                     res = preprocessorNlpModule;
                 }
                 else {
-                    ieNlpModule.setTrainEndpoint(module.getTrainEndpoint());
-                    ieNlpModule.setTrainListEndpoint(module.getTrainListEndpoint());
-                    ieNlpModule.setInfEndpoint(module.getInfEndpoint());
-                    ieNlpModule.setInfEndpoint(module.getInfListEndpoint());
                     res = ieNlpModule;
                 }
 
                 res.setName(name);
                 res.setClient(client);
+                res.setEndpoints(module.getEndpoints());
             }
         }
 
@@ -86,11 +81,19 @@ public class NlpModuleDao {
         switch (name) {
             case "mbert":
                 host = System.getenv().getOrDefault("MBERT_HOST", "localhost");
-                port = this.mbertPort;
+                port = mbertPort;
                 break;
-            case "en-preprocessor":
+            case "en_preprocessor":
                 host = System.getenv().getOrDefault("EN_PREPROCESSOR_HOST", "localhost");
                 port = enPreprocessorPort;
+                break;
+            case "ar_preprocessor":
+                host = System.getenv().getOrDefault("AR_PREPROCESSOR_HOST", "localhost");
+                port = arPreprocessorPort;
+                break;
+            case "bpe":
+                host = System.getenv().getOrDefault("BPE_HOST", "localhost");
+                port = bpePort;
                 break;
         }
 

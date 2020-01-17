@@ -18,19 +18,23 @@ public class IENlpModule extends NlpModule {
         super(datasetService, fileShareService, betterFileService);
     }
 
-    public void setTrainEndpoint(HttpEndpoint trainEndpoint) {
-        this.trainEndpoint = trainEndpoint;
-    }
-
-    public void setTrainListEndpoint(HttpEndpoint trainListEndpoint) {
-        this.trainListEndpoint = trainListEndpoint;
-    }
-
-    public void setInfEndpoint(HttpEndpoint infEndpoint) {
-        this.infEndpoint = infEndpoint;
-    }
-
-    public void setInfListEndpoint(HttpEndpoint infListEndpoint) {
-        this.infListEndpoint = infListEndpoint;
+    @Override
+    protected void setEndpoints(HttpEndpoint[] endpoints) {
+        for (HttpEndpoint endpoint : endpoints) {
+            switch (endpoint.getType()) {
+                case TRAIN:
+                    trainEndpoint = endpoint;
+                    break;
+                case TRAIN_LIST:
+                    trainListEndpoint = endpoint;
+                    break;
+                case INF:
+                    infEndpoint = endpoint;
+                    break;
+                case INF_LIST:
+                    infListEndpoint = endpoint;
+                    break;
+            }
+        }
     }
 }

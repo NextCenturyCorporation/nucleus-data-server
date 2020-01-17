@@ -22,6 +22,7 @@ import java.util.Map;
 public abstract class NlpModule {
     private String name;
     private WebClient client;
+    private HttpEndpoint[] endpoints;
     private DatasetService datasetService;
     private FileShareService fileShareService;
     private BetterFileService betterFileService;
@@ -39,6 +40,8 @@ public abstract class NlpModule {
     public void setClient(WebClient client) {
         this.client = client;
     }
+
+    protected abstract void setEndpoints(HttpEndpoint[] endpoints);
 
     protected Mono<String[]> performListOperation(Map<String, String> data, HttpEndpoint endpoint) {
         return buildRequest(data, endpoint)
