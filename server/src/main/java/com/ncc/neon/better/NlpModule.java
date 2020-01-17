@@ -104,14 +104,9 @@ public abstract class NlpModule {
             });
         }
 
-        // Build multivalue map for BodyInserters.
-        LinkedMultiValueMap<String, String> multiValueMap = new LinkedMultiValueMap<>();
-        for (Map.Entry<String, String> entry : data.entrySet()) {
-            multiValueMap.add(entry.getKey(), entry.getValue());
-        }
-
         return client.post()
                 .uri(uriBuilder -> uriBuilder.pathSegment(endpoint.getPathSegment()).build())
-                .body(BodyInserters.fromFormData(multiValueMap));
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(data));
     }
 }
