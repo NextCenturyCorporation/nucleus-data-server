@@ -1,7 +1,7 @@
 package com.ncc.neon.controllers;
 
 import com.ncc.neon.better.IENlpModule;
-import com.ncc.neon.better.NlpModuleDao;
+import com.ncc.neon.services.NlpModuleService;
 import com.ncc.neon.better.PreprocessorNlpModule;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.BetterFile;
@@ -12,6 +12,7 @@ import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.rest.RestStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -36,13 +37,16 @@ public class BetterController {
     private DatasetService datasetService;
     private FileShareService fileShareService;
     private BetterFileService betterFileService;
+    private NlpModuleService nlpModuleService;
 
     BetterController(DatasetService datasetService,
                      FileShareService fileShareService,
-                     BetterFileService betterFileService) {
+                     BetterFileService betterFileService,
+                     NlpModuleService nlpModuleService) {
         this.datasetService = datasetService;
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
+        this.nlpModuleService = nlpModuleService;
     }
 
     @PostMapping(path = "upload")
@@ -133,7 +137,7 @@ public class BetterController {
     @GetMapping(path="preprocess")
     Flux<RestStatus> preprocess(@RequestParam("file") String file, @RequestParam("module") String module) {
         try {
-            PreprocessorNlpModule preprocessorNlpModule = (PreprocessorNlpModule) NlpModuleDao.getInstance().getNlpModule(module);
+            PreprocessorNlpModule preprocessorNlpModule = (PreprocessorNlpModule) this.nlpModuleService.getNlpModule(module);
             return preprocessorNlpModule.performPreprocessing(file);
         }
         catch (IOException e) {
@@ -145,7 +149,7 @@ public class BetterController {
     Flux<RestStatus> train(@RequestParam("listConfigFile") String listConfigFile,
                            @RequestParam("trainConfigFile") String trainConfigFile, @RequestParam("module") String module) {
         try {
-            IENlpModule ieNlpModule = (IENlpModule) NlpModuleDao.getInstance().getNlpModule(module);
+            IENlpModule ieNlpModule = (IENlpModule) this.nlpModuleService.getNlpModule(module);
             return ieNlpModule.performTraining(listConfigFile, trainConfigFile);
         }
         catch (IOException e) {

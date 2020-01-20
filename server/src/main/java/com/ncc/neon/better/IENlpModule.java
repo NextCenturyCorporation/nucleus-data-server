@@ -30,7 +30,7 @@ public class IENlpModule extends NlpModule {
     }
 
     @Override
-    protected void setEndpoints(HttpEndpoint[] endpoints) {
+    public void setEndpoints(HttpEndpoint[] endpoints) {
         for (HttpEndpoint endpoint : endpoints) {
             switch (endpoint.getType()) {
                 case TRAIN:

@@ -27,8 +27,8 @@ import java.util.Map;
 @Component
 public class BetterFileService {
     private final RestHighLevelClient elasticSearchClient;
-    private final String fileIndex = "files";
-    private final String fileDataType = "filedata";
+    private final String fileIndex = "file";
+    private final String fileDataType = "file";
 
     BetterFileService() {
         String elasticHost = System.getenv().getOrDefault("ELASTIC_HOST", "localhost");
