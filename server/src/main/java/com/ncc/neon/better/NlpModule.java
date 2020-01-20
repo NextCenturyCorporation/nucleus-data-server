@@ -20,6 +20,10 @@ import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
+/*
+Abstract class to represent a remote NLP module REST service.  These services typically expose endpoints to perform
+NLP operations for preprocessing, training, and inference.
+ */
 public abstract class NlpModule {
     private String name;
     private WebClient client;
@@ -105,6 +109,7 @@ public abstract class NlpModule {
             });
         }
 
+        // Otherwise, we are doing a post.
         return client.post()
                 .uri(uriBuilder -> uriBuilder.pathSegment(endpoint.getPathSegment()).build())
                 .contentType(MediaType.APPLICATION_JSON)

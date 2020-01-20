@@ -3,9 +3,13 @@ package com.ncc.neon.better;
 import com.ncc.neon.models.EndpointType;
 import org.springframework.http.HttpMethod;
 
+/*
+Data class to represent an endpoint of an NLP module.
+ */
 public class HttpEndpoint {
     private String pathSegment;
     private HttpMethod method;
+    // The type controls how endpoints are mapped to specific NLP operations.
     private EndpointType type;
 
     public HttpEndpoint() {}

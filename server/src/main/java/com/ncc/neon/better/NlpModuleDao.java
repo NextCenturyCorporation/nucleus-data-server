@@ -8,11 +8,12 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 
+/*
+This class is responsible for deserializing NLP modules from the database to NLP Module POJOs.
+ */
 public class NlpModuleDao {
     private static NlpModuleDao singletonInstance = null;
     private HashMap<String, NlpModule> nlpModuleCache;
