@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -74,14 +75,14 @@ public abstract class NlpModule {
                 .doOnSuccess(status -> datasetService.notify(new DataNotification()));
     }
 
-    protected Disposable handleNlpOperationError(Throwable err, String[] pendingFiles) {
+    protected Disposable handleNlpOperationError(WebClientResponseException err, String[] pendingFiles) {
         return Flux.fromArray(pendingFiles)
                 .flatMap(pendingFile -> fileShareService.delete(pendingFile)
                     .then(betterFileService.getById(pendingFile))
                     .flatMap(fileToUpdate -> {
                         // Set status of files to error.
                         fileToUpdate.setStatus(FileStatus.ERROR);
-                        fileToUpdate.setStatus_message(err.getMessage());
+                        fileToUpdate.setStatus_message(err.getResponseBodyAsString());
                         return betterFileService.upsert(fileToUpdate);
                     }))
                 .then(betterFileService.refreshFilesIndex().retry(3))

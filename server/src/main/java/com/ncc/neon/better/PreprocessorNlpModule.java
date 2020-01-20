@@ -6,6 +6,7 @@ import com.ncc.neon.services.FileShareService;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
@@ -40,7 +41,7 @@ public class PreprocessorNlpModule extends NlpModule {
         return this.performListOperation(params, listEndpoint)
                 .flatMapMany(pendingFiles -> this.initPendingFiles(pendingFiles)
                 .then(this.performNlpOperation(params, preprocessEndpoint))
-                .doOnError(onError -> this.handleNlpOperationError(onError, pendingFiles)))
+                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)))
                 .flatMap(this::handleNlpOperationSuccess);
     }
 }

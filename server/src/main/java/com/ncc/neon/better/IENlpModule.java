@@ -8,6 +8,7 @@ import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 
@@ -49,6 +50,7 @@ public class IENlpModule extends NlpModule {
     }
 
     public Flux<RestStatus> performTraining(String listConfigFile, String trainConfigFile) throws IOException {
+        // Parse JSON files to maps.
         String shareDir = System.getenv("SHARE_DIR");
         File listConfig = new File(Paths.get(shareDir, listConfigFile).toString());
         File trainConfig = new File(Paths.get(shareDir, trainConfigFile).toString());
@@ -59,7 +61,7 @@ public class IENlpModule extends NlpModule {
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
                 .flatMapMany(pendingFiles -> this.initPendingFiles(pendingFiles)
                 .then(this.performNlpOperation(trainConfigMap, trainEndpoint))
-                .doOnError(onError -> this.handleNlpOperationError(onError, pendingFiles)))
+                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)))
                 .flatMap(this::handleNlpOperationSuccess);
     }
 }
