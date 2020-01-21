@@ -136,31 +136,21 @@ public class BetterController {
 
     @GetMapping(path="preprocess")
     Flux<RestStatus> preprocess(@RequestParam("file") String file, @RequestParam("module") String module) {
-        try {
-            return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
-                PreprocessorNlpModule preprocessorNlpModule = (PreprocessorNlpModule)nlpModule;
-                return preprocessorNlpModule.performPreprocessing(file);
-            });
-        }
-        catch (IOException e) {
-            return Flux.error(e);
-        }
+        return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
+            PreprocessorNlpModule preprocessorNlpModule = (PreprocessorNlpModule)nlpModule;
+            return preprocessorNlpModule.performPreprocessing(file);
+        });
     }
 
     @GetMapping(path="train")
     Flux<RestStatus> train(@RequestParam("configFile") String configFile, @RequestParam("module") String module) {
-        try {
-            return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
-                IENlpModule preprocessorNlpModule = (IENlpModule) nlpModule;
-                try {
-                    return preprocessorNlpModule.performTraining(configFile);
-                } catch (IOException e) {
-                    return Flux.error(e);
-                }
-            });
-        }
-        catch (IOException e) {
-            return Flux.error(e);
-        }
+        return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
+            IENlpModule preprocessorNlpModule = (IENlpModule) nlpModule;
+            try {
+                return preprocessorNlpModule.performTraining(configFile);
+            } catch (IOException e) {
+                return Flux.error(e);
+            }
+        });
     }
 }

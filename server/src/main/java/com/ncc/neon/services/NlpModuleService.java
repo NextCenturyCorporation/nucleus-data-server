@@ -4,20 +4,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.better.IENlpModule;
 import com.ncc.neon.better.NlpModule;
 import com.ncc.neon.better.PreprocessorNlpModule;
+import com.ncc.neon.models.ConnectionInfo;
 import com.ncc.neon.models.NlpModuleModel;
-import org.apache.http.HttpHost;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
+import com.ncc.neon.models.queries.FieldClause;
+import com.ncc.neon.models.queries.Query;
+import com.ncc.neon.models.queries.SelectClause;
+import com.ncc.neon.models.queries.SingularWhereClause;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.HashMap;
 
 /*
@@ -27,10 +25,9 @@ This class is responsible for deserializing NLP modules from the database to NLP
 public class NlpModuleService {
     private HashMap<String, NlpModule> nlpModuleCache;
     private NlpModuleModel[] nlpModules;
-    private QueryService queryService;
+    private ConnectionInfo nlpModuleConnectionInfo;
     private final String moduleIndex = "module";
     private final String moduleDataType = "module";
-    private final RestHighLevelClient elasticSearchClient;
 
     @Autowired
     private Environment env;
@@ -38,54 +35,45 @@ public class NlpModuleService {
     private PreprocessorNlpModule preprocessorNlpModule;
     @Autowired
     private IENlpModule ieNlpModule;
+    @Autowired
+    private QueryService queryService;
 
     public NlpModuleService() {
         this.nlpModuleCache = new HashMap<>();
-
+//
         String elasticHost = System.getenv().getOrDefault("ELASTIC_HOST", "localhost");
-        this.elasticSearchClient = new RestHighLevelClient(RestClient.builder(
-                new HttpHost(elasticHost, 9200, "http")
-        ));
-    }
-
-    public Mono<NlpModule> getNlpModule(String name) throws IOException {
-        if (nlpModuleCache.containsKey(name)) {
-            return Mono.just(nlpModuleCache.get(name));
+        nlpModuleConnectionInfo = new ConnectionInfo("elasticsearch", elasticHost);
         }
 
-        GetRequest gr = new GetRequest(moduleIndex, moduleDataType, name);
+        public Mono<NlpModule> getNlpModule(String name) {
+            if (nlpModuleCache.containsKey(name)) {
+                return Mono.just(nlpModuleCache.get(name));
+        }
 
-        return Mono.create(sink -> {
-            try {
-                GetResponse response = elasticSearchClient.get(gr, RequestOptions.DEFAULT);
+        // Build query to get module by name.
+        Query getModuleByNameQuery = new Query();
+        getModuleByNameQuery.setSelectClause(new SelectClause(moduleIndex, moduleDataType));
+        getModuleByNameQuery.setWhereClause(SingularWhereClause.fromString(new FieldClause(moduleIndex, moduleDataType, "name"), "=", name));
 
-                if (response.getSource() == null) {
-                    sink.error(new Exception("Module " + name + " not found."));
-                } else {
-                    NlpModuleModel module = new ObjectMapper().readValue(response.getSourceAsString(), NlpModuleModel.class);
-                    NlpModule res = null;
-                    WebClient client = buildNlpWebClient(name);
-                    // Build the concrete module based on the type.
-                    switch(module.getType()) {
-                        case PREPROCESSOR:
-                            res = preprocessorNlpModule;
-                            break;
-                        case IE:
-                            res = ieNlpModule;
-                            break;
-                    }
-
-                    res.setName(name);
-                    res.setClient(client);
-                    res.setEndpoints(module.getEndpoints());
-                    nlpModuleCache.put(name, res);
-                    sink.success(res);
-                }
-
+        return queryService.executeQuery(nlpModuleConnectionInfo, getModuleByNameQuery).flatMap(tabularQueryResult -> {
+            NlpModuleModel module = new ObjectMapper().convertValue(tabularQueryResult.getFirstOrNull(), NlpModuleModel.class);
+            NlpModule res = null;
+            WebClient client = buildNlpWebClient(name);
+            // Build the concrete module based on the type.
+            switch(module.getType()) {
+                case PREPROCESSOR:
+                    res = preprocessorNlpModule;
+                    break;
+                case IE:
+                    res = ieNlpModule;
+                    break;
             }
-            catch (IOException e) {
-                sink.error(e);
-            }
+
+            res.setName(name);
+            res.setClient(client);
+            res.setEndpoints(module.getEndpoints());
+            nlpModuleCache.put(name, res);
+            return Mono.just(res);
         });
     }
 
