@@ -148,13 +148,12 @@ public class BetterController {
     }
 
     @GetMapping(path="train")
-    Flux<RestStatus> train(@RequestParam("listConfigFile") String listConfigFile,
-                           @RequestParam("trainConfigFile") String trainConfigFile, @RequestParam("module") String module) {
+    Flux<RestStatus> train(@RequestParam("configFile") String configFile, @RequestParam("module") String module) {
         try {
             return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
                 IENlpModule preprocessorNlpModule = (IENlpModule) nlpModule;
                 try {
-                    return preprocessorNlpModule.performTraining(listConfigFile, trainConfigFile);
+                    return preprocessorNlpModule.performTraining(configFile);
                 } catch (IOException e) {
                     return Flux.error(e);
                 }
