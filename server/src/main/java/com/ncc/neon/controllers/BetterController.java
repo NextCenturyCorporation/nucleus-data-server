@@ -137,8 +137,10 @@ public class BetterController {
     @GetMapping(path="preprocess")
     Flux<RestStatus> preprocess(@RequestParam("file") String file, @RequestParam("module") String module) {
         try {
-            PreprocessorNlpModule preprocessorNlpModule = (PreprocessorNlpModule) this.nlpModuleService.getNlpModule(module);
-            return preprocessorNlpModule.performPreprocessing(file);
+            return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
+                PreprocessorNlpModule preprocessorNlpModule = (PreprocessorNlpModule)nlpModule;
+                return preprocessorNlpModule.performPreprocessing(file);
+            });
         }
         catch (IOException e) {
             return Flux.error(e);
@@ -149,8 +151,14 @@ public class BetterController {
     Flux<RestStatus> train(@RequestParam("listConfigFile") String listConfigFile,
                            @RequestParam("trainConfigFile") String trainConfigFile, @RequestParam("module") String module) {
         try {
-            IENlpModule ieNlpModule = (IENlpModule) this.nlpModuleService.getNlpModule(module);
-            return ieNlpModule.performTraining(listConfigFile, trainConfigFile);
+            return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
+                IENlpModule preprocessorNlpModule = (IENlpModule) nlpModule;
+                try {
+                    return preprocessorNlpModule.performTraining(listConfigFile, trainConfigFile);
+                } catch (IOException e) {
+                    return Flux.error(e);
+                }
+            });
         }
         catch (IOException e) {
             return Flux.error(e);

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -47,33 +48,45 @@ public class NlpModuleService {
         ));
     }
 
-    public NlpModule getNlpModule(String name) throws IOException {
+    public Mono<NlpModule> getNlpModule(String name) throws IOException {
         if (nlpModuleCache.containsKey(name)) {
-            return nlpModuleCache.get(name);
+            return Mono.just(nlpModuleCache.get(name));
         }
 
         GetRequest gr = new GetRequest(moduleIndex, moduleDataType, name);
-        GetResponse response = elasticSearchClient.get(gr, RequestOptions.DEFAULT);
-        NlpModuleModel module = new ObjectMapper().readValue(response.getSourceAsString(), NlpModuleModel.class);
 
-        NlpModule res = null;
-        WebClient client = buildNlpWebClient(name);
-        // Build the concrete module based on the type.
-        switch(module.getType()) {
-            case PREPROCESSOR:
-                res = preprocessorNlpModule;
-                break;
-            case IE:
-                res = ieNlpModule;
-                break;
-        }
+        return Mono.create(sink -> {
+            try {
+                GetResponse response = elasticSearchClient.get(gr, RequestOptions.DEFAULT);
 
-        res.setName(name);
-        res.setClient(client);
-        res.setEndpoints(module.getEndpoints());
-        nlpModuleCache.put(name, res);
+                if (response.getSource() == null) {
+                    sink.error(new Exception("Module " + name + " not found."));
+                } else {
+                    NlpModuleModel module = new ObjectMapper().readValue(response.getSourceAsString(), NlpModuleModel.class);
+                    NlpModule res = null;
+                    WebClient client = buildNlpWebClient(name);
+                    // Build the concrete module based on the type.
+                    switch(module.getType()) {
+                        case PREPROCESSOR:
+                            res = preprocessorNlpModule;
+                            break;
+                        case IE:
+                            res = ieNlpModule;
+                            break;
+                    }
 
-        return res;
+                    res.setName(name);
+                    res.setClient(client);
+                    res.setEndpoints(module.getEndpoints());
+                    nlpModuleCache.put(name, res);
+                    sink.success(res);
+                }
+
+            }
+            catch (IOException e) {
+                sink.error(e);
+            }
+        });
     }
 
     private WebClient buildNlpWebClient(String name) {
