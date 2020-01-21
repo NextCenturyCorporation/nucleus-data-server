@@ -106,7 +106,7 @@ public class BetterFileService {
     public Mono<RestStatus> refreshFilesIndex() {
         return Mono.create(sink -> {
             try {
-                RefreshResponse refreshResponse = elasticSearchClient.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
+                RefreshResponse refreshResponse = elasticSearchClient.indices().refresh(new RefreshRequest(fileIndex), RequestOptions.DEFAULT);
                 sink.success(refreshResponse.getStatus());
             } catch (Exception e) {
                 sink.error(e);
