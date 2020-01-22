@@ -16,6 +16,8 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.rest.RestStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -30,11 +32,10 @@ public class BetterFileService {
     private final String fileIndex = "file";
     private final String fileDataType = "file";
 
-    BetterFileService() {
-        String elasticHost = System.getenv().getOrDefault("ELASTIC_HOST", "localhost");
-
+    @Autowired
+    BetterFileService(@Value("${db_host}") String dbHost) {
         this.elasticSearchClient = new RestHighLevelClient(RestClient.builder(
-                new HttpHost(elasticHost, 9200, "http")
+                new HttpHost(dbHost, 9200, "http")
         ));
     }
 

@@ -11,6 +11,7 @@ import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.queries.SelectClause;
 import com.ncc.neon.models.queries.SingularWhereClause;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -38,10 +39,11 @@ public class NlpModuleService {
     @Autowired
     private QueryService queryService;
 
-    public NlpModuleService() {
+    @Autowired
+    public NlpModuleService(@Value("${db_type}") String dbType,
+                            @Value("${db_host}") String dbHost) {
         this.nlpModuleCache = new HashMap<>();
-        String elasticHost = System.getenv().getOrDefault("ELASTIC_HOST", "localhost");
-        nlpModuleConnectionInfo = new ConnectionInfo("elasticsearch", elasticHost);
+        nlpModuleConnectionInfo = new ConnectionInfo(dbType, dbHost);
     }
 
     public Mono<NlpModule> getNlpModule(String name) {
