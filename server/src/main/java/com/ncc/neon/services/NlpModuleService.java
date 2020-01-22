@@ -40,14 +40,13 @@ public class NlpModuleService {
 
     public NlpModuleService() {
         this.nlpModuleCache = new HashMap<>();
-//
         String elasticHost = System.getenv().getOrDefault("ELASTIC_HOST", "localhost");
         nlpModuleConnectionInfo = new ConnectionInfo("elasticsearch", elasticHost);
-        }
+    }
 
-        public Mono<NlpModule> getNlpModule(String name) {
-            if (nlpModuleCache.containsKey(name)) {
-                return Mono.just(nlpModuleCache.get(name));
+    public Mono<NlpModule> getNlpModule(String name) {
+        if (nlpModuleCache.containsKey(name)) {
+            return Mono.just(nlpModuleCache.get(name));
         }
 
         // Build query to get module by name.
