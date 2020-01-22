@@ -11,6 +11,7 @@ The NUCLEUS Data Server is a REST server that is used with [NUCLEUS](https://git
 * [Datastore Support](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#datastore-support)
 * [Datastore Configuration](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#datastore-configuration)
 * [Technical Stack](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#technical-stack)
+* [Architecture Documentation](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#architecture-documentation)
 * [License](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#apache-2-open-source-license)
 * [Contact Us](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#contact-us)
 
@@ -261,6 +262,22 @@ Change the modules included in your build (to add or remove adapter dependencies
 * [Spring Boot Java Docs](https://docs.spring.io/spring-boot/docs/current/api/)
 * [Building a Reactive RESTful Web Service](https://spring.io/guides/gs/reactive-rest-service/)
 * [Web on Reactive Stack](https://docs.spring.io/spring/docs/current/spring-framework-reference/web-reactive.html)
+
+## Architecture Documentation
+
+### Field Types
+
+NUCLEUS returns the following field types from its `queryservice/fields/types` endpoint:
+
+- `boolean`
+- `date`
+- `decimal`
+- `geo`
+- `id`
+- `integer`
+- `keyword`
+- `object`
+- `text`
 
 ## Apache 2 Open Source License
 
