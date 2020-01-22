@@ -23,10 +23,12 @@ public class IENlpModule extends NlpModule {
     private HttpEndpoint trainListEndpoint;
     private HttpEndpoint infEndpoint;
     private HttpEndpoint infListEndpoint;
+    private String shareDir;
 
     @Autowired
     IENlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService) {
         super(datasetService, fileShareService, betterFileService);
+        shareDir = System.getenv("SHARE_DIR");
     }
 
     @Override
@@ -51,7 +53,6 @@ public class IENlpModule extends NlpModule {
 
     public Flux<RestStatus> performTraining(String listConfigFile, String trainConfigFile) throws IOException {
         // Parse JSON files to maps.
-        String shareDir = System.getenv("SHARE_DIR");
         File listConfig = new File(Paths.get(shareDir, listConfigFile).toString());
         File trainConfig = new File(Paths.get(shareDir, trainConfigFile).toString());
         Map<String, String> listConfigMap = new ObjectMapper().readValue(listConfig, Map.class);
