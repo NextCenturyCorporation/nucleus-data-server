@@ -1,16 +1,20 @@
 package com.ncc.neon.better;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ncc.neon.models.Run;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
+import com.ncc.neon.services.RunService;
 import org.elasticsearch.rest.RestStatus;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,10 +28,12 @@ public class IENlpModule extends NlpModule {
     private HttpEndpoint trainListEndpoint;
     private HttpEndpoint infEndpoint;
     private HttpEndpoint infListEndpoint;
+    private RunService runService;
 
     @Autowired
-    IENlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService) {
+    IENlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, RunService runService) {
         super(datasetService, fileShareService, betterFileService);
+        this.runService = runService;
     }
 
     @Override
@@ -62,8 +68,10 @@ public class IENlpModule extends NlpModule {
         return this.performListOperation(listConfigMap, trainListEndpoint)
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
                 .flatMapMany(pendingFiles -> this.initPendingFiles(pendingFiles)
-                .then(this.performNlpOperation(trainConfigMap, trainEndpoint))
-                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)))
-                .flatMap(this::handleNlpOperationSuccess);
+                .then(runService.initRun(trainConfigFile, pendingFiles)
+                .flatMap(initRes -> this.performNlpOperation(trainConfigMap, trainEndpoint)
+                .flatMap(this::handleNlpOperationSuccess)
+                .then(runService.completeRun(initRes.getT1()))))
+                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)));
     }
 }
