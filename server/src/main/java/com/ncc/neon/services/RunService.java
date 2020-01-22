@@ -31,6 +31,7 @@ public class RunService extends ElasticSearchService<Run> {
 
     public Mono<RestStatus> completeRun(String completedRunId) {
         Map<String, Object> data = new HashMap<>();
+        data.put("status", "complete");
         data.put("ended", getCurrentDateTime());
         return update(data, index, dataType, completedRunId);
     }
