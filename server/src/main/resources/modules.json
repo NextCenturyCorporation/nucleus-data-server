@@ -1,0 +1,102 @@
+[
+  {
+    "name": "mbert",
+    "type": "IE",
+    "endpoints": [
+      {
+        "type": "TRAIN",
+        "pathSegment": "train",
+        "method": "POST"
+      },
+      {
+        "type": "TRAIN_LIST",
+        "pathSegment": "train/list",
+        "method": "POST"
+      },
+      {
+        "type": "INF",
+        "pathSegment": "inf",
+        "method": "POST"
+      },
+      {
+        "type": "INF_LIST",
+        "pathSegment": "inf/list",
+        "method": "POST"
+      }
+    ]
+  },
+  {
+    "name": "nmt",
+    "type": "IE",
+    "endpoints": [
+      {
+        "type": "TRAIN",
+        "pathSegment": "train",
+        "method": "POST"
+      },
+      {
+        "type": "TRAIN_LIST",
+        "pathSegment": "train/list",
+        "method": "POST"
+      },
+      {
+        "type": "INF",
+        "pathSegment": "inf",
+        "method": "POST"
+      },
+      {
+        "type": "INF_LIST",
+        "pathSegment": "inf/list",
+        "method": "POST"
+      }
+    ]
+  },
+  {
+    "name": "en_preprocessor",
+    "type": "PREPROCESSOR",
+    "endpoints": [
+      {
+        "type": "PREPROCESS",
+        "pathSegment": "",
+        "method": "GET"
+      },
+      {
+        "type": "LIST",
+        "pathSegment": "list",
+        "method": "GET"
+      }
+    ]
+  },
+  {
+    "name": "ar_preprocessor",
+    "type": "PREPROCESSOR",
+    "endpoints": [
+      {
+        "type": "PREPROCESS",
+        "pathSegment": "",
+        "method": "GET"
+      },
+      {
+        "type": "LIST",
+        "pathSegment": "list",
+        "method": "GET"
+      }
+    ]
+  },
+  {
+    "name": "bpe",
+    "type": "PREPROCESSOR",
+    "endpoints": [
+      {
+        "type": "PREPROCESS",
+        "pathSegment": "",
+        "method": "GET"
+      },
+      {
+        "type": "LIST",
+        "pathSegment": "list",
+        "method": "GET"
+      }
+    ]
+  }
+]
