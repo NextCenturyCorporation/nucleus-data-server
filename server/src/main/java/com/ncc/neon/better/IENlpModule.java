@@ -22,7 +22,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
 public class IENlpModule extends NlpModule {
     private HttpEndpoint trainEndpoint;
     private HttpEndpoint trainListEndpoint;
@@ -30,8 +29,7 @@ public class IENlpModule extends NlpModule {
     private HttpEndpoint infListEndpoint;
     private RunService runService;
 
-    @Autowired
-    IENlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, RunService runService) {
+    public IENlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, RunService runService) {
         super(datasetService, fileShareService, betterFileService);
         this.runService = runService;
     }

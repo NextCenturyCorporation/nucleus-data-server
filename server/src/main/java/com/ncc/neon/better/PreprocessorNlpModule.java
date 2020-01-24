@@ -11,13 +11,11 @@ import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 
-@Component
 public class PreprocessorNlpModule extends NlpModule {
     private HttpEndpoint preprocessEndpoint;
     private HttpEndpoint listEndpoint;
 
-    @Autowired
-    PreprocessorNlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService) {
+    public PreprocessorNlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService) {
         super(datasetService, fileShareService, betterFileService);
     }
 
