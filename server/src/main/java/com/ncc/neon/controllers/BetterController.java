@@ -152,4 +152,18 @@ public class BetterController {
             return Flux.error(e);
         }
     }
+
+    @GetMapping(path="inference")
+    Flux<RestStatus> inference(@RequestParam("listConfigFile") String listConfigFile,
+                               @RequestParam("infConfigFile") String infConfigFile, @RequestParam("module") String module) {
+        try {
+            IENlpModule ieNlpModule = (IENlpModule) NlpModuleDao.getInstance().getNlpModule(module);
+            return ieNlpModule.performInference(listConfigFile, infConfigFile);
+        }
+        catch (IOException e) {
+            return Flux.error(e);
+        }
+    }
+
+
 }

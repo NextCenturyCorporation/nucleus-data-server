@@ -65,4 +65,18 @@ public class IENlpModule extends NlpModule {
                 .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)))
                 .flatMap(this::handleNlpOperationSuccess);
     }
+
+    public Flux<RestStatus> performInference(String listConfigFile, String infConfigFile) throws IOException {
+        File listConfig = new File(Paths.get(shareDir, listConfigFile).toString());
+        File infConfig = new File(Paths.get(shareDir, infConfigFile).toString());
+        Map<String, String> listConfigMap = new ObjectMapper().readValue(listConfig, Map.class);
+        Map<String, String> infConfigMap = new ObjectMapper().readValue(infConfig, Map.class);
+
+        return this.performListOperation(listConfigMap, infListEndpoint)
+                .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
+                .flatMapMany(pendingFiles -> this.initPendingFiles(pendingFiles)
+                .then(this.performNlpOperation(infConfigMap, infEndpoint))
+                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)))
+                .flatMap(this::handleNlpOperationSuccess);
+    }
 }
