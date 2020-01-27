@@ -24,10 +24,12 @@ public class IENlpModule extends NlpModule {
     private HttpEndpoint trainListEndpoint;
     private HttpEndpoint infEndpoint;
     private HttpEndpoint infListEndpoint;
+    private String shareDir;
 
     @Autowired
     IENlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService) {
         super(datasetService, fileShareService, betterFileService);
+        shareDir = System.getenv("SHARE_DIR");
     }
 
     @Override
