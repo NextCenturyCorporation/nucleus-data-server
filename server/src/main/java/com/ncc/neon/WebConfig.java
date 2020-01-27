@@ -1,10 +1,8 @@
 package com.ncc.neon;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.ncc.neon.better.NlpModuleDao;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.embedded.netty.NettyReactiveWebServerFactory;
 import org.springframework.boot.web.server.WebServer;
@@ -31,11 +29,5 @@ public class WebConfig implements WebFluxConfigurer {
 
             }
         };
-    }
-
-    // Allows application.property values to be passed into this class.
-    @Bean
-    public NlpModuleDao nlpModuleDao() throws IOException {
-        return NlpModuleDao.getInstance();
     }
 }

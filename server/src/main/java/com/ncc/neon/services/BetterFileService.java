@@ -16,6 +16,8 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.rest.RestStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -27,14 +29,13 @@ import java.util.Map;
 @Component
 public class BetterFileService {
     private final RestHighLevelClient elasticSearchClient;
-    private final String fileIndex = "files";
-    private final String fileDataType = "filedata";
+    private final String fileIndex = "file";
+    private final String fileDataType = "file";
 
-    BetterFileService() {
-        String elasticHost = System.getenv().getOrDefault("ELASTIC_HOST", "localhost");
-
+    @Autowired
+    BetterFileService(@Value("${db_host}") String dbHost) {
         this.elasticSearchClient = new RestHighLevelClient(RestClient.builder(
-                new HttpHost(elasticHost, 9200, "http")
+                new HttpHost(dbHost, 9200, "http")
         ));
     }
 
@@ -106,7 +107,7 @@ public class BetterFileService {
     public Mono<RestStatus> refreshFilesIndex() {
         return Mono.create(sink -> {
             try {
-                RefreshResponse refreshResponse = elasticSearchClient.indices().refresh(new RefreshRequest("files"), RequestOptions.DEFAULT);
+                RefreshResponse refreshResponse = elasticSearchClient.indices().refresh(new RefreshRequest(fileIndex), RequestOptions.DEFAULT);
                 sink.success(refreshResponse.getStatus());
             } catch (Exception e) {
                 sink.error(e);

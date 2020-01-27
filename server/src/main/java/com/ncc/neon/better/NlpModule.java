@@ -46,7 +46,7 @@ public abstract class NlpModule {
         this.client = client;
     }
 
-    protected abstract void setEndpoints(HttpEndpoint[] endpoints);
+    public abstract void setEndpoints(HttpEndpoint[] endpoints);
 
     protected Mono<String[]> performListOperation(Map<String, String> data, HttpEndpoint endpoint) {
         return buildRequest(data, endpoint)

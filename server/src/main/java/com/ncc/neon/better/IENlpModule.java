@@ -15,6 +15,7 @@ import reactor.core.publisher.Flux;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 
 @Component
@@ -32,7 +33,7 @@ public class IENlpModule extends NlpModule {
     }
 
     @Override
-    protected void setEndpoints(HttpEndpoint[] endpoints) {
+    public void setEndpoints(HttpEndpoint[] endpoints) {
         for (HttpEndpoint endpoint : endpoints) {
             switch (endpoint.getType()) {
                 case TRAIN:
@@ -51,12 +52,14 @@ public class IENlpModule extends NlpModule {
         }
     }
 
-    public Flux<RestStatus> performTraining(String listConfigFile, String trainConfigFile) throws IOException {
-        // Parse JSON files to maps.
-        File listConfig = new File(Paths.get(shareDir, listConfigFile).toString());
+    public Flux<RestStatus> performTraining(String trainConfigFile) throws IOException {
+        // Parse JSON file to maps.
+        String shareDir = System.getenv("SHARE_DIR");
         File trainConfig = new File(Paths.get(shareDir, trainConfigFile).toString());
-        Map<String, String> listConfigMap = new ObjectMapper().readValue(listConfig, Map.class);
         Map<String, String> trainConfigMap = new ObjectMapper().readValue(trainConfig, Map.class);
+        Map<String, String> listConfigMap = new HashMap<>();
+        // Reuse output_file_prefix field for the list call.
+        listConfigMap.put("output_file_prefix", trainConfigMap.get("output_file_prefix"));
 
         return this.performListOperation(listConfigMap, trainListEndpoint)
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
