@@ -4,10 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
+import com.ncc.neon.services.RunService;
 import org.elasticsearch.rest.RestStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
@@ -18,17 +17,17 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
 public class IENlpModule extends NlpModule {
     private HttpEndpoint trainEndpoint;
     private HttpEndpoint trainListEndpoint;
     private HttpEndpoint infEndpoint;
     private HttpEndpoint infListEndpoint;
+    private RunService runService;
     private String shareDir;
 
-    @Autowired
-    IENlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService) {
+    public IENlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, RunService runService) {
         super(datasetService, fileShareService, betterFileService);
+        this.runService = runService;
         shareDir = System.getenv("SHARE_DIR");
     }
 
@@ -54,7 +53,6 @@ public class IENlpModule extends NlpModule {
 
     public Flux<RestStatus> performTraining(String trainConfigFile) throws IOException {
         // Parse JSON file to maps.
-        String shareDir = System.getenv("SHARE_DIR");
         File trainConfig = new File(Paths.get(shareDir, trainConfigFile).toString());
         Map<String, String> trainConfigMap = new ObjectMapper().readValue(trainConfig, Map.class);
         Map<String, String> listConfigMap = new HashMap<>();
@@ -64,13 +62,12 @@ public class IENlpModule extends NlpModule {
         return this.performListOperation(listConfigMap, trainListEndpoint)
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
                 .flatMapMany(pendingFiles -> this.initPendingFiles(pendingFiles)
-                .then(this.performNlpOperation(trainConfigMap, trainEndpoint))
-                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)))
-                .flatMap(this::handleNlpOperationSuccess);
+                .flatMap(initRes -> this.performNlpOperation(trainConfigMap, trainEndpoint)
+                        .flatMap(this::handleNlpOperationSuccess)
+                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))));
     }
 
     public Flux<RestStatus> performInference(String infConfigFile) throws IOException {
-        String shareDir = System.getenv("SHARE_DIR");
         File infConfig = new File(Paths.get(shareDir, infConfigFile).toString());
         Map<String, String> infConfigMap = new ObjectMapper().readValue(infConfig, Map.class);
         Map<String, String> listConfigMap = new HashMap<>();
@@ -80,8 +77,9 @@ public class IENlpModule extends NlpModule {
         return this.performListOperation(listConfigMap, infListEndpoint)
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
                 .flatMapMany(pendingFiles -> this.initPendingFiles(pendingFiles)
-                .then(this.performNlpOperation(infConfigMap, infEndpoint))
-                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)))
-                .flatMap(this::handleNlpOperationSuccess);
+                .then(this.performNlpOperation(infConfigMap, infEndpoint)
+                        .flatMap(this::handleNlpOperationSuccess)
+                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))));
+
     }
 }

@@ -1,16 +1,12 @@
 package com.ncc.neon.controllers;
 
 import com.ncc.neon.better.IENlpModule;
-import com.ncc.neon.better.NlpModule;
 import com.ncc.neon.better.PreprocessorNlpModule;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.DataNotification;
 import com.ncc.neon.models.FileStatus;
-import com.ncc.neon.services.BetterFileService;
-import com.ncc.neon.services.DatasetService;
-import com.ncc.neon.services.FileShareService;
-import com.ncc.neon.services.NlpModuleService;
+import com.ncc.neon.services.*;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.io.Resource;
@@ -38,15 +34,18 @@ public class BetterController {
     private FileShareService fileShareService;
     private BetterFileService betterFileService;
     private NlpModuleService nlpModuleService;
+    private RunService runService;
 
     BetterController(DatasetService datasetService,
                      FileShareService fileShareService,
                      BetterFileService betterFileService,
-                     NlpModuleService nlpModuleService) {
+                     NlpModuleService nlpModuleService,
+                     RunService runService) {
         this.datasetService = datasetService;
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
         this.nlpModuleService = nlpModuleService;
+        this.runService = runService;
     }
 
     @PostMapping(path = "upload")
@@ -170,8 +169,29 @@ public class BetterController {
     Flux<RestStatus> eval(@RequestParam("trainConfigFile") String trainConfigFile,
                           @RequestParam("infConfigFile") String infConfigFile, @RequestParam("module") String module,
                           @RequestParam("infOnly") boolean infOnly) {
-        nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
-            
-        });
+        nlpModuleService.getNlpModule(module)
+                .flatMapMany(nlpModule -> runService.initRun(trainConfigFile)
+                .flatMap(initialRun -> {
+                    IENlpModule ieNlpModule = (IENlpModule) nlpModule;
+                    try {
+                        Flux<RestStatus> nlpResult = Flux.empty();
+                                //ieNlpModule.performTraining(trainConfigFile);
+                        if (!infOnly) {
+                            nlpResult = ieNlpModule.performTraining(trainConfigFile);
+                        }
+                        nlpResult.then(runService.updateToInferenceStatus(initialRun.getT1()))
+                        .flatMapMany(updateRes -> {
+                            try {
+                                return ieNlpModule.performInference(infConfigFile);
+                            } catch (IOException e) {
+                                return Flux.error(e);
+                            }
+                        })
+                        .then(runService.updateToScoringStatus(initialRun.getT1()));
+                    } catch (IOException e) {
+                        return Flux.error(e);
+                    }
+
+                }));
     }
 }

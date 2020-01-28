@@ -5,6 +5,7 @@ import com.ncc.neon.better.EvalNlpModule;
 import com.ncc.neon.better.IENlpModule;
 import com.ncc.neon.better.NlpModule;
 import com.ncc.neon.better.PreprocessorNlpModule;
+import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.ConnectionInfo;
 import com.ncc.neon.models.NlpModuleModel;
 import com.ncc.neon.models.queries.FieldClause;
@@ -26,7 +27,6 @@ This class is responsible for deserializing NLP modules from the database to NLP
 @Component
 public class NlpModuleService {
     private HashMap<String, NlpModule> nlpModuleCache;
-    private NlpModuleModel[] nlpModules;
     private ConnectionInfo nlpModuleConnectionInfo;
     private final String moduleIndex = "module";
     private final String moduleDataType = "module";
@@ -34,9 +34,13 @@ public class NlpModuleService {
     @Autowired
     private Environment env;
     @Autowired
-    private PreprocessorNlpModule preprocessorNlpModule;
+    private DatasetService datasetService;
     @Autowired
-    private IENlpModule ieNlpModule;
+    private BetterFileService betterFileService;
+    @Autowired
+    private FileShareService fileShareService;
+    @Autowired
+    private RunService runService;
     @Autowired
     private EvalNlpModule evalNlpModule;
     @Autowired
@@ -66,10 +70,10 @@ public class NlpModuleService {
             // Build the concrete module based on the type.
             switch(module.getType()) {
                 case PREPROCESSOR:
-                    res = preprocessorNlpModule;
+                    res = new PreprocessorNlpModule(datasetService, fileShareService, betterFileService);
                     break;
                 case IE:
-                    res = ieNlpModule;
+                    res = new IENlpModule(datasetService, fileShareService, betterFileService, runService);
                     break;
                 case EVAL:
                     res = evalNlpModule;
