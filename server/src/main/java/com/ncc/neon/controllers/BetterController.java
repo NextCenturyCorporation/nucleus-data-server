@@ -1,7 +1,7 @@
 package com.ncc.neon.controllers;
 
 import com.ncc.neon.better.IENlpModule;
-import com.ncc.neon.services.NlpModuleService;
+import com.ncc.neon.better.NlpModule;
 import com.ncc.neon.better.PreprocessorNlpModule;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.BetterFile;
@@ -10,9 +10,9 @@ import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
+import com.ncc.neon.services.NlpModuleService;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.rest.RestStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -166,5 +166,12 @@ public class BetterController {
         });
     }
 
-
+    @GetMapping(path="eval")
+    Flux<RestStatus> eval(@RequestParam("trainConfigFile") String trainConfigFile,
+                          @RequestParam("infConfigFile") String infConfigFile, @RequestParam("module") String module,
+                          @RequestParam("infOnly") boolean infOnly) {
+        nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
+            
+        });
+    }
 }

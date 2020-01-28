@@ -43,8 +43,8 @@ public class EvalNlpModule extends NlpModule {
         return this.performListOperation(params, evalListEndpoint)
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
                 .flatMapMany(pendingFiles -> this.initPendingFiles(pendingFiles)
-                        .then(this.performNlpOperation(params, evalEndpoint))
-                        .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)))
-                .flatMap(this::handleNlpOperationSuccess);
+                .then(this.performNlpOperation(params, evalEndpoint))
+                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))
+                .flatMap(this::handleNlpOperationSuccess));
     }
 }
