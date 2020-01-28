@@ -145,9 +145,9 @@ public class BetterController {
     @GetMapping(path="train")
     Flux<RestStatus> train(@RequestParam("configFile") String configFile, @RequestParam("module") String module) {
         return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
-            IENlpModule preprocessorNlpModule = (IENlpModule) nlpModule;
+            IENlpModule trainNlpModule = (IENlpModule) nlpModule;
             try {
-                return preprocessorNlpModule.performTraining(configFile);
+                return trainNlpModule.performTraining(configFile);
             } catch (IOException e) {
                 return Flux.error(e);
             }
@@ -155,15 +155,15 @@ public class BetterController {
     }
 
     @GetMapping(path="inference")
-    Flux<RestStatus> inference(@RequestParam("listConfigFile") String listConfigFile,
-                               @RequestParam("infConfigFile") String infConfigFile, @RequestParam("module") String module) {
-        try {
-            IENlpModule ieNlpModule = (IENlpModule) NlpModuleDao.getInstance().getNlpModule(module);
-            return ieNlpModule.performInference(listConfigFile, infConfigFile);
-        }
-        catch (IOException e) {
-            return Flux.error(e);
-        }
+    Flux<RestStatus> inference(@RequestParam("configFile") String configFile, @RequestParam("module") String module) {
+        return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
+            IENlpModule infNlpModule = (IENlpModule) nlpModule;
+            try {
+                return infNlpModule.performInference(configFile);
+            } catch (IOException e) {
+                return Flux.error(e);
+            }
+        });
     }
 
 

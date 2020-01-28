@@ -1,6 +1,7 @@
 package com.ncc.neon.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ncc.neon.better.EvalNlpModule;
 import com.ncc.neon.better.IENlpModule;
 import com.ncc.neon.better.NlpModule;
 import com.ncc.neon.better.PreprocessorNlpModule;
@@ -37,6 +38,8 @@ public class NlpModuleService {
     @Autowired
     private IENlpModule ieNlpModule;
     @Autowired
+    private EvalNlpModule evalNlpModule;
+    @Autowired
     private QueryService queryService;
 
     @Autowired
@@ -67,6 +70,9 @@ public class NlpModuleService {
                     break;
                 case IE:
                     res = ieNlpModule;
+                    break;
+                case EVAL:
+                    res = evalNlpModule;
                     break;
             }
 

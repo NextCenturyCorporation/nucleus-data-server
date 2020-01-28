@@ -69,11 +69,13 @@ public class IENlpModule extends NlpModule {
                 .flatMap(this::handleNlpOperationSuccess);
     }
 
-    public Flux<RestStatus> performInference(String listConfigFile, String infConfigFile) throws IOException {
-        File listConfig = new File(Paths.get(shareDir, listConfigFile).toString());
+    public Flux<RestStatus> performInference(String infConfigFile) throws IOException {
+        String shareDir = System.getenv("SHARE_DIR");
         File infConfig = new File(Paths.get(shareDir, infConfigFile).toString());
-        Map<String, String> listConfigMap = new ObjectMapper().readValue(listConfig, Map.class);
         Map<String, String> infConfigMap = new ObjectMapper().readValue(infConfig, Map.class);
+        Map<String, String> listConfigMap = new HashMap<>();
+        // Reuse output_file_prefix field for the list call.
+        listConfigMap.put("output_file_prefix", infConfigMap.get("output_file_prefix"));
 
         return this.performListOperation(listConfigMap, infListEndpoint)
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
