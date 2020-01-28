@@ -33,20 +33,26 @@ public class RunService extends ElasticSearchService<Run> {
         data.put("trainEndTime", DateUtil.getCurrentDateTime());
         data.put("status", RunStatus.INFERENCING);
         data.put("infStartTime", DateUtil.getCurrentDateTime());
-        return update(data, index, dataType, runId);
+        return update(data, runId);
     }
 
     public Mono<RestStatus> updateToScoringStatus(String runId) {
         Map<String, Object> data = new HashMap<>();
         data.put("infEndTime", DateUtil.getCurrentDateTime());
         data.put("status", RunStatus.SCORING);
-        return update(data, index, dataType, runId);
+        return update(data, runId);
+    }
+
+    public Mono<RestStatus> updateOutputs(String runId, String outputsKey, String[] outputs) {
+        Map<String, Object> data = new HashMap<>();
+        data.put(outputsKey, outputs);
+        return update(data, runId);
     }
 
     public Mono<RestStatus> completeRun(String completedRunId) {
         Map<String, Object> data = new HashMap<>();
         data.put("status", "complete");
         data.put("ended", DateUtil.getCurrentDateTime());
-        return update(data, index, dataType, completedRunId);
+        return update(data, completedRunId);
     }
 }

@@ -75,7 +75,7 @@ public abstract class ElasticSearchService<T> {
         return completeIndexRequest(indexRequest);
     }
 
-    public Mono<RestStatus> update(Map<String, Object> data, String index, String dataType, String docId) {
+    public Mono<RestStatus> update(Map<String, Object> data, String docId) {
         UpdateRequest request = new UpdateRequest(index, dataType, docId).doc(data);
         return Mono.create(sink -> {
             UpdateResponse response = null;

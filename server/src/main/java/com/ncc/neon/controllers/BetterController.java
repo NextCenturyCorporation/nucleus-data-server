@@ -142,11 +142,11 @@ public class BetterController {
     }
 
     @GetMapping(path="train")
-    Flux<RestStatus> train(@RequestParam("configFile") String configFile, @RequestParam("module") String module) {
+    Flux<RestStatus> train(@RequestParam("configFile") String configFile, @RequestParam("module") String module, @RequestParam("runId") String runId) {
         return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
             IENlpModule trainNlpModule = (IENlpModule) nlpModule;
             try {
-                return trainNlpModule.performTraining(configFile);
+                return trainNlpModule.performTraining(configFile, runId);
             } catch (IOException e) {
                 return Flux.error(e);
             }
@@ -154,11 +154,11 @@ public class BetterController {
     }
 
     @GetMapping(path="inference")
-    Flux<RestStatus> inference(@RequestParam("configFile") String configFile, @RequestParam("module") String module) {
+    Flux<RestStatus> inference(@RequestParam("configFile") String configFile, @RequestParam("module") String module, @RequestParam("runId") String runId) {
         return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
             IENlpModule infNlpModule = (IENlpModule) nlpModule;
             try {
-                return infNlpModule.performInference(configFile);
+                return infNlpModule.performInference(configFile, runId);
             } catch (IOException e) {
                 return Flux.error(e);
             }
@@ -175,14 +175,13 @@ public class BetterController {
                     IENlpModule ieNlpModule = (IENlpModule) nlpModule;
                     try {
                         Flux<RestStatus> nlpResult = Flux.empty();
-                                //ieNlpModule.performTraining(trainConfigFile);
                         if (!infOnly) {
-                            nlpResult = ieNlpModule.performTraining(trainConfigFile);
+                            nlpResult = ieNlpModule.performTraining(trainConfigFile, initialRun.getT1());
                         }
                         return nlpResult.then(runService.updateToInferenceStatus(initialRun.getT1()))
                         .flatMapMany(updateRes -> {
                             try {
-                                return ieNlpModule.performInference(infConfigFile);
+                                return ieNlpModule.performInference(infConfigFile, initialRun.getT1());
                             } catch (IOException e) {
                                 return Flux.error(e);
                             }

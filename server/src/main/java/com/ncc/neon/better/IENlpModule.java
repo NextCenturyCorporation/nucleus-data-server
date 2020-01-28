@@ -51,7 +51,7 @@ public class IENlpModule extends NlpModule {
         }
     }
 
-    public Flux<RestStatus> performTraining(String trainConfigFile) throws IOException {
+    public Flux<RestStatus> performTraining(String trainConfigFile, String runId) throws IOException {
         // Parse JSON file to maps.
         File trainConfig = new File(Paths.get(shareDir, trainConfigFile).toString());
         Map<String, String> trainConfigMap = new ObjectMapper().readValue(trainConfig, Map.class);
@@ -62,12 +62,13 @@ public class IENlpModule extends NlpModule {
         return this.performListOperation(listConfigMap, trainListEndpoint)
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
                 .flatMapMany(pendingFiles -> this.initPendingFiles(pendingFiles)
-                .flatMap(initRes -> this.performNlpOperation(trainConfigMap, trainEndpoint)
+                        .then(runService.updateOutputs(runId, "trainOutputs", pendingFiles))
+                        .flatMap(initRes -> this.performNlpOperation(trainConfigMap, trainEndpoint)
                         .flatMap(this::handleNlpOperationSuccess)
                 .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))));
     }
 
-    public Flux<RestStatus> performInference(String infConfigFile) throws IOException {
+    public Flux<RestStatus> performInference(String infConfigFile, String runId) throws IOException {
         File infConfig = new File(Paths.get(shareDir, infConfigFile).toString());
         Map<String, String> infConfigMap = new ObjectMapper().readValue(infConfig, Map.class);
         Map<String, String> listConfigMap = new HashMap<>();
@@ -77,7 +78,8 @@ public class IENlpModule extends NlpModule {
         return this.performListOperation(listConfigMap, infListEndpoint)
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
                 .flatMapMany(pendingFiles -> this.initPendingFiles(pendingFiles)
-                .then(this.performNlpOperation(infConfigMap, infEndpoint)
+                        .then(runService.updateOutputs(runId, "infOutputs", pendingFiles))
+                        .then(this.performNlpOperation(infConfigMap, infEndpoint)
                         .flatMap(this::handleNlpOperationSuccess)
                 .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))));
 
