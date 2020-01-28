@@ -175,10 +175,12 @@ public class BetterController {
                     IENlpModule ieNlpModule = (IENlpModule) nlpModule;
                     try {
                         return ieNlpModule.performTraining(trainConfigFile, initialRun.getT1(), infOnly)
+                                .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())))
                                 .flatMap(trainRes -> runService.updateToInferenceStatus(initialRun.getT1())
                                 .flatMapMany(updateRes -> {
                                     try {
-                                        return ieNlpModule.performInference(infConfigFile, initialRun.getT1());
+                                        return ieNlpModule.performInference(infConfigFile, initialRun.getT1())
+                                                .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())));
                                     } catch (IOException e) {
                                         return Flux.error(e);
                                     }

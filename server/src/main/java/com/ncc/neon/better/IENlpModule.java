@@ -6,9 +6,8 @@ import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
 import com.ncc.neon.services.RunService;
 import org.elasticsearch.rest.RestStatus;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import org.springframework.web.server.ResponseStatusException;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -61,7 +60,7 @@ public class IENlpModule extends NlpModule {
         listConfigMap.put("output_file_prefix", trainConfigMap.get("output_file_prefix"));
 
         return performListOperation(listConfigMap, trainListEndpoint)
-                .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
+                .doOnError(onError -> handleErrorDuringRun(onError, runId))
                 .flatMapMany(pendingFiles -> initPendingFiles(pendingFiles)
                         .then(runService.updateOutputs(runId, "trainOutputs", pendingFiles))
                         .flatMap(initRes -> {
@@ -70,7 +69,10 @@ public class IENlpModule extends NlpModule {
                             if (!skip) {
                                 res = performNlpOperation(trainConfigMap, trainEndpoint)
                                         .flatMap(this::handleNlpOperationSuccess)
-                                        .doOnError(onError -> handleNlpOperationError((WebClientResponseException) onError, pendingFiles));
+                                        .doOnError(onError -> {
+                                            handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
+                                            handleErrorDuringRun(onError, runId);
+                                        });
                             }
 
                             return res;
@@ -85,12 +87,21 @@ public class IENlpModule extends NlpModule {
         listConfigMap.put("output_file_prefix", infConfigMap.get("output_file_prefix"));
 
         return performListOperation(listConfigMap, infListEndpoint)
-                .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
+                .doOnError(onError -> handleErrorDuringRun(onError, runId))
                 .flatMapMany(pendingFiles -> initPendingFiles(pendingFiles)
                         .then(runService.updateOutputs(runId, "infOutputs", pendingFiles))
                         .then(performNlpOperation(infConfigMap, infEndpoint)
                         .flatMap(this::handleNlpOperationSuccess)
-                .doOnError(onError -> handleNlpOperationError((WebClientResponseException) onError, pendingFiles))));
+                .doOnError(onError -> {
+                    handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
+                    handleErrorDuringRun(onError, runId);
+                })));
 
+    }
+
+    private Disposable handleErrorDuringRun(Throwable err, String runId) {
+        return runService.updateToErrorStatus(runId, err.getMessage())
+                .then(runService.refreshIndex())
+                .subscribe();
     }
 }
