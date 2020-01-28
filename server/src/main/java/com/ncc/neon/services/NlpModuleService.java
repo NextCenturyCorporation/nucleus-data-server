@@ -42,8 +42,6 @@ public class NlpModuleService {
     @Autowired
     private RunService runService;
     @Autowired
-    private EvalNlpModule evalNlpModule;
-    @Autowired
     private QueryService queryService;
 
     @Autowired
@@ -76,7 +74,7 @@ public class NlpModuleService {
                     res = new IENlpModule(datasetService, fileShareService, betterFileService, runService);
                     break;
                 case EVAL:
-                    res = evalNlpModule;
+                    res = new EvalNlpModule(datasetService, fileShareService, betterFileService);
                     break;
             }
 

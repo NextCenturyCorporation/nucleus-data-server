@@ -4,7 +4,6 @@ import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
 import org.elasticsearch.rest.RestStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,8 +15,7 @@ public class EvalNlpModule extends NlpModule {
     private HttpEndpoint evalEndpoint;
     private HttpEndpoint evalListEndpoint;
 
-    @Autowired
-    EvalNlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService) {
+    public EvalNlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService) {
         super(datasetService, fileShareService, betterFileService);
     }
 

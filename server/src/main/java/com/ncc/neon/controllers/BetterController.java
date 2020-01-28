@@ -169,7 +169,7 @@ public class BetterController {
     Flux<RestStatus> eval(@RequestParam("trainConfigFile") String trainConfigFile,
                           @RequestParam("infConfigFile") String infConfigFile, @RequestParam("module") String module,
                           @RequestParam("infOnly") boolean infOnly) {
-        nlpModuleService.getNlpModule(module)
+        return nlpModuleService.getNlpModule(module)
                 .flatMapMany(nlpModule -> runService.initRun(trainConfigFile)
                 .flatMap(initialRun -> {
                     IENlpModule ieNlpModule = (IENlpModule) nlpModule;
@@ -179,7 +179,7 @@ public class BetterController {
                         if (!infOnly) {
                             nlpResult = ieNlpModule.performTraining(trainConfigFile);
                         }
-                        nlpResult.then(runService.updateToInferenceStatus(initialRun.getT1()))
+                        return nlpResult.then(runService.updateToInferenceStatus(initialRun.getT1()))
                         .flatMapMany(updateRes -> {
                             try {
                                 return ieNlpModule.performInference(infConfigFile);
@@ -189,7 +189,7 @@ public class BetterController {
                         })
                         .then(runService.updateToScoringStatus(initialRun.getT1()));
                     } catch (IOException e) {
-                        return Flux.error(e);
+                        return Mono.error(e);
                     }
 
                 }));
