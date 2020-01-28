@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,7 +52,7 @@ public class IENlpModule extends NlpModule {
         }
     }
 
-    public Flux<RestStatus> performTraining(String trainConfigFile, String runId) throws IOException {
+    public Flux<RestStatus> performTraining(String trainConfigFile, String runId, boolean skip) throws IOException {
         // Parse JSON file to maps.
         File trainConfig = new File(Paths.get(shareDir, trainConfigFile).toString());
         Map<String, String> trainConfigMap = new ObjectMapper().readValue(trainConfig, Map.class);
@@ -59,13 +60,21 @@ public class IENlpModule extends NlpModule {
         // Reuse output_file_prefix field for the list call.
         listConfigMap.put("output_file_prefix", trainConfigMap.get("output_file_prefix"));
 
-        return this.performListOperation(listConfigMap, trainListEndpoint)
+        return performListOperation(listConfigMap, trainListEndpoint)
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
-                .flatMapMany(pendingFiles -> this.initPendingFiles(pendingFiles)
+                .flatMapMany(pendingFiles -> initPendingFiles(pendingFiles)
                         .then(runService.updateOutputs(runId, "trainOutputs", pendingFiles))
-                        .flatMap(initRes -> this.performNlpOperation(trainConfigMap, trainEndpoint)
-                        .flatMap(this::handleNlpOperationSuccess)
-                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))));
+                        .flatMap(initRes -> {
+                            Mono<RestStatus> res = Mono.empty();
+
+                            if (!skip) {
+                                res = performNlpOperation(trainConfigMap, trainEndpoint)
+                                        .flatMap(this::handleNlpOperationSuccess)
+                                        .doOnError(onError -> handleNlpOperationError((WebClientResponseException) onError, pendingFiles));
+                            }
+
+                            return res;
+                        }));
     }
 
     public Flux<RestStatus> performInference(String infConfigFile, String runId) throws IOException {
@@ -75,13 +84,13 @@ public class IENlpModule extends NlpModule {
         // Reuse output_file_prefix field for the list call.
         listConfigMap.put("output_file_prefix", infConfigMap.get("output_file_prefix"));
 
-        return this.performListOperation(listConfigMap, infListEndpoint)
+        return performListOperation(listConfigMap, infListEndpoint)
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
-                .flatMapMany(pendingFiles -> this.initPendingFiles(pendingFiles)
+                .flatMapMany(pendingFiles -> initPendingFiles(pendingFiles)
                         .then(runService.updateOutputs(runId, "infOutputs", pendingFiles))
-                        .then(this.performNlpOperation(infConfigMap, infEndpoint)
+                        .then(performNlpOperation(infConfigMap, infEndpoint)
                         .flatMap(this::handleNlpOperationSuccess)
-                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))));
+                .doOnError(onError -> handleNlpOperationError((WebClientResponseException) onError, pendingFiles))));
 
     }
 }

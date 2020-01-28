@@ -146,7 +146,7 @@ public class BetterController {
         return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
             IENlpModule trainNlpModule = (IENlpModule) nlpModule;
             try {
-                return trainNlpModule.performTraining(configFile, runId);
+                return trainNlpModule.performTraining(configFile, runId, false);
             } catch (IOException e) {
                 return Flux.error(e);
             }
@@ -174,23 +174,19 @@ public class BetterController {
                 .flatMap(initialRun -> {
                     IENlpModule ieNlpModule = (IENlpModule) nlpModule;
                     try {
-                        Flux<RestStatus> nlpResult = Flux.empty();
-                        if (!infOnly) {
-                            nlpResult = ieNlpModule.performTraining(trainConfigFile, initialRun.getT1());
-                        }
-                        return nlpResult.then(runService.updateToInferenceStatus(initialRun.getT1()))
-                        .flatMapMany(updateRes -> {
-                            try {
-                                return ieNlpModule.performInference(infConfigFile, initialRun.getT1());
-                            } catch (IOException e) {
-                                return Flux.error(e);
-                            }
-                        })
-                        .then(runService.updateToScoringStatus(initialRun.getT1()));
+                        return ieNlpModule.performTraining(trainConfigFile, initialRun.getT1(), infOnly)
+                                .then(runService.updateToInferenceStatus(initialRun.getT1()))
+                                .flatMapMany(updateRes -> {
+                                    try {
+                                        return ieNlpModule.performInference(infConfigFile, initialRun.getT1());
+                                    } catch (IOException e) {
+                                        return Flux.error(e);
+                                    }
+                                })
+                                .then(runService.updateToScoringStatus(initialRun.getT1()));
                     } catch (IOException e) {
                         return Mono.error(e);
                     }
-
                 }));
     }
 }
