@@ -79,9 +79,15 @@ public class IENlpModule extends NlpModule {
                         }));
     }
 
-    public Flux<RestStatus> performInference(String infConfigFile, String runId) throws IOException {
+    public Flux<RestStatus> performInference(String infConfigFile, String runId) {
         File infConfig = new File(Paths.get(shareDir, infConfigFile).toString());
-        Map<String, String> infConfigMap = new ObjectMapper().readValue(infConfig, Map.class);
+        Map<String, String> infConfigMap;
+        try {
+            infConfigMap = new ObjectMapper().readValue(infConfig, Map.class);
+        }
+        catch (IOException e) {
+            return Flux.error(e);
+        }
         Map<String, String> listConfigMap = new HashMap<>();
         // Reuse output_file_prefix field for the list call.
         listConfigMap.put("output_file_prefix", infConfigMap.get("output_file_prefix"));
