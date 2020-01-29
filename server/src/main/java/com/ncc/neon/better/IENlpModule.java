@@ -62,7 +62,7 @@ public class IENlpModule extends NlpModule {
         return performListOperation(listConfigMap, trainListEndpoint)
                 .doOnError(onError -> handleErrorDuringRun(onError, runId))
                 .flatMapMany(pendingFiles -> initPendingFiles(pendingFiles)
-                        .then(runService.updateOutputs(runId, "trainOutputs", pendingFiles))
+                        .then(runService.updateOutputs(runId, "train_outputs", pendingFiles))
                         .flatMap(initRes -> {
                             Mono<RestStatus> res = Mono.empty();
 
@@ -89,7 +89,7 @@ public class IENlpModule extends NlpModule {
         return performListOperation(listConfigMap, infListEndpoint)
                 .doOnError(onError -> handleErrorDuringRun(onError, runId))
                 .flatMapMany(pendingFiles -> initPendingFiles(pendingFiles)
-                        .then(runService.updateOutputs(runId, "infOutputs", pendingFiles))
+                        .then(runService.updateOutputs(runId, "inf_outputs", pendingFiles))
                         .then(performNlpOperation(infConfigMap, infEndpoint)
                         .flatMap(this::handleNlpOperationSuccess)
                 .doOnError(onError -> {
