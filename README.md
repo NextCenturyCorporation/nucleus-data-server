@@ -279,6 +279,48 @@ NUCLEUS returns the following field types from its `queryservice/fields/types` e
 - `object`
 - `text`
 
+### Query Objects
+
+NUCLEUS saves datastore-agnostic query objects in a SQL-like JSON syntax that can be (de)serialized to/from [Java classes](./common/src/main/java/com/ncc/neon/models/queries).
+
+Notes on NUCLEUS query JSON/Java objects:
+
+- Fields are always represented as JSON objects containing their corresponding `"database"`, `"table"`, and `"field"` names.
+- The `"selectClause"` is always required.
+
+More info coming soon!
+
+Query Example:
+
+```json
+{
+  "selectClause": {
+    "database": "testDatabase",
+    "table": "testTable",
+    "fieldClauses": []
+  },
+  "whereClause": {
+    "type": "where",
+    "lhs": { "database": "testDatabase", "table": "testTable", "field": "testWhereField" },
+    "operator": "!=",
+    "rhs": null
+  },
+  "aggregateClauses": [
+    { "type": "field", "operation": "count", "label": "testAggregateLabel", "fieldClause": { "database": "testDatabase", "table": "testTable", "field": "testAggregateField" } }
+  ],
+  "groupByClauses": [
+    { "type": "field", "fieldClause": { "database": "testDatabase", "table": "testTable", "field": "testGroupField" } }
+  ],
+  "orderByClauses": [
+    { "type": "field", "fieldClause": { "database": "testDatabase", "table": "testTable", "field": "testOrderField" }, "order": -1 }
+  ],
+  "limitClause": { "limit": 12 },
+  "offsetClause":{ "offset": 34 },
+  "joinClauses": [],
+  "isDistinct": false
+}
+```
+
 ## Apache 2 Open Source License
 
 NUCLEUS is made available by [Next Century](http://www.nextcentury.com) under the [Apache 2 Open Source License](http://www.apache.org/licenses/LICENSE-2.0.txt). You may freely download, use, and modify, in whole or in part, the source code or release packages. Any restrictions or attribution requirements are spelled out in the license file. NUCLEUS attribution information can be found in the [LICENSE](./LICENSE) file. For more information about the Apache license, please visit the [The Apache Software Foundation’s License FAQ](http://www.apache.org/foundation/license-faq.html).
