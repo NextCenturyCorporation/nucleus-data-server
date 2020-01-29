@@ -1,12 +1,7 @@
 package com.ncc.neon.better;
 
-import com.ncc.neon.models.BetterFile;
-import com.ncc.neon.models.DataNotification;
-import com.ncc.neon.models.FileStatus;
-import com.ncc.neon.services.BetterFileService;
-import com.ncc.neon.services.DatasetService;
-import com.ncc.neon.services.FileShareService;
-import com.ncc.neon.services.RunService;
+import java.util.Map;
+
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -14,11 +9,17 @@ import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+
+import com.ncc.neon.models.BetterFile;
+import com.ncc.neon.models.DataNotification;
+import com.ncc.neon.models.FileStatus;
+import com.ncc.neon.services.BetterFileService;
+import com.ncc.neon.services.DatasetService;
+import com.ncc.neon.services.FileShareService;
+
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.Map;
 
 /*
 Abstract class to represent a remote NLP module REST service.  These services typically expose endpoints to perform
@@ -27,7 +28,6 @@ NLP operations for preprocessing, training, and inference.
 public abstract class NlpModule {
     private String name;
     private WebClient client;
-    private HttpEndpoint[] endpoints;
     private DatasetService datasetService;
     private FileShareService fileShareService;
     private BetterFileService betterFileService;

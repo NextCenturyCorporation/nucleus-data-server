@@ -1,16 +1,17 @@
 package com.ncc.neon.better;
 
-import com.ncc.neon.services.BetterFileService;
-import com.ncc.neon.services.DatasetService;
-import com.ncc.neon.services.FileShareService;
-import com.ncc.neon.services.RunService;
+import java.util.HashMap;
+
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
-import reactor.core.publisher.Flux;
 
-import java.util.HashMap;
+import com.ncc.neon.services.BetterFileService;
+import com.ncc.neon.services.DatasetService;
+import com.ncc.neon.services.FileShareService;
+
+import reactor.core.publisher.Flux;
 
 public class EvalNlpModule extends NlpModule {
     private HttpEndpoint evalEndpoint;

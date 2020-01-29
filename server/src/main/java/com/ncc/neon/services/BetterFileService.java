@@ -70,7 +70,8 @@ public class BetterFileService {
 
     public Mono<Tuple2<String, RestStatus>> upsert(BetterFile fileToAdd) {
         // Serialize file to json map.
-        Map<String, Object> bfMapper = new ObjectMapper().convertValue(fileToAdd, Map.class);
+        @SuppressWarnings("unchecked")
+		Map<String, Object> bfMapper = new ObjectMapper().convertValue(fileToAdd, Map.class);
 
         // Build the elasticsearch request.
         IndexRequest indexRequest = new IndexRequest(fileIndex, fileDataType).source(bfMapper).id(fileToAdd.getFilename());
