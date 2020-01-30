@@ -90,7 +90,7 @@ public class IENlpModule extends NlpModule {
         }
         Map<String, String> listConfigMap = new HashMap<>();
         // Reuse output_file_prefix field for the list call.
-        listConfigMap.put("output_file_prefix", infConfigMap.get("output_file_prefix"));
+        listConfigMap.put("inf_file", infConfigMap.get("inf_file"));
 
         return performListOperation(listConfigMap, infListEndpoint)
                 .doOnError(onError -> handleErrorDuringRun(onError, runId))
