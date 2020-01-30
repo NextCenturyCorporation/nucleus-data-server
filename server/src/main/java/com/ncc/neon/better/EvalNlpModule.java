@@ -48,19 +48,19 @@ public class EvalNlpModule extends NlpModule {
                 .bodyToMono(EvaluationResponse.class);
     }
 
-    public Flux<RestStatus> performEval(String refFile, String sysFile, String runId) {
+    public Mono<RestStatus> performEval(String refFile, String sysFile, String runId) {
         HashMap<String, String> params = new HashMap<>();
         params.put("sysfile", sysFile);
 
         return this.performListOperation(params, evalListEndpoint)
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
-                .flatMapMany(pendingFiles -> this.initPendingFiles(pendingFiles)
+                .flatMap(pendingFiles -> this.initPendingFiles(pendingFiles)
                         .then(runService.updateOutputs(runId, "eval_outputs", pendingFiles))
-                        .flatMapMany(response -> {
+                        .flatMap(response -> {
                             params.put("reffile", refFile);
                             return this.performEvalOperation(params, evalEndpoint)
                                 .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))
-                                .flatMapMany(res -> {
+                                .flatMap(res -> {
                                     EvaluationOutput evaluationOutput = new EvaluationOutput(runId, res.getEvaluation());
                                     return evaluationService.insert(evaluationOutput)
                                             .flatMap(evaluation -> handleNlpOperationSuccess(res.getFiles()));

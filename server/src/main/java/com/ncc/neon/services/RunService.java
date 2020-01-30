@@ -23,14 +23,26 @@ public class RunService extends ElasticSearchService<Run> {
         super(dbHost, index, dataType, Run.class, datasetService);
     }
 
-    public Mono<Tuple2<String, RestStatus>> initRun(String configFile) {
-        Run run = new Run(configFile);
+    public Mono<Tuple2<String, RestStatus>> initRun(String trainConfigFile, String infConfigFile) {
+        Run run = new Run(trainConfigFile, infConfigFile);
         return insert(run);
+    }
+
+    public Mono<RestStatus> updateToTrainStatus(String runId) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("train_start_time", DateUtil.getCurrentDateTime());
+        data.put("status", RunStatus.TRAINING);
+        return updateAndRefresh(data, runId);
+    }
+
+    public Mono<RestStatus> completeTraining(String runId) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("train_end_time", DateUtil.getCurrentDateTime());
+        return updateAndRefresh(data, runId);
     }
 
     public Mono<RestStatus> updateToInferenceStatus(String runId) {
         Map<String, Object> data = new HashMap<>();
-        data.put("train_end_time", DateUtil.getCurrentDateTime());
         data.put("status", RunStatus.INFERENCING);
         data.put("inf_start_time", DateUtil.getCurrentDateTime());
         return updateAndRefresh(data, runId);

@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -114,7 +116,6 @@ public class BetterController {
         ResponseEntity<?> res;
         // TODO: don't allow relative paths.
         Path filePath = fileShareService.getSharePath().resolve(file);
-
         try {
             Resource resource = new UrlResource(filePath.toUri());
 
@@ -146,11 +147,7 @@ public class BetterController {
     Flux<RestStatus> train(@RequestParam("configFile") String configFile, @RequestParam("module") String module, @RequestParam("runId") String runId) {
         return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
             IENlpModule trainNlpModule = (IENlpModule) nlpModule;
-            try {
-                return trainNlpModule.performTraining(configFile, runId, false);
-            } catch (IOException e) {
-                return Flux.error(e);
-            }
+            return trainNlpModule.performTraining(configFile, runId);
         });
     }
 
@@ -163,32 +160,37 @@ public class BetterController {
     }
 
     @GetMapping(path="eval")
-    Flux<RestStatus> eval(@RequestParam("trainConfigFile") String trainConfigFile,
+    Mono<?> eval(@RequestParam("trainConfigFile") String trainConfigFile,
                           @RequestParam("infConfigFile") String infConfigFile, @RequestParam("module") String module,
                           @RequestParam("infOnly") boolean infOnly, @RequestParam("refFile") String refFile) {
         return nlpModuleService.getNlpModule(module)
-                .flatMapMany(nlpModule -> runService.initRun(trainConfigFile)
-                    .flatMapMany(initialRun -> {
-                        IENlpModule ieNlpModule = (IENlpModule) nlpModule;
-                        try {
-                            return ieNlpModule.performTraining(trainConfigFile, initialRun.getT1(), infOnly)
-                                    .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())))
-                                    .flatMap(trainRes -> runService.updateToInferenceStatus(initialRun.getT1())
-                                    .flatMapMany(updateRes -> ieNlpModule.performInference(infConfigFile, initialRun.getT1())
-                                                    .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
-                                                    .flatMap(res -> runService.updateToScoringStatus(initialRun.getT1()))
-                                                        .flatMap(updatedRun -> nlpModuleService.getNlpModule("ie_eval")
-                                                        .flatMapMany(evalModule -> {
-                                                            EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
-                                                            return runService.getInferenceOutput(initialRun.getT1())
-                                                                    .flatMapMany(sysFile -> evalNlpModule.performEval(refFile, sysFile, initialRun.getT1())
-                                                                            .doOnError(evalError -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage())))
-                                                                            .flatMap(response -> runService.updateToDoneStatus(initialRun.getT1())));
-                                                        }))
-                                    ));
-                        } catch (IOException e) {
-                            return Mono.error(e);
-                        }
-                    }));
+                .flatMap(nlpModule -> runService.initRun(trainConfigFile, infConfigFile)
+                .flatMap(initialRun -> {
+                    IENlpModule ieNlpModule = (IENlpModule) nlpModule;
+                    Mono<Tuple2<String, IENlpModule>> res = Mono.just(Tuples.of(initialRun.getT1(), ieNlpModule));
+
+                    if (!infOnly) {
+                        return runService.updateToTrainStatus(initialRun.getT1())
+                                .flatMap(test -> ieNlpModule.performTraining(trainConfigFile, initialRun.getT1()))
+                                .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())))
+                                .then(res);
+                    }
+
+                    return res;
+                }))
+                .flatMap(trainRes -> runService.updateToInferenceStatus(trainRes.getT1())
+                                .flatMap(updateRes -> trainRes.getT2().performInference(infConfigFile, trainRes.getT1())
+                                                .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
+                                                .flatMap(infRes -> runService.updateToScoringStatus(trainRes.getT1()))
+                                                    .flatMap(updatedRun -> nlpModuleService.getNlpModule("ie_eval")
+                                                            .flatMap(evalModule -> {
+                                                                EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
+                                                                return runService.getInferenceOutput(trainRes.getT1())
+                                                                        .flatMap(sysFile -> evalNlpModule.performEval(refFile, sysFile, trainRes.getT1())
+                                                                                .doOnError(evalError -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage())))
+                                                                                .flatMap(response -> runService.updateToDoneStatus(trainRes.getT1())));
+                                                            }))
+                                )
+                );
     }
 }
