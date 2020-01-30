@@ -112,7 +112,7 @@ public class BetterController {
     ResponseEntity<?> download(@RequestParam("file") String file) {
         ResponseEntity<?> res;
         // TODO: don't allow relative paths.
-        Path filePath = fileShareService.sharePath.resolve(file);
+        Path filePath = fileShareService.getSharePath().resolve(file);
 
         try {
             Resource resource = new UrlResource(filePath.toUri());

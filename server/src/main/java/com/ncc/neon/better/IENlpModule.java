@@ -1,21 +1,23 @@
 package com.ncc.neon.better;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.elasticsearch.rest.RestStatus;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
 import com.ncc.neon.services.RunService;
-import org.elasticsearch.rest.RestStatus;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 
 public class IENlpModule extends NlpModule {
     private HttpEndpoint trainEndpoint;
@@ -23,15 +25,16 @@ public class IENlpModule extends NlpModule {
     private HttpEndpoint infEndpoint;
     private HttpEndpoint infListEndpoint;
     private RunService runService;
-    private String shareDir;
+    private Path shareDir;
 
     public IENlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, RunService runService) {
         super(datasetService, fileShareService, betterFileService);
         this.runService = runService;
-        shareDir = System.getenv("SHARE_DIR");
+        shareDir = fileShareService.getSharePath();
     }
 
-    @Override
+    @SuppressWarnings("incomplete-switch")
+	@Override
     public void setEndpoints(HttpEndpoint[] endpoints) {
         for (HttpEndpoint endpoint : endpoints) {
             switch (endpoint.getType()) {
@@ -53,8 +56,9 @@ public class IENlpModule extends NlpModule {
 
     public Flux<RestStatus> performTraining(String trainConfigFile, String runId, boolean skip) throws IOException {
         // Parse JSON file to maps.
-        File trainConfig = new File(Paths.get(shareDir, trainConfigFile).toString());
-        Map<String, String> trainConfigMap = new ObjectMapper().readValue(trainConfig, Map.class);
+        File trainConfig = shareDir.resolve(trainConfigFile).toFile(); 
+        @SuppressWarnings("unchecked")
+		Map<String, String> trainConfigMap = new ObjectMapper().readValue(trainConfig, Map.class);
         Map<String, String> listConfigMap = new HashMap<>();
         // Reuse output_file_prefix field for the list call.
         listConfigMap.put("output_file_prefix", trainConfigMap.get("output_file_prefix"));
@@ -75,12 +79,13 @@ public class IENlpModule extends NlpModule {
                                         });
                             }
 
-                            return res;
-                        }));
+							return res;
+						}));
     }
 
-    public Flux<RestStatus> performInference(String infConfigFile, String runId) {
-        File infConfig = new File(Paths.get(shareDir, infConfigFile).toString());
+    @SuppressWarnings("unchecked")
+	public Flux<RestStatus> performInference(String infConfigFile, String runId) {
+        File infConfig = shareDir.resolve(infConfigFile).toFile();
         Map<String, String> infConfigMap;
         try {
             infConfigMap = new ObjectMapper().readValue(infConfig, Map.class);
