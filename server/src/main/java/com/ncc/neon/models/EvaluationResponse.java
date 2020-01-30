@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class EvaluationResponse {
-    private final EvaluationOutput evaluationOutput;
-    private final BetterFile[] outputFiles;
+    private final Score[] evaluation;
+    private final BetterFile[] files;
 }

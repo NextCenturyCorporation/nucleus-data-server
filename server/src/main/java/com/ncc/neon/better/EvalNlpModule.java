@@ -1,6 +1,8 @@
 package com.ncc.neon.better;
 
+import com.ncc.neon.models.EvaluationOutput;
 import com.ncc.neon.models.EvaluationResponse;
+import com.ncc.neon.models.Score;
 import com.ncc.neon.services.*;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.http.HttpStatus;
@@ -58,8 +60,11 @@ public class EvalNlpModule extends NlpModule {
                             params.put("reffile", refFile);
                             return this.performEvalOperation(params, evalEndpoint)
                                 .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))
-                                .flatMapMany(res -> evaluationService.insert(res.getEvaluationOutput())
-                                .flatMap(evaluation -> handleNlpOperationSuccess(res.getOutputFiles())));
+                                .flatMapMany(res -> {
+                                    EvaluationOutput evaluationOutput = new EvaluationOutput(runId, res.getEvaluation());
+                                    return evaluationService.insert(evaluationOutput)
+                                            .flatMap(evaluation -> handleNlpOperationSuccess(res.getFiles()));
+                                });
                         }));
     }
 }
