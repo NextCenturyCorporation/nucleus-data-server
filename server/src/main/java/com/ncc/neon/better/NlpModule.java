@@ -2,6 +2,12 @@ package com.ncc.neon.better;
 
 import java.util.Map;
 
+import com.ncc.neon.models.BetterFile;
+import com.ncc.neon.models.DataNotification;
+import com.ncc.neon.models.FileStatus;
+import com.ncc.neon.services.BetterFileService;
+import com.ncc.neon.services.DatasetService;
+import com.ncc.neon.services.FileShareService;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -21,6 +27,8 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Map;
+
 /*
 Abstract class to represent a remote NLP module REST service.  These services typically expose endpoints to perform
 NLP operations for preprocessing, training, and inference.
@@ -28,6 +36,7 @@ NLP operations for preprocessing, training, and inference.
 public abstract class NlpModule {
     private String name;
     private WebClient client;
+    private HttpEndpoint[] endpoints;
     private DatasetService datasetService;
     private FileShareService fileShareService;
     private BetterFileService betterFileService;
@@ -94,7 +103,7 @@ public abstract class NlpModule {
                 .subscribe();
     }
 
-    private WebClient.RequestHeadersSpec<?> buildRequest(Map<String, String> data, HttpEndpoint endpoint) {
+    protected WebClient.RequestHeadersSpec<?> buildRequest(Map<String, String> data, HttpEndpoint endpoint) {
         if (endpoint.getMethod() == HttpMethod.GET) {
             // Build Http Headers for query params.
             HttpHeaders params = new HttpHeaders();

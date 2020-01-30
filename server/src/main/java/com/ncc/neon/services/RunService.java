@@ -61,4 +61,10 @@ public class RunService extends ElasticSearchService<Run> {
         data.put(outputsKey, outputs);
         return updateAndRefresh(data, runId);
     }
+
+    public Mono<String> getInferenceOutput(String runId) {
+        return getById(runId)
+            .map(run -> run.getInf_outputs()[0]);
+
+    }
 }

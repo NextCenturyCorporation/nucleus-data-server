@@ -44,6 +44,8 @@ public class NlpModuleService {
     private RunService runService;
     @Autowired
     private QueryService queryService;
+    @Autowired
+    private EvaluationService evaluationService;
 
     @Autowired
     public NlpModuleService(@Value("${db_type}") String dbType,
@@ -74,8 +76,8 @@ public class NlpModuleService {
                 case IE:
                     res = new IENlpModule(datasetService, fileShareService, betterFileService, runService);
                     break;
-                case EVAL:
-                    res = new EvalNlpModule(datasetService, fileShareService, betterFileService);
+                case EVALUATION:
+                    res = new EvalNlpModule(datasetService, fileShareService, betterFileService, runService, evaluationService);
                     break;
             }
 

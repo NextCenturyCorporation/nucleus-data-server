@@ -1,5 +1,6 @@
 package com.ncc.neon.controllers;
 
+import com.ncc.neon.better.EvalNlpModule;
 import com.ncc.neon.better.IENlpModule;
 import com.ncc.neon.better.PreprocessorNlpModule;
 import com.ncc.neon.exception.UpsertException;
@@ -164,22 +165,30 @@ public class BetterController {
     @GetMapping(path="eval")
     Flux<RestStatus> eval(@RequestParam("trainConfigFile") String trainConfigFile,
                           @RequestParam("infConfigFile") String infConfigFile, @RequestParam("module") String module,
-                          @RequestParam("infOnly") boolean infOnly) {
+                          @RequestParam("infOnly") boolean infOnly, @RequestParam("refFile") String refFile) {
         return nlpModuleService.getNlpModule(module)
                 .flatMapMany(nlpModule -> runService.initRun(trainConfigFile)
-                .flatMapMany(initialRun -> {
-                    IENlpModule ieNlpModule = (IENlpModule) nlpModule;
-                    try {
-                        return ieNlpModule.performTraining(trainConfigFile, initialRun.getT1(), infOnly)
-                                .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())))
-                                .flatMap(trainRes -> runService.updateToInferenceStatus(initialRun.getT1())
-                                .flatMapMany(updateRes -> ieNlpModule.performInference(infConfigFile, initialRun.getT1())
-                                                .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
-                                                .flatMap(res -> runService.updateToScoringStatus(initialRun.getT1()))
-                                ));
-                    } catch (IOException e) {
-                        return Mono.error(e);
-                    }
-                }));
+                    .flatMapMany(initialRun -> {
+                        IENlpModule ieNlpModule = (IENlpModule) nlpModule;
+                        try {
+                            return ieNlpModule.performTraining(trainConfigFile, initialRun.getT1(), infOnly)
+                                    .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())))
+                                    .flatMap(trainRes -> runService.updateToInferenceStatus(initialRun.getT1())
+                                    .flatMapMany(updateRes -> ieNlpModule.performInference(infConfigFile, initialRun.getT1())
+                                                    .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
+                                                    .flatMap(res -> runService.updateToScoringStatus(initialRun.getT1()))
+                                                        .flatMap(updatedRun -> nlpModuleService.getNlpModule("ie-eval")
+                                                        .flatMapMany(evalModule -> {
+                                                            EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
+                                                            return runService.getInferenceOutput(initialRun.getT1())
+                                                                    .flatMapMany(sysFile -> evalNlpModule.performEval(refFile, sysFile, initialRun.getT1())
+                                                                            .doOnError(evalError -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage())))
+                                                                            .flatMap(response -> runService.updateToDoneStatus(initialRun.getT1())));
+                                                        }))
+                                    ));
+                        } catch (IOException e) {
+                            return Mono.error(e);
+                        }
+                    }));
     }
 }

@@ -1,5 +1,5 @@
 package com.ncc.neon.models;
 
 public enum NlpModuleType {
-    IE, PREPROCESSOR, EVAL
+    IE, PREPROCESSOR, EVALUATION
 }

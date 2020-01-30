@@ -103,10 +103,10 @@ public class IENlpModule extends NlpModule {
                         .then(runService.updateOutputs(runId, "inf_outputs", pendingFiles))
                         .then(performNlpOperation(infConfigMap, infEndpoint)
                         .flatMap(this::handleNlpOperationSuccess)
-                .doOnError(onError -> {
-                    handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
-                    handleErrorDuringRun(onError, runId);
-                })));
+                                .doOnError(onError -> {
+                                    handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
+                                    handleErrorDuringRun(onError, runId);
+                                })));
 
     }
 
