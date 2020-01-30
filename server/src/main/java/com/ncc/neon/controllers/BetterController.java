@@ -177,7 +177,7 @@ public class BetterController {
                                     .flatMapMany(updateRes -> ieNlpModule.performInference(infConfigFile, initialRun.getT1())
                                                     .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
                                                     .flatMap(res -> runService.updateToScoringStatus(initialRun.getT1()))
-                                                        .flatMap(updatedRun -> nlpModuleService.getNlpModule("ie-eval")
+                                                        .flatMap(updatedRun -> nlpModuleService.getNlpModule("ie_eval")
                                                         .flatMapMany(evalModule -> {
                                                             EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
                                                             return runService.getInferenceOutput(initialRun.getT1())
