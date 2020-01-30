@@ -157,11 +157,7 @@ public class BetterController {
     Flux<RestStatus> inference(@RequestParam("configFile") String configFile, @RequestParam("module") String module, @RequestParam("runId") String runId) {
         return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
             IENlpModule infNlpModule = (IENlpModule) nlpModule;
-            try {
-                return infNlpModule.performInference(configFile, runId);
-            } catch (IOException e) {
-                return Flux.error(e);
-            }
+            return infNlpModule.performInference(configFile, runId);
         });
     }
 
@@ -171,21 +167,16 @@ public class BetterController {
                           @RequestParam("infOnly") boolean infOnly) {
         return nlpModuleService.getNlpModule(module)
                 .flatMapMany(nlpModule -> runService.initRun(trainConfigFile)
-                .flatMap(initialRun -> {
+                .flatMapMany(initialRun -> {
                     IENlpModule ieNlpModule = (IENlpModule) nlpModule;
                     try {
                         return ieNlpModule.performTraining(trainConfigFile, initialRun.getT1(), infOnly)
                                 .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())))
                                 .flatMap(trainRes -> runService.updateToInferenceStatus(initialRun.getT1())
-                                .flatMapMany(updateRes -> {
-                                    try {
-                                        return ieNlpModule.performInference(infConfigFile, initialRun.getT1())
-                                                .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())));
-                                    } catch (IOException e) {
-                                        return Flux.error(e);
-                                    }
-                                }))
-                                .then(runService.updateToScoringStatus(initialRun.getT1()));
+                                .flatMapMany(updateRes -> ieNlpModule.performInference(infConfigFile, initialRun.getT1())
+                                                .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
+                                                .flatMap(res -> runService.updateToScoringStatus(initialRun.getT1()))
+                                ));
                     } catch (IOException e) {
                         return Mono.error(e);
                     }

@@ -3,6 +3,7 @@ package com.ncc.neon.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.BetterFile;
+import com.ncc.neon.models.DataNotification;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
@@ -30,14 +31,16 @@ public abstract class ElasticSearchService<T> {
     private final String index;
     private final String dataType;
     private final Class<T> type;
+    private final DatasetService datasetService;
 
-    ElasticSearchService(String host, String index, String dataType, Class<T> type) {
+    ElasticSearchService(String host, String index, String dataType, Class<T> type, DatasetService datasetService) {
         this.elasticSearchClient = new RestHighLevelClient(RestClient.builder(
                 new HttpHost(host, 9200, "http")
         ));
         this.index = index;
         this.dataType = dataType;
         this.type = type;
+        this.datasetService = datasetService;
     }
 
     public Mono<T> getById(String id) {
@@ -73,6 +76,12 @@ public abstract class ElasticSearchService<T> {
 
         IndexRequest indexRequest = new IndexRequest(index, dataType).source(itemMap).id(id);
         return completeIndexRequest(indexRequest);
+    }
+
+    public Mono<RestStatus> updateAndRefresh(Map<String, Object> data, String docId) {
+        return update(data, docId)
+                .then(refreshIndex().retry(3))
+                .doOnSuccess(status -> datasetService.notify(new DataNotification()));
     }
 
     public Mono<RestStatus> update(Map<String, Object> data, String docId) {
