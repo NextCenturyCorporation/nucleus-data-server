@@ -60,11 +60,12 @@ public class EvalNlpModule extends NlpModule {
                             params.put("reffile", refFile);
                             return this.performEvalOperation(params, evalEndpoint)
                                 .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))
-                                .flatMap(res -> {
-                                    EvaluationOutput evaluationOutput = new EvaluationOutput(runId, res.getEvaluation());
-                                    return evaluationService.insert(evaluationOutput)
-                                            .flatMap(evaluation -> handleNlpOperationSuccess(res.getFiles()));
-                                });
+                                .flatMap(res -> runService.updateToDoneStatus(runId, res.getOverallScore())
+                                        .flatMap(ignored -> {
+                                            EvaluationOutput evaluationOutput = new EvaluationOutput(runId, res.getEvaluation());
+                                            return evaluationService.insert(evaluationOutput)
+                                                    .flatMap(evaluation -> handleNlpOperationSuccess(res.getFiles()));
+                                        }));
                         }));
     }
 }

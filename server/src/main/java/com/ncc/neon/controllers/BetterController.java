@@ -187,8 +187,7 @@ public class BetterController {
                                                                 EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
                                                                 return runService.getInferenceOutput(trainRes.getT1())
                                                                         .flatMap(sysFile -> evalNlpModule.performEval(refFile, sysFile, trainRes.getT1())
-                                                                                .doOnError(evalError -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage())))
-                                                                                .flatMap(response -> runService.updateToDoneStatus(trainRes.getT1())));
+                                                                                .doOnError(evalError -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage()))));
                                                             }))
                                 )
                 );

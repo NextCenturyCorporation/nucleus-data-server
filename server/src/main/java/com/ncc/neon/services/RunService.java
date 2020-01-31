@@ -55,9 +55,10 @@ public class RunService extends ElasticSearchService<Run> {
         return updateAndRefresh(data, runId);
     }
 
-    public Mono<RestStatus> updateToDoneStatus(String completedRunId) {
+    public Mono<RestStatus> updateToDoneStatus(String completedRunId, double overallScore) {
         Map<String, Object> data = new HashMap<>();
         data.put("status", RunStatus.DONE);
+        data.put("overall_score", overallScore);
         return updateAndRefresh(data, completedRunId);
     }
 
