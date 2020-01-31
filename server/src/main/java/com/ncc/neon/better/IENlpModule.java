@@ -69,6 +69,7 @@ public class IENlpModule extends NlpModule {
                             .then(runService.updateOutputs(runId, "train_outputs", pendingFiles))
                             .flatMap(initRes -> performNlpOperation(trainConfigMap, trainEndpoint)
                                     .flatMap(this::handleNlpOperationSuccess)
+                                    .flatMap(ignored -> runService.completeTraining(runId))
                                     .doOnError(onError -> {
                                         handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
                                         handleErrorDuringRun(onError, runId);
