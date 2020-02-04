@@ -8,14 +8,6 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
-import com.ncc.neon.adapters.QueryAdapter;
-import com.ncc.neon.models.queries.Query;
-import com.ncc.neon.models.results.FieldType;
-import com.ncc.neon.models.results.FieldTypePair;
-import com.ncc.neon.models.results.ImportResult;
-import com.ncc.neon.models.results.TableWithFields;
-import com.ncc.neon.models.results.TabularQueryResult;
-
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -27,7 +19,6 @@ import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
-import org.elasticsearch.action.admin.indices.shards.IndicesShardStoresResponse.Failure;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -37,10 +28,18 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
+
+import com.ncc.neon.adapters.QueryAdapter;
+import com.ncc.neon.models.queries.Query;
+import com.ncc.neon.models.results.FieldType;
+import com.ncc.neon.models.results.FieldTypePair;
+import com.ncc.neon.models.results.ImportResult;
+import com.ncc.neon.models.results.TableWithFields;
+import com.ncc.neon.models.results.TabularQueryResult;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -138,21 +137,20 @@ public class ElasticsearchAdapter extends QueryAdapter {
 
     @Override
     public Flux<String> getFieldNames(String databaseName, String tableName) {
-        BiConsumer<FluxSink<String>, Map<String, Map>> mappingConsumer = (sink, mappingProperties) -> {
+        BiConsumer<FluxSink<String>, Map<String, Map<String, ?>>> mappingConsumer = (sink, mappingProperties) -> {
             getFieldsFromMapping(mappingProperties, null).forEach(pair -> sink.next(pair.getField()));
         };
         return getMappings(databaseName, tableName, mappingConsumer);
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public Flux<TableWithFields> getTableAndFieldNames(String databaseName) {
         GetMappingsRequest request = new GetMappingsRequest();
         request.indices(databaseName);
 
         return getMappingRequestToFlux(request, (sink, response) -> {
             response.getMappings().get(databaseName).keysIt().forEachRemaining(tableName -> {
-                Map<String, Map> mappingProperties = getPropertiesFromMapping(response, databaseName, tableName);
+                Map<String, Map<String, ?>> mappingProperties = getPropertiesFromMapping(response, databaseName, tableName);
                 List<String> fieldNames = getFieldNamesFromMapping(mappingProperties, null);
                 if (!fieldNames.contains("_id")) {
                     fieldNames.add("_id");
@@ -162,21 +160,22 @@ public class ElasticsearchAdapter extends QueryAdapter {
         });
     }
 
-    private Map<String, Map> getPropertiesFromMapping(GetMappingsResponse response, String databaseName, String tableName) {
+    @SuppressWarnings("unchecked")
+	private Map<String, Map<String, ?>> getPropertiesFromMapping(GetMappingsResponse response, String databaseName, String tableName) {
         Map<String, Object> mappingTable = response.mappings().get(databaseName).get(tableName).sourceAsMap();
 
         // ES6 indexes have databaseName->tableName->"properties" but ES7 indexes have databaseName->"properties"
         // This won't work on an ES6 index with a tableName="properties"
         if (tableName.equals("properties")) {
-            return (Map<String, Map>) mappingTable.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                    entry -> (Map) entry.getValue()));
+            return mappingTable.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+                    entry -> (Map<String, ?>) entry.getValue()));
         }
-        return (Map<String, Map>) mappingTable.get("properties");
+        return (Map<String, Map<String, ?>>) mappingTable.get("properties");
     }
 
     @Override
     public Flux<FieldTypePair> getFieldTypes(String databaseName, String tableName) {
-        BiConsumer<FluxSink<FieldTypePair>, Map<String, Map>> mappingConsumer = (sink, mappingProperties) -> {
+        BiConsumer<FluxSink<FieldTypePair>, Map<String, Map<String, ?>>> mappingConsumer = (sink, mappingProperties) -> {
             getFieldsFromMapping(mappingProperties, null).forEach(pair -> sink.next(pair));
         };
         return getMappings(databaseName, tableName, mappingConsumer);
@@ -185,21 +184,19 @@ public class ElasticsearchAdapter extends QueryAdapter {
     /*
      * Helper function for getfieldname and getfieldtypes as they are the same
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private <T> Flux<T> getMappings(String databaseName, String tableName,
-                                    BiConsumer<FluxSink<T>, Map<String, Map>> mappingConsumer) {
+                                    BiConsumer<FluxSink<T>, Map<String, Map<String, ?>>> mappingConsumer) {
         GetMappingsRequest request = new GetMappingsRequest();
         request.indices(databaseName);
 
         return getMappingRequestToFlux(request, (sink, response) -> {
-            Map<String, Map> mappingProperties = getPropertiesFromMapping(response, databaseName, tableName);
+            Map<String, Map<String, ?>> mappingProperties = getPropertiesFromMapping(response, databaseName, tableName);
             mappingConsumer.accept(sink, mappingProperties);
         });
     }
 
     /* Recursive function to get all the properties */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private List<FieldTypePair> getFieldsFromMapping(Map<String, Map> mappingProperties, String parentFieldName) {
+    private List<FieldTypePair> getFieldsFromMapping(Map<String, Map<String, ?>> mappingProperties, String parentFieldName) {
         List<FieldTypePair> fieldTypePairs = new ArrayList<>();
         mappingProperties.forEach((fieldName, value) -> {
             String type = null;
@@ -210,7 +207,8 @@ public class ElasticsearchAdapter extends QueryAdapter {
                 }
                 fieldTypePairs.add(new FieldTypePair(fieldName, retrieveFieldType(type)));
             } else if (value.get("properties") != null) {
-                Map<String, Map> nestedFields = (Map<String, Map>) value.get("properties");
+                @SuppressWarnings("unchecked")
+				Map<String, Map<String, ?>> nestedFields = (Map<String, Map<String, ?>>) value.get("properties");
                 fieldTypePairs.addAll(getFieldsFromMapping(nestedFields, fieldName));
             }
         });
@@ -249,8 +247,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
     }
 
     /* Recursive function to get all the field names */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private List<String> getFieldNamesFromMapping(Map<String, Map> mappingProperties, String parentFieldName) {
+    private List<String> getFieldNamesFromMapping(Map<String, Map<String, ?>> mappingProperties, String parentFieldName) {
         List<String> fields = new ArrayList<>();
         mappingProperties.forEach((fieldName, value) -> {
             /* If we want to include parents of nested fields in list:
@@ -268,7 +265,8 @@ public class ElasticsearchAdapter extends QueryAdapter {
                 }
                 fields.add(fieldName);
             } else if (value.get("properties") != null) {
-                Map<String, Map> nestedFields = (Map<String, Map>) value.get("properties");
+                @SuppressWarnings("unchecked")
+				Map<String, Map<String, ?>> nestedFields = (Map<String, Map<String, ?>>) value.get("properties");
                 fields.addAll(getFieldNamesFromMapping(nestedFields, fieldName));
             }
         });

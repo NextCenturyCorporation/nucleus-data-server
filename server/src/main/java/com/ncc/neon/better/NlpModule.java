@@ -1,5 +1,7 @@
 package com.ncc.neon.better;
 
+import java.util.Map;
+
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.DataNotification;
 import com.ncc.neon.models.FileStatus;
@@ -10,10 +12,17 @@ import org.elasticsearch.rest.RestStatus;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+
+import com.ncc.neon.models.BetterFile;
+import com.ncc.neon.models.DataNotification;
+import com.ncc.neon.models.FileStatus;
+import com.ncc.neon.services.BetterFileService;
+import com.ncc.neon.services.DatasetService;
+import com.ncc.neon.services.FileShareService;
+
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -94,7 +103,7 @@ public abstract class NlpModule {
                 .subscribe();
     }
 
-    private WebClient.RequestHeadersSpec<?> buildRequest(Map<String, String> data, HttpEndpoint endpoint) {
+    protected WebClient.RequestHeadersSpec<?> buildRequest(Map<String, String> data, HttpEndpoint endpoint) {
         if (endpoint.getMethod() == HttpMethod.GET) {
             // Build Http Headers for query params.
             HttpHeaders params = new HttpHeaders();

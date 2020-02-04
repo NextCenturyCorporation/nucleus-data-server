@@ -4,20 +4,16 @@ import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
 import org.elasticsearch.rest.RestStatus;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 
-@Component
 public class PreprocessorNlpModule extends NlpModule {
     private HttpEndpoint preprocessEndpoint;
     private HttpEndpoint listEndpoint;
 
-    @Autowired
-    PreprocessorNlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService) {
+    public PreprocessorNlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService) {
         super(datasetService, fileShareService, betterFileService);
     }
 
@@ -40,8 +36,8 @@ public class PreprocessorNlpModule extends NlpModule {
         params.put("file", filename);
         return this.performListOperation(params, listEndpoint)
                 .flatMapMany(pendingFiles -> this.initPendingFiles(pendingFiles)
-                .then(this.performNlpOperation(params, preprocessEndpoint))
+                .then(this.performNlpOperation(params, preprocessEndpoint)
                 .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)))
-                .flatMap(this::handleNlpOperationSuccess);
+                .flatMap(this::handleNlpOperationSuccess));
     }
 }

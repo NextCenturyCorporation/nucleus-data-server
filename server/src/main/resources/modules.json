@@ -1,5 +1,21 @@
 [
   {
+    "name": "eval",
+    "type": "EVAL",
+    "endpoints": [
+      {
+        "type": "EVAL",
+        "pathSegment": "",
+        "method": "GET"
+      },
+      {
+        "type": "EVAL_LIST",
+        "pathSegment": "list",
+        "method": "GET"
+      }
+    ]
+  },
+  {
     "name": "mbert",
     "type": "IE",
     "endpoints": [

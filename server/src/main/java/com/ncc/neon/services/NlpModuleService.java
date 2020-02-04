@@ -1,6 +1,15 @@
 package com.ncc.neon.services;
 
+import java.util.HashMap;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ncc.neon.better.EvalNlpModule;
 import com.ncc.neon.better.IENlpModule;
 import com.ncc.neon.better.NlpModule;
 import com.ncc.neon.better.PreprocessorNlpModule;
@@ -10,14 +19,8 @@ import com.ncc.neon.models.queries.FieldClause;
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.queries.SelectClause;
 import com.ncc.neon.models.queries.SingularWhereClause;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
+import reactor.core.publisher.Mono;
 
 /*
 This class is responsible for deserializing NLP modules from the database to NLP Module POJOs.
@@ -25,7 +28,6 @@ This class is responsible for deserializing NLP modules from the database to NLP
 @Component
 public class NlpModuleService {
     private HashMap<String, NlpModule> nlpModuleCache;
-    private NlpModuleModel[] nlpModules;
     private ConnectionInfo nlpModuleConnectionInfo;
     private final String moduleIndex = "module";
     private final String moduleDataType = "module";
@@ -33,11 +35,17 @@ public class NlpModuleService {
     @Autowired
     private Environment env;
     @Autowired
-    private PreprocessorNlpModule preprocessorNlpModule;
+    private DatasetService datasetService;
     @Autowired
-    private IENlpModule ieNlpModule;
+    private BetterFileService betterFileService;
+    @Autowired
+    private FileShareService fileShareService;
+    @Autowired
+    private RunService runService;
     @Autowired
     private QueryService queryService;
+    @Autowired
+    private EvaluationService evaluationService;
 
     @Autowired
     public NlpModuleService(@Value("${db_type}") String dbType,
@@ -63,10 +71,13 @@ public class NlpModuleService {
             // Build the concrete module based on the type.
             switch(module.getType()) {
                 case PREPROCESSOR:
-                    res = preprocessorNlpModule;
+                    res = new PreprocessorNlpModule(datasetService, fileShareService, betterFileService);
                     break;
                 case IE:
-                    res = ieNlpModule;
+                    res = new IENlpModule(datasetService, fileShareService, betterFileService, runService);
+                    break;
+                case EVALUATION:
+                    res = new EvalNlpModule(datasetService, fileShareService, betterFileService, runService, evaluationService);
                     break;
             }
 

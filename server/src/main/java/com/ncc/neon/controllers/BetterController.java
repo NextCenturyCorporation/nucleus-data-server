@@ -1,18 +1,15 @@
 package com.ncc.neon.controllers;
 
+import com.ncc.neon.better.EvalNlpModule;
 import com.ncc.neon.better.IENlpModule;
-import com.ncc.neon.services.NlpModuleService;
 import com.ncc.neon.better.PreprocessorNlpModule;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.DataNotification;
 import com.ncc.neon.models.FileStatus;
-import com.ncc.neon.services.BetterFileService;
-import com.ncc.neon.services.DatasetService;
-import com.ncc.neon.services.FileShareService;
+import com.ncc.neon.services.*;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.rest.RestStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -23,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -38,15 +37,18 @@ public class BetterController {
     private FileShareService fileShareService;
     private BetterFileService betterFileService;
     private NlpModuleService nlpModuleService;
+    private RunService runService;
 
     BetterController(DatasetService datasetService,
                      FileShareService fileShareService,
                      BetterFileService betterFileService,
-                     NlpModuleService nlpModuleService) {
+                     NlpModuleService nlpModuleService,
+                     RunService runService) {
         this.datasetService = datasetService;
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
         this.nlpModuleService = nlpModuleService;
+        this.runService = runService;
     }
 
     @PostMapping(path = "upload")
@@ -113,8 +115,7 @@ public class BetterController {
     ResponseEntity<?> download(@RequestParam("file") String file) {
         ResponseEntity<?> res;
         // TODO: don't allow relative paths.
-        Path filePath = fileShareService.sharePath.resolve(file);
-
+        Path filePath = fileShareService.getSharePath().resolve(file);
         try {
             Resource resource = new UrlResource(filePath.toUri());
 
@@ -143,14 +144,52 @@ public class BetterController {
     }
 
     @GetMapping(path="train")
-    Flux<RestStatus> train(@RequestParam("configFile") String configFile, @RequestParam("module") String module) {
+    Flux<RestStatus> train(@RequestParam("configFile") String configFile, @RequestParam("module") String module, @RequestParam("runId") String runId) {
         return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
-            IENlpModule preprocessorNlpModule = (IENlpModule) nlpModule;
-            try {
-                return preprocessorNlpModule.performTraining(configFile);
-            } catch (IOException e) {
-                return Flux.error(e);
-            }
+            IENlpModule trainNlpModule = (IENlpModule) nlpModule;
+            return trainNlpModule.performTraining(configFile, runId);
         });
+    }
+
+    @GetMapping(path="inference")
+    Flux<RestStatus> inference(@RequestParam("configFile") String configFile, @RequestParam("module") String module, @RequestParam("runId") String runId) {
+        return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
+            IENlpModule infNlpModule = (IENlpModule) nlpModule;
+            return infNlpModule.performInference(configFile, runId);
+        });
+    }
+
+    @GetMapping(path="eval")
+    Mono<?> eval(@RequestParam("trainConfigFile") String trainConfigFile,
+                          @RequestParam("infConfigFile") String infConfigFile, @RequestParam("module") String module,
+                          @RequestParam("infOnly") boolean infOnly, @RequestParam("refFile") String refFile) {
+        return nlpModuleService.getNlpModule(module)
+                .flatMap(nlpModule -> runService.initRun(trainConfigFile, infConfigFile)
+                .flatMap(initialRun -> {
+                    IENlpModule ieNlpModule = (IENlpModule) nlpModule;
+                    Mono<Tuple2<String, IENlpModule>> res = Mono.just(Tuples.of(initialRun.getT1(), ieNlpModule));
+
+                    if (!infOnly) {
+                        return runService.updateToTrainStatus(initialRun.getT1())
+                                .flatMap(test -> ieNlpModule.performTraining(trainConfigFile, initialRun.getT1()))
+                                .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())))
+                                .then(res);
+                    }
+
+                    return res;
+                }))
+                .flatMap(trainRes -> runService.updateToInferenceStatus(trainRes.getT1())
+                                .flatMap(updateRes -> trainRes.getT2().performInference(infConfigFile, trainRes.getT1())
+                                                .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
+                                                .flatMap(infRes -> runService.updateToScoringStatus(trainRes.getT1()))
+                                                    .flatMap(updatedRun -> nlpModuleService.getNlpModule("ie_eval")
+                                                            .flatMap(evalModule -> {
+                                                                EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
+                                                                return runService.getInferenceOutput(trainRes.getT1())
+                                                                        .flatMap(sysFile -> evalNlpModule.performEval(refFile, sysFile, trainRes.getT1())
+                                                                                .doOnError(evalError -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage()))));
+                                                            }))
+                                )
+                );
     }
 }

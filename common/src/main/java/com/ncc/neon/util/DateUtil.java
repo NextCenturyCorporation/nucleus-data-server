@@ -1,5 +1,6 @@
 package com.ncc.neon.util;
 
+
 import java.time.DateTimeException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -23,5 +24,10 @@ public class DateUtil {
         catch(DateTimeException e1) {
             return null;
         }
+    }
+
+    public static String getCurrentDateTime() {
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss.SSSZ");
+        return ZonedDateTime.now().format(fmt);
     }
 }
