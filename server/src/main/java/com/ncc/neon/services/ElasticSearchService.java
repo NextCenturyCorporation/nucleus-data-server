@@ -127,12 +127,12 @@ public abstract class ElasticSearchService<T> {
                 IndexResponse indexResponse = elasticSearchClient.index(request, RequestOptions.DEFAULT);
 
                 if (indexResponse.status() != RestStatus.CREATED && indexResponse.status() != RestStatus.OK) {
-                    sink.error(new UpsertException(request.id()));
+                    sink.error(new UpsertException(request.id(), indexResponse.status().toString()));
                 } else {
                     sink.success(Tuples.of(indexResponse.getId(), indexResponse.status()));
                 }
             } catch (Exception e) {
-                sink.error(e);
+                sink.error(new UpsertException(request.id(), e.getMessage()));
             }
         });
     }

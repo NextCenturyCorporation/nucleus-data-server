@@ -82,7 +82,7 @@ public class BetterFileService {
                 IndexResponse indexResponse = elasticSearchClient.index(indexRequest, RequestOptions.DEFAULT);
 
                 if (indexResponse.status() != RestStatus.CREATED && indexResponse.status() != RestStatus.OK) {
-                    sink.error(new UpsertException(fileToAdd.getFilename()));
+                    sink.error(new UpsertException(fileToAdd.getFilename(), indexResponse.status().toString()));
                 } else {
                     sink.success(Tuples.of(fileToAdd.getFilename(), indexResponse.status()));
                 }

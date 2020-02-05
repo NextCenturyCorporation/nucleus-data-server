@@ -23,7 +23,6 @@ import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 
@@ -52,7 +51,7 @@ public class BetterController {
     }
 
     @PostMapping(path = "upload")
-    Mono<RestStatus> upload(@RequestPart("file") Mono<FilePart> filePartMono) {
+    Mono<ResponseEntity<?>> upload(@RequestPart("file") Mono<FilePart> filePartMono) {
         // TODO: Return error message if file is not provided.
 
         return filePartMono
@@ -60,6 +59,7 @@ public class BetterController {
                     // Create pending file in ES.
                     BetterFile pendingFile = new BetterFile(filePart.filename(), 0);
                     return betterFileService.upsert(pendingFile)
+                            .onErrorResume(Mono::error)
                             .then(betterFileService.refreshFilesIndex().retry(3))
                             .doOnSuccess(status -> datasetService.notify(new DataNotification()))
                             // Write file part to share.
@@ -92,7 +92,8 @@ public class BetterController {
                             // Delete file if update fails.
                             .doOnError(onError -> fileShareService.delete(file.getName()))
                             .then(betterFileService.refreshFilesIndex().retry(3))
-                            .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+                            .doOnSuccess(status -> datasetService.notify(new DataNotification()))
+                            .then(Mono.just(ResponseEntity.ok().build()));
                 });
     }
 
