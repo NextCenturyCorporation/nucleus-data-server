@@ -6,7 +6,6 @@ import com.ncc.neon.better.PreprocessorNlpModule;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.DataNotification;
-import com.ncc.neon.models.DatabaseOperationErrorResponse;
 import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.*;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +23,6 @@ import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 
@@ -61,7 +59,7 @@ public class BetterController {
                     // Create pending file in ES.
                     BetterFile pendingFile = new BetterFile(filePart.filename(), 0);
                     return betterFileService.upsert(pendingFile)
-                            .onErrorResume(onError -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, new DatabaseOperationErrorResponse(filePart.filename(), onError.getMessage()).toString())))
+                            .onErrorResume(Mono::error)
                             .then(betterFileService.refreshFilesIndex().retry(3))
                             .doOnSuccess(status -> datasetService.notify(new DataNotification()))
                             // Write file part to share.
