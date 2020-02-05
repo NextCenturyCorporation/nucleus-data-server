@@ -6,6 +6,7 @@ import com.ncc.neon.better.PreprocessorNlpModule;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.DataNotification;
+import com.ncc.neon.models.DatabaseOperationErrorResponse;
 import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.*;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +53,7 @@ public class BetterController {
     }
 
     @PostMapping(path = "upload")
-    Mono<RestStatus> upload(@RequestPart("file") Mono<FilePart> filePartMono) {
+    Mono<ResponseEntity<?>> upload(@RequestPart("file") Mono<FilePart> filePartMono) {
         // TODO: Return error message if file is not provided.
 
         return filePartMono
@@ -60,6 +61,7 @@ public class BetterController {
                     // Create pending file in ES.
                     BetterFile pendingFile = new BetterFile(filePart.filename(), 0);
                     return betterFileService.upsert(pendingFile)
+                            .onErrorResume(onError -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, new DatabaseOperationErrorResponse(filePart.filename(), onError.getMessage()).toString())))
                             .then(betterFileService.refreshFilesIndex().retry(3))
                             .doOnSuccess(status -> datasetService.notify(new DataNotification()))
                             // Write file part to share.
@@ -92,7 +94,8 @@ public class BetterController {
                             // Delete file if update fails.
                             .doOnError(onError -> fileShareService.delete(file.getName()))
                             .then(betterFileService.refreshFilesIndex().retry(3))
-                            .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+                            .doOnSuccess(status -> datasetService.notify(new DataNotification()))
+                            .then(Mono.just(ResponseEntity.ok().build()));
                 });
     }
 
