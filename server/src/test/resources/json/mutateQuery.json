@@ -1,0 +1,24 @@
+{
+  "datastoreHost": "testHost",
+  "datastoreType": "testType",
+  "databaseName": "testDatabase",
+  "tableName": "testTable",
+  "dataId": "testId",
+  "fieldsWithValues": {
+    "testString": "string",
+    "testZero": 0,
+    "testInteger": 1234,
+    "testDecimal": 56.78,
+    "testNegativeInteger": -4321,
+    "testNegativeDecimal": -87.65,
+    "testTrue": true,
+    "testFalse": false,
+    "testEmptyArray": [],
+    "testArray": ["a", "b", "c", "d"],
+    "testEmptyObject": {},
+    "testObject": {
+      "testPropertyOne": "x",
+      "testPropertyTwo": "y"
+    }
+  }
+}
