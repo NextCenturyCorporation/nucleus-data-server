@@ -329,10 +329,9 @@ public class ElasticsearchAdapter extends QueryAdapter {
     }
 
     @Override
-    public Mono<ActionResult> mutateData(MutateQuery mutate) {
+    public Mono<ActionResult> mutateData(MutateQuery mutateQuery) {
         // TODO Use an UpdateByQueryRequest here if we need to update multiple documents simultaneously in the future.
-        UpdateRequest updateRequest = new UpdateRequest(mutate.getDatabaseName(), mutate.getTableName(),
-            mutate.getDataId()).doc(mutate.getFieldsWithValues());
+        UpdateRequest updateRequest = ElasticsearchQueryConverter.convertMutationByIdQuery(mutateQuery);
         return Mono.create(sink -> {
             client.updateAsync(updateRequest, RequestOptions.DEFAULT, new ActionListener<UpdateResponse>() {
                 @Override

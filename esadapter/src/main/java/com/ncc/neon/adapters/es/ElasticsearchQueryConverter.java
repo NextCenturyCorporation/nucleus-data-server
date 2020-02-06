@@ -13,6 +13,7 @@ import com.ncc.neon.models.queries.CompoundWhereClause;
 import com.ncc.neon.models.queries.GroupByClause;
 import com.ncc.neon.models.queries.GroupByFieldClause;
 import com.ncc.neon.models.queries.GroupByOperationClause;
+import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.OrWhereClause;
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.queries.SelectClause;
@@ -26,6 +27,7 @@ import com.ncc.neon.util.DateUtil;
 
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.common.unit.TimeValue;
@@ -454,5 +456,10 @@ public class ElasticsearchQueryConverter {
         }
 
         return null;
+    }
+
+    public static UpdateRequest convertMutationByIdQuery(MutateQuery mutateQuery) {
+        return new UpdateRequest(mutateQuery.getDatabaseName(), mutateQuery.getTableName(), mutateQuery.getDataId())
+            .doc(mutateQuery.getFieldsWithValues());
     }
 }

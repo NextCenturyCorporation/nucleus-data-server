@@ -2,18 +2,23 @@ package com.ncc.neon.adapters.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import com.ncc.neon.adapters.QueryBuilder;
 import com.ncc.neon.models.queries.AndWhereClause;
 import com.ncc.neon.models.queries.FieldClause;
 import com.ncc.neon.models.queries.LimitClause;
+import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.queries.SelectClause;
 import com.ncc.neon.models.queries.SingularWhereClause;
 
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -1036,5 +1041,23 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
         SearchRequest expected = createRequest("testDatabaseA", "testTableX", source);
         assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertMutationByIdQueryTest() {
+        Map<String, Object> fieldsWithValues = new LinkedHashMap<String, Object>(){{
+            put("testStringField", "testStringValue");
+            put("testNumberField", 1);
+            put("testBoolField", true);
+            put("testListField", new ArrayList<String>(){{ add("testItem"); }});
+            put("testObjectField", new LinkedHashMap<String, Object>(){{
+                put("testNestedField", "testNestedValue");
+            }});
+        }};
+        UpdateRequest actual = ElasticsearchQueryConverter.convertMutationByIdQuery(new MutateQuery(
+            "testHost", "testType", "testDatabase", "testTable", "testId", fieldsWithValues));
+        UpdateRequest expected = new UpdateRequest("testDatabase", "testTable", "testId").doc(fieldsWithValues);
+        // This test fails without the toString (I don't know why)
+        assertThat(actual.toString()).isEqualTo(expected.toString());
     }
 }
