@@ -7,7 +7,7 @@ import java.util.List;
 import com.ncc.neon.NeonServerApplication;
 import com.ncc.neon.models.ConnectionInfo;
 import com.ncc.neon.models.queries.ImportQuery;
-import com.ncc.neon.models.results.ImportResult;
+import com.ncc.neon.models.results.ActionResult;
 import com.ncc.neon.services.QueryService;
 
 import org.junit.Test;
@@ -50,16 +50,16 @@ public class ImportControllerTests {
     @Test
     public void importFromCSV_shouldReturnDataForValidInput()
     {
-        List<String> source = List.of("record1", "record2");       
+        List<String> source = List.of("record1", "record2");
         ImportQuery importQuery = new ImportQuery("testHost", "testDataStoreType", "testDatabase", "testTable", source, false);
 
-        ImportResult importResult = new ImportResult("One record failed to import");
+        ActionResult importResult = new ActionResult("One record failed to import");
 
         ConnectionInfo ci = new ConnectionInfo(importQuery.getDataStoreType(), importQuery.getHostName());
 
         when(queryService.getDatabaseNames(ci)).thenReturn(Flux.just("testDatabase"));
         when(queryService.getTableNames(ci, "testDatabase")).thenReturn(Flux.just("testTable"));
-        when(queryService.addData(ci, importQuery.getDatabase(), importQuery.getTable(), importQuery.getSource())).thenReturn(Mono.just(importResult));
+        when(queryService.importData(ci, importQuery)).thenReturn(Mono.just(importResult));
 
         webTestClient.post()
                 .uri("/importservice/")
@@ -68,7 +68,7 @@ public class ImportControllerTests {
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
-                .expectBody(ImportResult.class)
+                .expectBody(ActionResult.class)
                 .value(result -> {
                     assertEquals(importResult.getError(), result.getError());
                 });

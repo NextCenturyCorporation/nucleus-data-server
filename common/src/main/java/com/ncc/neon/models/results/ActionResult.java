@@ -7,16 +7,17 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 @Data
-public class ImportResult {
+public class ActionResult {
     String error;
+    String success;
     List<String> recordErrors;
 
-    public ImportResult(List<String> recordErrors) {
+    public ActionResult(String success, List<String> recordErrors) {
+        this.success = success;
         this.recordErrors = recordErrors;
     }
 
-    public ImportResult(String error)
-    {
+    public ActionResult(String error) {
         this.error = error;
     }
 }

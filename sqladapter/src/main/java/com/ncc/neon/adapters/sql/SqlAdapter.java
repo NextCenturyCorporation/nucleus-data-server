@@ -1,10 +1,12 @@
 package com.ncc.neon.adapters.sql;
 
 import com.ncc.neon.adapters.QueryAdapter;
+import com.ncc.neon.models.queries.ImportQuery;
+import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.Query;
+import com.ncc.neon.models.results.ActionResult;
 import com.ncc.neon.models.results.FieldType;
 import com.ncc.neon.models.results.FieldTypePair;
-import com.ncc.neon.models.results.ImportResult;
 import com.ncc.neon.models.results.TableWithFields;
 import com.ncc.neon.models.results.TabularQueryResult;
 
@@ -21,6 +23,7 @@ import io.r2dbc.spi.ConnectionFactory;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -155,8 +158,14 @@ public class SqlAdapter extends QueryAdapter {
     }
 
     @Override
-    public Mono<ImportResult> addData(String databaseName, String tableName, List<String> sourceData) {
+    public Mono<ActionResult> importData(ImportQuery importQuery) {
         // TODO THOR-1500 THOR-1501
+        return Mono.just(new ActionResult("Import not yet supported for SQL"));
+    }
+
+    @Override
+    public Mono<ActionResult> mutateData(MutateQuery mutateQuery) {
+        // TODO
         return Mono.just(null);
     }
 
