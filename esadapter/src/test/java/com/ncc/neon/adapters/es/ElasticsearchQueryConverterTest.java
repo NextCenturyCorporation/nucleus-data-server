@@ -2,10 +2,7 @@ package com.ncc.neon.adapters.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 import com.ncc.neon.adapters.QueryBuilder;
 import com.ncc.neon.models.queries.AndWhereClause;
@@ -1045,18 +1042,20 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
 
     @Test
     public void convertMutationByIdQueryTest() {
-        Map<String, Object> fieldsWithValues = new LinkedHashMap<String, Object>(){{
-            put("testStringField", "testStringValue");
-            put("testNumberField", 1);
-            put("testBoolField", true);
-            put("testListField", new ArrayList<String>(){{ add("testItem"); }});
-            put("testObjectField", new LinkedHashMap<String, Object>(){{
-                put("testNestedField", "testNestedValue");
-            }});
-        }};
-        UpdateRequest actual = ElasticsearchQueryConverter.convertMutationByIdQuery(new MutateQuery(
-            "testHost", "testType", "testDatabase", "testTable", "testId", fieldsWithValues));
-        UpdateRequest expected = new UpdateRequest("testDatabase", "testTable", "testId").doc(fieldsWithValues);
+        MutateQuery mutateQuery = buildMutationByIdQuery();
+        UpdateRequest actual = ElasticsearchQueryConverter.convertMutationByIdQuery(mutateQuery);
+        UpdateRequest expected = new UpdateRequest("testDatabase", "testTable", "testId")
+            .doc(mutateQuery.getFieldsWithValues());
+        // This test fails without the toString (I don't know why)
+        assertThat(actual.toString()).isEqualTo(expected.toString());
+    }
+
+    @Test
+    public void convertArrayAndObjectMutationByIdQueryTest() {
+        MutateQuery mutateQuery = buildArrayAndObjectMutationByIdQuery();
+        UpdateRequest actual = ElasticsearchQueryConverter.convertMutationByIdQuery(mutateQuery);
+        UpdateRequest expected = new UpdateRequest("testDatabase", "testTable", "testId")
+            .doc(mutateQuery.getFieldsWithValues());
         // This test fails without the toString (I don't know why)
         assertThat(actual.toString()).isEqualTo(expected.toString());
     }

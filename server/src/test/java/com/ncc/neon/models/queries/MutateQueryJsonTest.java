@@ -34,27 +34,35 @@ public class MutateQueryJsonTest {
     }
 
     private MutateQuery getQuery() {
-        return new MutateQuery("testHost", "testType", "testDatabase", "testTable", "testId",
-            new LinkedHashMap<String, Object>(){{
-                put("testString", "string");
+        return new MutateQuery("testHost", "testType", "testDatabase", "testTable", "testIdField", "testId",
+            new LinkedHashMap<String, Object>() {{
+                put("testString", "a");
                 put("testZero", 0);
-                put("testInteger", 1234);
-                put("testDecimal", 56.78);
-                put("testNegativeInteger", -4321);
-                put("testNegativeDecimal", -87.65);
+                put("testInteger", 1);
+                put("testDecimal", 0.5);
+                put("testNegativeInteger", -1);
+                put("testNegativeDecimal", -0.5);
                 put("testTrue", true);
                 put("testFalse", false);
                 put("testEmptyArray", new ArrayList<Object>());
-                put("testArray", new ArrayList<Object>(){{
-                    add("a");
+                put("testArray", new ArrayList<Object>() {{
                     add("b");
-                    add("c");
-                    add("d");
+                    add(2);
+                    add(true);
+                    add(new LinkedHashMap<String, Object>() {{
+                        put("testArrayObjectString", "c");
+                        put("testArrayObjectInteger", 3);
+                    }});
                 }});
                 put("testEmptyObject", new LinkedHashMap<String, Object>());
-                put("testObject", new LinkedHashMap<String, Object>(){{
-                    put("testPropertyOne", "x");
-                    put("testPropertyTwo", "y");
+                put("testObject", new LinkedHashMap<String, Object>() {{
+                    put("testObjectString", "d");
+                    put("testObjectInteger", 4);
+                    put("testObjectBoolean", true);
+                    put("testObjectArray", new ArrayList<Object>() {{
+                        add("e");
+                        add(5);
+                    }});
                 }});
             }}
         );

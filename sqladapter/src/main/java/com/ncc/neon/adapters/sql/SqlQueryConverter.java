@@ -2,6 +2,7 @@ package com.ncc.neon.adapters.sql;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -13,6 +14,7 @@ import com.ncc.neon.models.queries.FieldsWhereClause;
 import com.ncc.neon.models.queries.GroupByFieldClause;
 import com.ncc.neon.models.queries.GroupByOperationClause;
 import com.ncc.neon.models.queries.JoinClause;
+import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.OrWhereClause;
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.queries.SingularWhereClause;
@@ -255,5 +257,35 @@ public class SqlQueryConverter {
             return transformFieldsWhere((FieldsWhereClause) where, type);
         }
         return null;
+    }
+
+    public static String convertMutationQuery(MutateQuery mutateQuery) {
+        List<String> fieldAndValueStrings = mutateQuery.getFieldsWithValues().entrySet().stream()
+            .map(entry -> entry.getKey() + " = " + SqlQueryConverter.transformObjectToString(entry.getValue(), false))
+            .collect(Collectors.toList());
+
+        String sqlQueryString = "UPDATE " + mutateQuery.getDatabaseName() + "." + mutateQuery.getTableName() +
+            " SET " + String.join(", ", fieldAndValueStrings) + " WHERE " + mutateQuery.getIdFieldName() + " = '" +
+            mutateQuery.getDataId() + "'";
+
+        return sqlQueryString;
+    }
+
+    private static String transformObjectToString(Object object, boolean insideJson) {
+        if (object instanceof String) {
+            return (insideJson ? "\"" : "'") + object + (insideJson ? "\"" : "'");
+        }
+        if (object instanceof List) {
+            List<String> objects = ((List<Object>)object).stream().map(item ->
+                SqlQueryConverter.transformObjectToString(item, true)).collect(Collectors.toList());
+            return (insideJson ? "" : "'") + "[" + String.join(",", objects) + "]" + (insideJson ? "" : "'");
+        }
+        if (object instanceof Map) {
+            List<String> objects = ((Map<String, Object>)object).entrySet().stream().map(entry -> "\"" +
+                entry.getKey() + "\":" + SqlQueryConverter.transformObjectToString(entry.getValue(), true)).collect(
+                    Collectors.toList());
+            return (insideJson ? "" : "'") + "{" + String.join(",", objects) + "}" + (insideJson ? "" : "'");
+        }
+        return object.toString();
     }
 }

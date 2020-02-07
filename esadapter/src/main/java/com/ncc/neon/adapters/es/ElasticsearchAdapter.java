@@ -358,7 +358,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
                     }
                     String responseText = "Index " + updateResponse.getIndex() + " ID " + updateResponse.getId() +
                         " " + updateText + ".";
-                    List<String> documentErrors = updateFailed ? new ArrayList<String>(){{
+                    List<String> documentErrors = updateFailed ? new ArrayList<String>() {{
                         add(responseText);
                     }} : new ArrayList<String>();
                     sink.success(new ActionResult(responseText, documentErrors));

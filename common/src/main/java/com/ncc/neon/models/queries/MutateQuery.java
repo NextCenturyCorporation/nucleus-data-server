@@ -12,6 +12,7 @@ public class MutateQuery {
     String datastoreType;
     String databaseName;
     String tableName;
+    String idFieldName;
     String dataId;
     Map<String, Object> fieldsWithValues;
 }

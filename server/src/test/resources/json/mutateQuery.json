@@ -3,22 +3,25 @@
   "datastoreType": "testType",
   "databaseName": "testDatabase",
   "tableName": "testTable",
+  "idFieldName": "testIdField",
   "dataId": "testId",
   "fieldsWithValues": {
-    "testString": "string",
+    "testString": "a",
     "testZero": 0,
-    "testInteger": 1234,
-    "testDecimal": 56.78,
-    "testNegativeInteger": -4321,
-    "testNegativeDecimal": -87.65,
+    "testInteger": 1,
+    "testDecimal": 0.5,
+    "testNegativeInteger": -1,
+    "testNegativeDecimal": -0.5,
     "testTrue": true,
     "testFalse": false,
     "testEmptyArray": [],
-    "testArray": ["a", "b", "c", "d"],
+    "testArray": ["b", 2, true, { "testArrayObjectString": "c", "testArrayObjectInteger": 3 }],
     "testEmptyObject": {},
     "testObject": {
-      "testPropertyOne": "x",
-      "testPropertyTwo": "y"
+      "testObjectString": "d",
+      "testObjectInteger": 4,
+      "testObjectBoolean": true,
+      "testObjectArray": ["e", 5]
     }
   }
 }

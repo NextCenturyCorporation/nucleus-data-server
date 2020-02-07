@@ -21,9 +21,8 @@ import io.r2dbc.spi.ConnectionFactories;
 import io.r2dbc.spi.ConnectionFactory;
 
 import java.time.Duration;
-import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -165,8 +164,11 @@ public class SqlAdapter extends QueryAdapter {
 
     @Override
     public Mono<ActionResult> mutateData(MutateQuery mutateQuery) {
-        // TODO
-        return Mono.just(null);
+        DatabaseClient database = DatabaseClient.create(this.pool);
+        return database.execute(SqlQueryConverter.convertMutationQuery(mutateQuery)).fetch().rowsUpdated()
+            .map(rowCount -> new ActionResult(rowCount + " rows updated in " + mutateQuery.getDatabaseName() + "." +
+                mutateQuery.getTableName() + " with " + mutateQuery.getIdFieldName() + " = " +
+                mutateQuery.getDataId(), new ArrayList<String>()));
     }
 
     private FieldType retrieveFieldType(String type) {

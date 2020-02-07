@@ -39,7 +39,7 @@ public class MutateControllerTests {
 
     @Test
     public void testMutateWithInvalidInput() {
-        MutateQuery mutateQuery = new MutateQuery("", "", "", "", "", new LinkedHashMap<String, Object>());
+        MutateQuery mutateQuery = new MutateQuery("", "", "", "", "", "", new LinkedHashMap<String, Object>());
         webTestClient.post()
                 .uri("/mutateservice/byid")
 				.contentType(MediaType.APPLICATION_JSON_UTF8)
@@ -50,15 +50,9 @@ public class MutateControllerTests {
 
     @Test
     public void testMutateWithValidInput() {
-        MutateQuery mutateQuery = new MutateQuery("testHost", "testType", "testDatabase", "testTable", "testId",
-            new LinkedHashMap<String, Object>(){{
+        MutateQuery mutateQuery = new MutateQuery("testHost", "testType", "testDatabase", "testTable", "testIdField",
+            "testId", new LinkedHashMap<String, Object>(){{
                 put("testStringField", "testStringValue");
-                put("testNumberField", 1);
-                put("testBoolField", true);
-                put("testListField", new ArrayList<String>(){{ add("testItem"); }});
-                put("testObjectField", new LinkedHashMap<String, Object>(){{
-                    put("testNestedField", "testNestedValue");
-                }});
             }}
         );
 

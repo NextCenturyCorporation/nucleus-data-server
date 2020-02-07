@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.ncc.neon.adapters.QueryBuilder;
 import com.ncc.neon.models.queries.FieldClause;
+import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.queries.SelectClause;
 import com.ncc.neon.models.queries.SingularWhereClause;
@@ -709,6 +710,27 @@ public class PostgreSqlQueryConverterTest extends QueryBuilder {
         String expected = "SELECT * FROM testDatabase.testTableA JOIN testDatabase.testTableB ON " +
             "testDatabase.testTableA.testField1 = testDatabase.testTableB.testField2 JOIN testDatabase.testTableC " +
             "ON testDatabase.testTableA.testField1 = testDatabase.testTableC.testField3";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertMutationQueryByIdTest() {
+        MutateQuery mutateQuery = buildMutationByIdQuery();
+        String actual = SqlQueryConverter.convertMutationQuery(mutateQuery);
+        String expected = "UPDATE testDatabase.testTable SET testString = 'a', testZero = 0, testInteger = 1, " +
+            "testDecimal = 0.5, testNegativeInteger = -1, testNegativeDecimal = -0.5, testTrue = true, " +
+            "testFalse = false WHERE testIdField = 'testId'";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertArrayAndObjectMutationQueryByIdTest() {
+        MutateQuery mutateQuery = buildArrayAndObjectMutationByIdQuery();
+        String actual = SqlQueryConverter.convertMutationQuery(mutateQuery);
+        String expected = "UPDATE testDatabase.testTable SET testEmptyArray = '[]', testEmptyObject = '{}', " +
+            "testArray = '[\"b\",2,true,{\"testArrayObjectString\":\"c\",\"testArrayObjectInteger\":3}]', " +
+            "testObject = '{\"testObjectString\":\"d\",\"testObjectInteger\":4,\"testObjectBoolean\":true," +
+            "\"testObjectArray\":[\"e\",5]}' WHERE testIdField = 'testId'";
         assertThat(actual).isEqualTo(expected);
     }
 }
