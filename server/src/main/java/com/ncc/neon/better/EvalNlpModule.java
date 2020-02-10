@@ -2,7 +2,6 @@ package com.ncc.neon.better;
 
 import com.ncc.neon.models.EvaluationOutput;
 import com.ncc.neon.models.EvaluationResponse;
-import com.ncc.neon.models.Score;
 import com.ncc.neon.services.*;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.http.HttpStatus;
