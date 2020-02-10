@@ -1,5 +1,6 @@
 package com.ncc.neon.better;
 
+import java.net.ConnectException;
 import java.util.Map;
 
 import com.ncc.neon.models.*;
@@ -9,6 +10,7 @@ import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
+import com.ncc.neon.services.ModuleService;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -32,11 +34,13 @@ public abstract class NlpModule {
     private DatasetService datasetService;
     private FileShareService fileShareService;
     private BetterFileService betterFileService;
+    private ModuleService moduleService;
 
-    NlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService) {
+    NlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService) {
         this.datasetService = datasetService;
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
+        this.moduleService = moduleService;
     }
 
     public String getName() { return this.name; }
@@ -55,7 +59,8 @@ public abstract class NlpModule {
         return buildRequest(data, endpoint)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToMono(String[].class);
+                .bodyToMono(String[].class)
+                .doOnError(this::handleHttpError);
     }
 
     protected Mono<?> initPendingFiles(String[] files) {
@@ -68,7 +73,8 @@ public abstract class NlpModule {
         return buildRequest(data, endpoint)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToMono(BetterFile[].class);
+                .bodyToMono(BetterFile[].class)
+                .doOnError(this::handleHttpError);
     }
 
     protected Mono<RestStatus> handleNlpOperationSuccess(BetterFile[] readyFiles) {
@@ -119,23 +125,11 @@ public abstract class NlpModule {
                 .body(BodyInserters.fromValue(data));
     }
 
-    private Class getReturnModel(HttpEndpoint endpoint) {
-        Class res = Object.class;
-
-        switch(endpoint.getType()) {
-            case LIST:
-            case TRAIN_LIST:
-            case INF_LIST:
-            case EVAL_LIST:
-                res = String[].class;
-            case TRAIN:
-            case INF:
-            case PREPROCESS:
-                res = BetterFile[].class;
-            case EVAL:
-                res = EvaluationResponse.class;
+    private Throwable handleHttpError(Throwable err) {
+        if (err instanceof ConnectException) {
+            moduleService.setStatusToDown(name).subscribe();
         }
 
-        return res;
+        return err;
     }
 }

@@ -35,6 +35,8 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
     private RunService runService;
     @Autowired
     private EvaluationService evaluationService;
+    @Autowired
+    private ModuleService moduleService;
 
 
     @Autowired
@@ -54,13 +56,13 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
             // Build the concrete module based on the type.
             switch(moduleModel.getType()) {
                 case PREPROCESSOR:
-                    res = new PreprocessorNlpModule(datasetService, fileShareService, betterFileService);
+                    res = new PreprocessorNlpModule(datasetService, fileShareService, betterFileService, moduleService);
                     break;
                 case IE:
-                    res = new IENlpModule(datasetService, fileShareService, betterFileService, runService);
+                    res = new IENlpModule(datasetService, fileShareService, betterFileService, runService, moduleService);
                     break;
                 case EVALUATION:
-                    res = new EvalNlpModule(datasetService, fileShareService, betterFileService, runService, evaluationService);
+                    res = new EvalNlpModule(datasetService, fileShareService, betterFileService, runService, evaluationService, moduleService);
                     break;
             }
 
@@ -101,6 +103,13 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
 
             return updateAndRefresh(data, moduleId);
         });
+    }
+
+    public Mono<RestStatus> setStatusToDown(String moduleId) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("job_count", 0);
+        data.put("status", ModuleStatus.DOWN);
+        return updateAndRefresh(data, moduleId);
     }
 
     private WebClient buildNlpWebClient(String name) {

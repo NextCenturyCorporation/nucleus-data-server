@@ -20,8 +20,8 @@ public class EvalNlpModule extends NlpModule {
     private RunService runService;
     private EvaluationService evaluationService;
 
-    public EvalNlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, RunService runService, EvaluationService evaluationService) {
-        super(datasetService, fileShareService, betterFileService);
+    public EvalNlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, RunService runService, EvaluationService evaluationService, ModuleService moduleService) {
+        super(datasetService, fileShareService, betterFileService, moduleService);
         this.runService = runService;
         this.evaluationService = evaluationService;
     }

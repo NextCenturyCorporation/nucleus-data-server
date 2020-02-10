@@ -3,6 +3,7 @@ package com.ncc.neon.better;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
+import com.ncc.neon.services.ModuleService;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
@@ -14,8 +15,8 @@ public class PreprocessorNlpModule extends NlpModule {
     private HttpEndpoint preprocessEndpoint;
     private HttpEndpoint listEndpoint;
 
-    public PreprocessorNlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService) {
-        super(datasetService, fileShareService, betterFileService);
+    public PreprocessorNlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService) {
+        super(datasetService, fileShareService, betterFileService, moduleService);
     }
 
     @Override

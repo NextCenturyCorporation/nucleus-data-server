@@ -7,14 +7,11 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.ncc.neon.services.*;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ncc.neon.services.BetterFileService;
-import com.ncc.neon.services.DatasetService;
-import com.ncc.neon.services.FileShareService;
-import com.ncc.neon.services.RunService;
 
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
@@ -27,8 +24,8 @@ public class IENlpModule extends NlpModule {
     private RunService runService;
     private Path shareDir;
 
-    public IENlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, RunService runService) {
-        super(datasetService, fileShareService, betterFileService);
+    public IENlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, RunService runService, ModuleService moduleService) {
+        super(datasetService, fileShareService, betterFileService, moduleService);
         this.runService = runService;
         shareDir = fileShareService.getSharePath();
     }

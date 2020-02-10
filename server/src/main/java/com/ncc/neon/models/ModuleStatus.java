@@ -1,5 +1,5 @@
 package com.ncc.neon.models;
 
 public enum ModuleStatus {
-    IDLE, BUSY
+    IDLE, BUSY, DOWN
 }
