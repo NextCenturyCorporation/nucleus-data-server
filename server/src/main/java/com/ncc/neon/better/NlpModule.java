@@ -2,9 +2,7 @@ package com.ncc.neon.better;
 
 import java.util.Map;
 
-import com.ncc.neon.models.BetterFile;
-import com.ncc.neon.models.DataNotification;
-import com.ncc.neon.models.FileStatus;
+import com.ncc.neon.models.*;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
@@ -36,7 +34,6 @@ NLP operations for preprocessing, training, and inference.
 public abstract class NlpModule {
     private String name;
     private WebClient client;
-    private HttpEndpoint[] endpoints;
     private DatasetService datasetService;
     private FileShareService fileShareService;
     private BetterFileService betterFileService;
@@ -46,6 +43,8 @@ public abstract class NlpModule {
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
     }
+
+    public String getName() { return this.name; }
 
     public void setName(String name) {
         this.name = name;
@@ -123,5 +122,25 @@ public abstract class NlpModule {
                 .uri(uriBuilder -> uriBuilder.pathSegment(endpoint.getPathSegment()).build())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(data));
+    }
+
+    private Class getReturnModel(HttpEndpoint endpoint) {
+        Class res = Object.class;
+
+        switch(endpoint.getType()) {
+            case LIST:
+            case TRAIN_LIST:
+            case INF_LIST:
+            case EVAL_LIST:
+                res = String[].class;
+            case TRAIN:
+            case INF:
+            case PREPROCESS:
+                res = BetterFile[].class;
+            case EVAL:
+                res = EvaluationResponse.class;
+        }
+
+        return res;
     }
 }

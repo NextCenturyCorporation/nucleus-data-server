@@ -35,18 +35,18 @@ public class BetterController {
     private DatasetService datasetService;
     private FileShareService fileShareService;
     private BetterFileService betterFileService;
-    private NlpModuleService nlpModuleService;
+    private ModuleService moduleService;
     private RunService runService;
 
     BetterController(DatasetService datasetService,
                      FileShareService fileShareService,
                      BetterFileService betterFileService,
-                     NlpModuleService nlpModuleService,
+                     ModuleService moduleService,
                      RunService runService) {
         this.datasetService = datasetService;
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
-        this.nlpModuleService = nlpModuleService;
+        this.moduleService = moduleService;
         this.runService = runService;
     }
 
@@ -137,24 +137,24 @@ public class BetterController {
     }
 
     @GetMapping(path="preprocess")
-    Flux<RestStatus> preprocess(@RequestParam("file") String file, @RequestParam("module") String module) {
-        return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
+    Flux<? extends RestStatus> preprocess(@RequestParam("file") String file, @RequestParam("module") String module) {
+        return moduleService.buildNlpModuleClient(module).flatMapMany(nlpModule -> {
             PreprocessorNlpModule preprocessorNlpModule = (PreprocessorNlpModule)nlpModule;
             return preprocessorNlpModule.performPreprocessing(file);
         });
     }
 
     @GetMapping(path="train")
-    Flux<RestStatus> train(@RequestParam("configFile") String configFile, @RequestParam("module") String module, @RequestParam("runId") String runId) {
-        return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
+    Flux<? extends RestStatus> train(@RequestParam("configFile") String configFile, @RequestParam("module") String module, @RequestParam("runId") String runId) {
+        return moduleService.buildNlpModuleClient(module).flatMapMany(nlpModule -> {
             IENlpModule trainNlpModule = (IENlpModule) nlpModule;
             return trainNlpModule.performTraining(configFile, runId);
         });
     }
 
     @GetMapping(path="inference")
-    Flux<RestStatus> inference(@RequestParam("configFile") String configFile, @RequestParam("module") String module, @RequestParam("runId") String runId) {
-        return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
+    Flux<? extends RestStatus> inference(@RequestParam("configFile") String configFile, @RequestParam("module") String module, @RequestParam("runId") String runId) {
+        return moduleService.buildNlpModuleClient(module).flatMapMany(nlpModule -> {
             IENlpModule infNlpModule = (IENlpModule) nlpModule;
             return infNlpModule.performInference(configFile, runId);
         });
@@ -164,31 +164,36 @@ public class BetterController {
     Mono<?> eval(@RequestParam("trainConfigFile") String trainConfigFile,
                           @RequestParam("infConfigFile") String infConfigFile, @RequestParam("module") String module,
                           @RequestParam("infOnly") boolean infOnly, @RequestParam("refFile") String refFile) {
-        return nlpModuleService.getNlpModule(module)
-                .flatMap(nlpModule -> runService.initRun(trainConfigFile, infConfigFile)
-                .flatMap(initialRun -> {
-                    IENlpModule ieNlpModule = (IENlpModule) nlpModule;
-                    Mono<Tuple2<String, IENlpModule>> res = Mono.just(Tuples.of(initialRun.getT1(), ieNlpModule));
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> moduleService.incrementJobCount(nlpModule.getName())
+                        .flatMap(ignored -> runService.initRun(trainConfigFile, infConfigFile)
+                            .flatMap(initialRun -> {
+                                IENlpModule ieNlpModule = (IENlpModule) nlpModule;
+                                Mono<Tuple2<String, IENlpModule>> res = Mono.just(Tuples.of(initialRun.getT1(), ieNlpModule));
 
-                    if (!infOnly) {
-                        return runService.updateToTrainStatus(initialRun.getT1())
-                                .flatMap(test -> ieNlpModule.performTraining(trainConfigFile, initialRun.getT1()))
-                                .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())))
-                                .then(res);
-                    }
+                                if (!infOnly) {
+                                    return runService.updateToTrainStatus(initialRun.getT1())
+                                            .flatMap(test -> ieNlpModule.performTraining(trainConfigFile, initialRun.getT1()))
+                                            .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())))
+                                            .then(res);
+                                }
 
-                    return res;
-                }))
+                                return res;
+                            }))
+                )
                 .flatMap(trainRes -> runService.updateToInferenceStatus(trainRes.getT1())
                                 .flatMap(updateRes -> trainRes.getT2().performInference(infConfigFile, trainRes.getT1())
                                                 .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
-                                                .flatMap(infRes -> runService.updateToScoringStatus(trainRes.getT1()))
-                                                    .flatMap(updatedRun -> nlpModuleService.getNlpModule("ie_eval")
+                                                .flatMap(infRes -> moduleService.decrementJobCount(module)
+                                                        .flatMap(ignored -> runService.updateToScoringStatus(trainRes.getT1())))
+                                                    .flatMap(updatedRun -> moduleService.buildNlpModuleClient("ie_eval")
                                                             .flatMap(evalModule -> {
                                                                 EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
+                                                                moduleService.incrementJobCount(evalModule.getName());
                                                                 return runService.getInferenceOutput(trainRes.getT1())
                                                                         .flatMap(sysFile -> evalNlpModule.performEval(refFile, sysFile, trainRes.getT1())
-                                                                                .doOnError(evalError -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage()))));
+                                                                                .doOnError(evalError -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage())))
+                                                                                .flatMap(ignored -> moduleService.decrementJobCount(evalModule.getName())));
                                                             }))
                                 )
                 );
