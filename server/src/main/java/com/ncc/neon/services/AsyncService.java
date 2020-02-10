@@ -65,10 +65,13 @@ public class AsyncService {
         });
     }
 
-    public Flux<?> performPreprocess(String file, String module) {
-        return moduleService.buildNlpModuleClient(module).flatMapMany(nlpModule -> {
+    public Mono<?> performPreprocess(String file, String module) {
+        return moduleService.buildNlpModuleClient(module).flatMap(nlpModule -> {
             PreprocessorNlpModule preprocessorNlpModule = (PreprocessorNlpModule)nlpModule;
-            return preprocessorNlpModule.performPreprocessing(file);
+
+            return moduleService.incrementJobCount(nlpModule.getName())
+                    .flatMap(ignored -> preprocessorNlpModule.performPreprocessing(file))
+                    .flatMap(ignored -> moduleService.decrementJobCount(nlpModule.getName()));
         });
     }
 }

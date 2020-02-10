@@ -6,6 +6,7 @@ import com.ncc.neon.services.FileShareService;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 
@@ -31,11 +32,11 @@ public class PreprocessorNlpModule extends NlpModule {
         }
     }
 
-    public Flux<RestStatus> performPreprocessing(String filename) {
+    public Mono<RestStatus> performPreprocessing(String filename) {
         HashMap<String, String> params = new HashMap<>();
         params.put("file", filename);
         return this.performListOperation(params, listEndpoint)
-                .flatMapMany(pendingFiles -> this.initPendingFiles(pendingFiles)
+                .flatMap(pendingFiles -> this.initPendingFiles(pendingFiles)
                 .then(this.performNlpOperation(params, preprocessEndpoint)
                 .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)))
                 .flatMap(this::handleNlpOperationSuccess));
