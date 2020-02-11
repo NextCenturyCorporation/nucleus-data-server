@@ -112,6 +112,12 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
         return updateAndRefresh(data, moduleId);
     }
 
+    public Mono<RestStatus> checkAllConnections() {
+        // Get all modules.
+        // Make call to heartbeat endpoint.
+        // Update status to down if any return connection exception.
+    }
+
     private WebClient buildNlpWebClient(String name) {
         String url = "http://";
         String host = System.getenv().getOrDefault(name.toUpperCase() + "_HOST", "localhost");

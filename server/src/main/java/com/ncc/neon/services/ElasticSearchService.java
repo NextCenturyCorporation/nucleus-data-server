@@ -43,6 +43,22 @@ public abstract class ElasticSearchService<T> {
         this.datasetService = datasetService;
     }
 
+    public Mono<T[]> getAll() {
+        GetRequest gr = new GetRequest(index);
+
+        return Mono.create(sink -> {
+            try {
+                GetResponse response = elasticSearchClient.get(gr, RequestOptions.DEFAULT);
+
+                @SuppressWarnings("unchecked")
+                T[] res = (T[])new ObjectMapper().readValue(response.getSourceAsString(), type);
+                sink.success(res);
+            } catch (Exception e) {
+                sink.error(e);
+            }
+        });
+    }
+
     public Mono<T> getById(String id) {
         GetRequest gr = new GetRequest(index, dataType, id);
 
