@@ -13,17 +13,25 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
+import javax.naming.directory.SearchResult;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
 public abstract class ElasticSearchService<T> {
@@ -43,18 +51,23 @@ public abstract class ElasticSearchService<T> {
         this.datasetService = datasetService;
     }
 
-    public Mono<T[]> getAll() {
-        GetRequest gr = new GetRequest(index);
+    public Flux<T> getAll() {
+        SearchRequest sr = new SearchRequest(index);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+        sr.source(searchSourceBuilder);
 
-        return Mono.create(sink -> {
+        return Flux.create(tFluxSink -> {
             try {
-                GetResponse response = elasticSearchClient.get(gr, RequestOptions.DEFAULT);
+                SearchResponse response = elasticSearchClient.search(sr, RequestOptions.DEFAULT);
+                SearchHit[] hits = response.getHits().getHits();
 
-                @SuppressWarnings("unchecked")
-                T[] res = (T[])new ObjectMapper().readValue(response.getSourceAsString(), type);
-                sink.success(res);
+                for (SearchHit hit : hits) {
+                    T res = new ObjectMapper().readValue(hit.getSourceAsString(), type);
+                    tFluxSink.next(res);
+                }
             } catch (Exception e) {
-                sink.error(e);
+                tFluxSink.error(e);
             }
         });
     }

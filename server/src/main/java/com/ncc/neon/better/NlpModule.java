@@ -1,6 +1,7 @@
 package com.ncc.neon.better;
 
 import java.net.ConnectException;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.ncc.neon.models.*;
@@ -12,8 +13,11 @@ import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
 import com.ncc.neon.services.ModuleService;
 import org.elasticsearch.rest.RestStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -22,7 +26,6 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
 
 /*
 Abstract class to represent a remote NLP module REST service.  These services typically expose endpoints to perform
@@ -30,17 +33,23 @@ NLP operations for preprocessing, training, and inference.
  */
 public abstract class NlpModule {
     private String name;
+    private HttpEndpoint statusEndpoint;
     private WebClient client;
     private DatasetService datasetService;
     private FileShareService fileShareService;
     private BetterFileService betterFileService;
     private ModuleService moduleService;
+    private Environment env;
 
-    NlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService) {
+    NlpModule(NlpModuleModel moduleModel, DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService, Environment env) {
         this.datasetService = datasetService;
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
         this.moduleService = moduleService;
+        this.env = env;
+        name = moduleModel.getName();
+        client = buildNlpWebClient(name);
+        initEndpoints(moduleModel.getEndpoints());
     }
 
     public String getName() { return this.name; }
@@ -49,11 +58,21 @@ public abstract class NlpModule {
         this.name = name;
     }
 
-    public void setClient(WebClient client) {
-        this.client = client;
+    public Mono<HttpStatus> getRemoteStatus() {
+        return buildRequest(new HashMap<>(), statusEndpoint)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(HttpStatus.class)
+                .doOnError(this::handleHttpError);
     }
 
-    public abstract void setEndpoints(HttpEndpoint[] endpoints);
+    protected void initEndpoints(HttpEndpoint[] endpoints) {
+        for (HttpEndpoint endpoint : endpoints) {
+            if (endpoint.getType() == EndpointType.STATUS) {
+                statusEndpoint = endpoint;
+            }
+        }
+    };
 
     protected Mono<String[]> performListOperation(Map<String, String> data, HttpEndpoint endpoint) {
         return buildRequest(data, endpoint)
@@ -123,6 +142,16 @@ public abstract class NlpModule {
                 .uri(uriBuilder -> uriBuilder.pathSegment(endpoint.getPathSegment()).build())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(data));
+    }
+
+    private WebClient buildNlpWebClient(String name) {
+        String url = "http://";
+        String host = System.getenv().getOrDefault(name.toUpperCase() + "_HOST", "localhost");
+        String port = env.getProperty(name + ".port");
+
+        url += host + ":" + port;
+
+        return WebClient.create(url);
     }
 
     private Throwable handleHttpError(Throwable err) {

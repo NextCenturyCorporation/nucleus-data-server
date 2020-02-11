@@ -10,6 +10,7 @@ import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -52,23 +53,19 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
 
         return getById(name).flatMap(moduleModel -> {
             NlpModule res = null;
-            WebClient client = buildNlpWebClient(name);
             // Build the concrete module based on the type.
             switch(moduleModel.getType()) {
                 case PREPROCESSOR:
-                    res = new PreprocessorNlpModule(datasetService, fileShareService, betterFileService, moduleService);
+                    res = new PreprocessorNlpModule(moduleModel, datasetService, fileShareService, betterFileService, moduleService, env);
                     break;
                 case IE:
-                    res = new IENlpModule(datasetService, fileShareService, betterFileService, runService, moduleService);
+                    res = new IENlpModule(moduleModel, datasetService, fileShareService, betterFileService, runService, moduleService, env);
                     break;
                 case EVALUATION:
-                    res = new EvalNlpModule(datasetService, fileShareService, betterFileService, runService, evaluationService, moduleService);
+                    res = new EvalNlpModule(moduleModel, datasetService, fileShareService, betterFileService, runService, evaluationService, moduleService, env);
                     break;
             }
 
-            res.setName(name);
-            res.setClient(client);
-            res.setEndpoints(moduleModel.getEndpoints());
             nlpModuleCache.put(name, res);
             return Mono.just(res);
         });
@@ -112,19 +109,9 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
         return updateAndRefresh(data, moduleId);
     }
 
-    public Mono<RestStatus> checkAllConnections() {
-        // Get all modules.
-        // Make call to heartbeat endpoint.
-        // Update status to down if any return connection exception.
-    }
-
-    private WebClient buildNlpWebClient(String name) {
-        String url = "http://";
-        String host = System.getenv().getOrDefault(name.toUpperCase() + "_HOST", "localhost");
-        String port = env.getProperty(name + ".port");
-
-        url += host + ":" + port;
-
-        return WebClient.create(url);
+    public Mono<HttpStatus> checkAllConnections() {
+        return getAll().flatMap(nlpModule -> buildNlpModuleClient(nlpModule.getName()))
+                .flatMap(NlpModule::getRemoteStatus)
+                .then(Mono.just(HttpStatus.OK));
     }
 }

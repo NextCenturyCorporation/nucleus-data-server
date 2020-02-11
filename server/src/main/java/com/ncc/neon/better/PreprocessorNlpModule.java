@@ -1,12 +1,13 @@
 package com.ncc.neon.better;
 
+import com.ncc.neon.models.NlpModuleModel;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
 import com.ncc.neon.services.ModuleService;
 import org.elasticsearch.rest.RestStatus;
+import org.springframework.core.env.Environment;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
@@ -15,12 +16,13 @@ public class PreprocessorNlpModule extends NlpModule {
     private HttpEndpoint preprocessEndpoint;
     private HttpEndpoint listEndpoint;
 
-    public PreprocessorNlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService) {
-        super(datasetService, fileShareService, betterFileService, moduleService);
+    public PreprocessorNlpModule(NlpModuleModel moduleModel, DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService, Environment env) {
+        super(moduleModel, datasetService, fileShareService, betterFileService, moduleService, env);
     }
 
     @Override
-    public void setEndpoints(HttpEndpoint[] endpoints) {
+    protected void initEndpoints(HttpEndpoint[] endpoints) {
+        super.initEndpoints(endpoints);
         for (HttpEndpoint endpoint : endpoints) {
             switch (endpoint.getType()) {
                 case PREPROCESS:

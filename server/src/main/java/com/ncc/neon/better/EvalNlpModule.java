@@ -2,8 +2,10 @@ package com.ncc.neon.better;
 
 import com.ncc.neon.models.EvaluationOutput;
 import com.ncc.neon.models.EvaluationResponse;
+import com.ncc.neon.models.NlpModuleModel;
 import com.ncc.neon.services.*;
 import org.elasticsearch.rest.RestStatus;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -20,14 +22,15 @@ public class EvalNlpModule extends NlpModule {
     private RunService runService;
     private EvaluationService evaluationService;
 
-    public EvalNlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, RunService runService, EvaluationService evaluationService, ModuleService moduleService) {
-        super(datasetService, fileShareService, betterFileService, moduleService);
+    public EvalNlpModule(NlpModuleModel moduleModel, DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, RunService runService, EvaluationService evaluationService, ModuleService moduleService, Environment env) {
+        super(moduleModel, datasetService, fileShareService, betterFileService, moduleService, env);
         this.runService = runService;
         this.evaluationService = evaluationService;
     }
 
     @Override
-    public void setEndpoints(HttpEndpoint[] endpoints) {
+    protected void initEndpoints(HttpEndpoint[] endpoints) {
+        super.initEndpoints(endpoints);
         for (HttpEndpoint endpoint : endpoints) {
             switch (endpoint.getType()) {
                 case EVAL:

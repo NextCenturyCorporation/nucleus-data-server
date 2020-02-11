@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import javax.annotation.PostConstruct;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 
@@ -31,21 +32,23 @@ public class BetterController {
     private FileShareService fileShareService;
     private BetterFileService betterFileService;
     private ModuleService moduleService;
-    private RunService runService;
     private AsyncService asyncService;
 
     BetterController(DatasetService datasetService,
                      FileShareService fileShareService,
                      BetterFileService betterFileService,
                      ModuleService moduleService,
-                     RunService runService,
                      AsyncService asyncService) {
         this.datasetService = datasetService;
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
         this.moduleService = moduleService;
-        this.runService = runService;
         this.asyncService = asyncService;
+    }
+
+    @PostConstruct
+    public void init() {
+        moduleService.checkAllConnections().subscribe();
     }
 
     @PostMapping(path = "upload")
