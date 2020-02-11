@@ -12,10 +12,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -109,9 +110,29 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
         return updateAndRefresh(data, moduleId);
     }
 
+    public Mono<RestStatus> setStatusToActive(String moduleId) {
+        return getJobCount(moduleId).flatMap(count -> updateStatusFromCount(moduleId, count));
+    }
+
+    public Mono<RestStatus> updateStatusFromCount(String moduleId, Integer count) {
+        Map<String, Object> data = new HashMap<>();
+
+        if (count == 0) {
+            data.put("status", ModuleStatus.IDLE);
+        }
+        else {
+            data.put("status", ModuleStatus.BUSY);
+        }
+
+        return updateAndRefresh(data, moduleId);
+    }
+
     public Mono<HttpStatus> checkAllConnections() {
-        return getAll().flatMap(nlpModule -> buildNlpModuleClient(nlpModule.getName()))
-                .flatMap(NlpModule::getRemoteStatus)
+        return getAll()
+                .flatMap(model -> buildNlpModuleClient(model.getName())
+                    .flatMap(NlpModule::getRemoteStatus)
+                    .flatMap(status -> setStatusToActive(model.getName()))
+                    .onErrorResume(err -> Mono.just(RestStatus.OK)))
                 .then(Mono.just(HttpStatus.OK));
     }
 }

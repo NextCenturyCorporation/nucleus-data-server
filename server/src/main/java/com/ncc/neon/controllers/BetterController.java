@@ -15,12 +15,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import javax.annotation.PostConstruct;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
+import java.util.List;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -49,6 +51,11 @@ public class BetterController {
     @PostConstruct
     public void init() {
         moduleService.checkAllConnections().subscribe();
+    }
+
+    @GetMapping(path = "status")
+    Mono<HttpStatus> status() {
+        return moduleService.checkAllConnections();
     }
 
     @PostMapping(path = "upload")
