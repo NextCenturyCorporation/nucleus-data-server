@@ -37,6 +37,7 @@ public abstract class ElasticSearchService<T> {
     private final String dataType;
     private final Class<T> type;
     private final DatasetService datasetService;
+    private final DataNotification notification;
 
     ElasticSearchService(String host, String index, String dataType, Class<T> type, DatasetService datasetService) {
         this.elasticSearchClient = new RestHighLevelClient(RestClient.builder(
@@ -46,6 +47,8 @@ public abstract class ElasticSearchService<T> {
         this.dataType = dataType;
         this.type = type;
         this.datasetService = datasetService;
+        notification = new DataNotification();
+        notification.setTableName(index);
     }
 
     public Flux<T> getAll() {
@@ -99,18 +102,12 @@ public abstract class ElasticSearchService<T> {
     }
 
     public Mono<RestStatus> insertAndRefresh(T itemToInsert) {
-        DataNotification notification = new DataNotification();
-        notification.setTableName(index);
-
         return insert(itemToInsert)
                 .then(refreshIndex().retry(3))
                 .doOnSuccess(status -> datasetService.notify(notification));
     }
 
     public Mono<RestStatus> upsertAndRefresh(T itemToAdd, String id) {
-        DataNotification notification = new DataNotification();
-        notification.setTableName(index);
-
         return upsert(itemToAdd, id)
                 .then(refreshIndex().retry(3))
                 .doOnSuccess(status -> datasetService.notify(notification));
@@ -125,9 +122,6 @@ public abstract class ElasticSearchService<T> {
     }
 
     public Mono<RestStatus> updateAndRefresh(Map<String, Object> data, String docId) {
-        DataNotification notification = new DataNotification();
-        notification.setTableName(index);
-
         return update(data, docId)
                 .then(refreshIndex().retry(3))
                 .doOnSuccess(status -> datasetService.notify(notification));
@@ -147,9 +141,6 @@ public abstract class ElasticSearchService<T> {
     }
 
     public Mono<RestStatus> deleteByIdAndRefresh(String id) {
-        DataNotification notification = new DataNotification();
-        notification.setTableName(index);
-
         return deleteById(id)
                 .then(refreshIndex().retry(3))
                 .doOnSuccess(status -> datasetService.notify(notification));
