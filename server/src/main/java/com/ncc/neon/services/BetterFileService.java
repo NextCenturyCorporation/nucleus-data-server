@@ -23,7 +23,7 @@ public class BetterFileService extends ElasticSearchService<BetterFile> {
 
     public Mono<RestStatus> initMany(String[] filesToAdd) {
         return Flux.fromArray(filesToAdd)
-                .flatMap(fileToAdd -> insert(new BetterFile(fileToAdd, 0)))
+                .flatMap(fileToAdd -> upsertAndRefresh(new BetterFile(fileToAdd, 0), fileToAdd))
                 .then(Mono.just(RestStatus.OK));
     }
 }
