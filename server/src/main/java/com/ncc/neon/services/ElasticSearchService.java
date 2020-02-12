@@ -2,7 +2,6 @@ package com.ncc.neon.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.exception.UpsertException;
-import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.DataNotification;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -29,9 +28,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import javax.naming.directory.SearchResult;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 
 public abstract class ElasticSearchService<T> {
@@ -66,6 +63,8 @@ public abstract class ElasticSearchService<T> {
                     T res = new ObjectMapper().readValue(hit.getSourceAsString(), type);
                     tFluxSink.next(res);
                 }
+
+                tFluxSink.complete();
             } catch (Exception e) {
                 tFluxSink.error(e);
             }

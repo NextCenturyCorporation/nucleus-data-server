@@ -15,8 +15,8 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Component
@@ -42,9 +42,10 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
 
 
     @Autowired
-    ModuleService(DatasetService datasetService, @Value("${db_host}") String dbHost) {
+    ModuleService(DatasetService datasetService, @Value("${db_host}") String dbHost, @Value("${status_check_interval_seconds}") int interval) {
         super(dbHost, index, dataType, NlpModuleModel.class, datasetService);
         nlpModuleCache = new HashMap<>();
+        Flux.interval(Duration.ofSeconds(interval)).flatMap(ignored -> checkAllConnections()).subscribe();
     }
 
     public Mono<NlpModule> buildNlpModuleClient(String name) {
@@ -73,7 +74,7 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
     }
 
     public Mono<Integer> getJobCount(String moduleId) {
-        return getById(moduleId).map(NlpModuleModel::getJobCount);
+        return getById(moduleId).flatMap(model -> Mono.just(model.getJobCount()));
     }
 
     public Mono<RestStatus> incrementJobCount(String moduleId) {
@@ -130,9 +131,8 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
     public Mono<HttpStatus> checkAllConnections() {
         return getAll()
                 .flatMap(model -> buildNlpModuleClient(model.getName())
-                    .flatMap(NlpModule::getRemoteStatus)
-                    .flatMap(status -> setStatusToActive(model.getName()))
-                    .onErrorResume(err -> Mono.just(RestStatus.OK)))
+                    .flatMap(nlpModule -> nlpModule.getRemoteStatus()
+                    .onErrorResume(err -> Mono.just(HttpStatus.OK))))
                 .then(Mono.just(HttpStatus.OK));
     }
 }

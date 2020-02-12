@@ -58,11 +58,12 @@ public abstract class NlpModule {
         this.name = name;
     }
 
-    public Mono<String> getRemoteStatus() {
+    public Mono<HttpStatus> getRemoteStatus() {
         return buildRequest(new HashMap<>(), statusEndpoint)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToMono(String.class)
+                .bodyToMono(HttpStatus.class)
+                .doOnSuccess(res -> moduleService.setStatusToActive(name).subscribe())
                 .doOnError(this::handleHttpError);
     }
 

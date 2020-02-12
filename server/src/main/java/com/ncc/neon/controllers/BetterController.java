@@ -6,7 +6,6 @@ import com.ncc.neon.models.DataNotification;
 import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.*;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -15,14 +14,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import javax.annotation.PostConstruct;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
-import java.util.List;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -46,11 +42,6 @@ public class BetterController {
         this.betterFileService = betterFileService;
         this.moduleService = moduleService;
         this.asyncService = asyncService;
-    }
-
-    @PostConstruct
-    public void init() {
-        moduleService.checkAllConnections().subscribe();
     }
 
     @GetMapping(path = "status")
