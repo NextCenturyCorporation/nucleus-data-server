@@ -2,7 +2,6 @@ package com.ncc.neon.controllers;
 
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.BetterFile;
-import com.ncc.neon.models.DataNotification;
 import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.*;
 import lombok.extern.slf4j.Slf4j;
@@ -57,10 +56,7 @@ public class BetterController {
                 .flatMap(filePart -> {
                     // Create pending file in ES.
                     BetterFile pendingFile = new BetterFile(filePart.filename(), 0);
-                    return betterFileService.upsert(pendingFile)
-                            .onErrorResume(Mono::error)
-                            .then(betterFileService.refreshFilesIndex().retry(3))
-                            .doOnSuccess(status -> datasetService.notify(new DataNotification()))
+                    return betterFileService.upsertAndRefresh(pendingFile, pendingFile.getFilename())
                             // Write file part to share.
                             .then(fileShareService.writeFilePart(filePart));
                 })
@@ -73,10 +69,8 @@ public class BetterController {
                                 .flatMap(errorFile -> {
                                     errorFile.setStatus(FileStatus.ERROR);
                                     errorFile.setStatus_message(onError.getClass() + ": " + onError.getMessage());
-                                    return betterFileService.upsert(errorFile);
-                                })
-                                .then(betterFileService.refreshFilesIndex().retry(3))
-                                .doOnSuccess(status -> datasetService.notify(new DataNotification())))
+                                    return betterFileService.insertAndRefresh(errorFile);
+                                }))
                                 .then(Mono.just(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error writing file to share.")))
                                 .subscribe();
                     }
@@ -87,11 +81,9 @@ public class BetterController {
                     fileToAdd.setStatus(FileStatus.READY);
 
                     // Update entries in ES.
-                    return betterFileService.upsert(fileToAdd)
+                    return betterFileService.upsertAndRefresh(fileToAdd, fileToAdd.getFilename())
                             // Delete file if update fails.
                             .doOnError(onError -> fileShareService.delete(file.getName()))
-                            .then(betterFileService.refreshFilesIndex().retry(3))
-                            .doOnSuccess(status -> datasetService.notify(new DataNotification()))
                             .then(Mono.just(ResponseEntity.ok().build()));
                 });
     }
@@ -105,10 +97,8 @@ public class BetterController {
                     }
                     return fileShareService.delete(fileToDelete.getFilename());
                 })
-                .then(betterFileService.deleteById(id))
-                .then(betterFileService.refreshFilesIndex().retry(3))
-                .then(Mono.just(ResponseEntity.ok().build()))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+                .then(betterFileService.deleteByIdAndRefresh(id))
+                .then(Mono.just(ResponseEntity.ok().build()));
     }
 
     @GetMapping(path = "download")

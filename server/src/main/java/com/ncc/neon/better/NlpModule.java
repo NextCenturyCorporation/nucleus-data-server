@@ -84,9 +84,7 @@ public abstract class NlpModule {
     }
 
     protected Mono<?> initPendingFiles(String[] files) {
-        return Mono.just(files).flatMapMany(fileList -> betterFileService.initMany(fileList))
-                .then(betterFileService.refreshFilesIndex().retry(3))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+        return Mono.just(files).flatMap(fileList -> betterFileService.initMany(fileList));
     }
 
     protected Mono<BetterFile[]> performNlpOperation(Map<String, String> data, HttpEndpoint endpoint) {
@@ -103,9 +101,9 @@ public abstract class NlpModule {
             readyFile.setStatus(FileStatus.READY);
         }
 
-        return betterFileService.upsertMany(readyFiles)
-                .then(betterFileService.refreshFilesIndex().retry(3))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+        return Flux.fromArray(readyFiles)
+                .flatMap(readyFile -> betterFileService.upsertAndRefresh(readyFile, readyFile.getFilename()))
+                .then(Mono.just(RestStatus.OK));
     }
 
     protected Disposable handleNlpOperationError(WebClientResponseException err, String[] pendingFiles) {
@@ -116,10 +114,8 @@ public abstract class NlpModule {
                         // Set status of files to error.
                         fileToUpdate.setStatus(FileStatus.ERROR);
                         fileToUpdate.setStatus_message(err.getResponseBodyAsString());
-                        return betterFileService.upsert(fileToUpdate);
+                        return betterFileService.upsertAndRefresh(fileToUpdate, fileToUpdate.getFilename());
                     }))
-                .then(betterFileService.refreshFilesIndex().retry(3))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification()))
                 .subscribe();
     }
 

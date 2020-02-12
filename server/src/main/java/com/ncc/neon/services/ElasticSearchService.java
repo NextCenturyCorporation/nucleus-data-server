@@ -98,6 +98,24 @@ public abstract class ElasticSearchService<T> {
         return completeIndexRequest(indexRequest);
     }
 
+    public Mono<RestStatus> insertAndRefresh(T itemToInsert) {
+        DataNotification notification = new DataNotification();
+        notification.setTableName(index);
+
+        return insert(itemToInsert)
+                .then(refreshIndex().retry(3))
+                .doOnSuccess(status -> datasetService.notify(notification));
+    }
+
+    public Mono<RestStatus> upsertAndRefresh(T itemToAdd, String id) {
+        DataNotification notification = new DataNotification();
+        notification.setTableName(index);
+
+        return upsert(itemToAdd, id)
+                .then(refreshIndex().retry(3))
+                .doOnSuccess(status -> datasetService.notify(notification));
+    }
+
     public Mono<Tuple2<String, RestStatus>> upsert(T itemToAdd, String id) {
         // Serialize item to json map.
         Map<String, Object> itemMap = new ObjectMapper().convertValue(itemToAdd, Map.class);
@@ -107,9 +125,12 @@ public abstract class ElasticSearchService<T> {
     }
 
     public Mono<RestStatus> updateAndRefresh(Map<String, Object> data, String docId) {
+        DataNotification notification = new DataNotification();
+        notification.setTableName(index);
+
         return update(data, docId)
                 .then(refreshIndex().retry(3))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+                .doOnSuccess(status -> datasetService.notify(notification));
     }
 
     public Mono<RestStatus> update(Map<String, Object> data, String docId) {
@@ -123,6 +144,15 @@ public abstract class ElasticSearchService<T> {
                 sink.error(e);
             }
         });
+    }
+
+    public Mono<RestStatus> deleteByIdAndRefresh(String id) {
+        DataNotification notification = new DataNotification();
+        notification.setTableName(index);
+
+        return deleteById(id)
+                .then(refreshIndex().retry(3))
+                .doOnSuccess(status -> datasetService.notify(notification));
     }
 
     public Mono<RestStatus> deleteById(String id) {
