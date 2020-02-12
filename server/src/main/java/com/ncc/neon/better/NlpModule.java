@@ -63,7 +63,15 @@ public abstract class NlpModule {
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(HttpStatus.class)
-                .doOnSuccess(res -> moduleService.setStatusToActive(name).subscribe())
+                .doOnSuccess(res -> moduleService.getById(name)
+                            .flatMap(module -> {
+                                // Only update status if it's changed.
+                                if (module.getStatus().equals(ModuleStatus.DOWN.toString())) {
+                                    return moduleService.setStatusToActive(name);
+                                }
+                                return Mono.just(HttpStatus.OK);
+                            }).subscribe()
+                )
                 .doOnError(this::handleHttpError);
     }
 
@@ -153,7 +161,15 @@ public abstract class NlpModule {
 
     private Throwable handleHttpError(Throwable err) {
         if (err instanceof ConnectException) {
-            moduleService.setStatusToDown(name).subscribe();
+            moduleService.getById(name)
+                    .flatMap(module -> {
+                        // Only update status if it's changed.
+                        if (!module.getStatus().equals(ModuleStatus.DOWN.toString())) {
+                            return moduleService.setStatusToDown(name);
+                        }
+
+                        return Mono.empty();
+                    }).subscribe();
         }
 
         return err;
