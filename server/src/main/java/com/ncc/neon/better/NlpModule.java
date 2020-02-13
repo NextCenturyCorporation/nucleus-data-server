@@ -1,19 +1,18 @@
 package com.ncc.neon.better;
 
 import java.net.ConnectException;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.ncc.neon.models.*;
 import com.ncc.neon.models.BetterFile;
-import com.ncc.neon.models.DataNotification;
 import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
 import com.ncc.neon.services.ModuleService;
 import org.elasticsearch.rest.RestStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -160,7 +159,7 @@ public abstract class NlpModule {
     }
 
     private Throwable handleHttpError(Throwable err) {
-        if (err instanceof ConnectException) {
+        if (err instanceof ConnectException || err instanceof UnknownHostException) {
             moduleService.getById(name)
                     .flatMap(module -> {
                         // Only update status if it's changed.
@@ -168,7 +167,7 @@ public abstract class NlpModule {
                             return moduleService.setStatusToDown(name);
                         }
 
-                        return Mono.empty();
+                        return Mono.just(RestStatus.OK);
                     }).subscribe();
         }
 
