@@ -18,6 +18,8 @@ import reactor.core.scheduler.Schedulers;
 
 import java.net.MalformedURLException;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -91,13 +93,20 @@ public class BetterController {
     @DeleteMapping(path = "file/{id}")
     Mono<ResponseEntity<Object>> delete(@PathVariable("id") String id) {
         return betterFileService.getById(id)
-                .map(fileToDelete -> {
+                .flatMap(fileToDelete -> {
                     if (fileToDelete == null) {
                         return Mono.just(ResponseEntity.notFound().build());
                     }
                     return fileShareService.delete(fileToDelete.getFilename());
                 })
-                .then(betterFileService.deleteByIdAndRefresh(id))
+                .then(betterFileService.deleteByIdAndRefresh(id)
+                .doOnError(err -> {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("status", FileStatus.ERROR);
+                    data.put("status_message", err.getMessage());
+
+                    betterFileService.updateAndRefresh(data, id).subscribe();
+                }))
                 .then(Mono.just(ResponseEntity.ok().build()));
     }
 
