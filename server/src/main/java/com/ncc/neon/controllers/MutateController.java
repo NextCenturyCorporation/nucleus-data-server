@@ -7,8 +7,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.ncc.neon.models.ConnectionInfo;
+import com.ncc.neon.models.DataNotification;
 import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.results.ActionResult;
+import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.QueryService;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -28,9 +30,11 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequestMapping("mutateservice")
 public class MutateController {
+    private DatasetService datasetService;
     private QueryService queryService;
 
-    MutateController(QueryService queryService) {
+    MutateController(DatasetService datasetService, QueryService queryService) {
+        this.datasetService = datasetService;
         this.queryService = queryService;
     }
 
@@ -58,6 +62,9 @@ public class MutateController {
         }
 
         ConnectionInfo info = new ConnectionInfo(mutateQuery.getDatastoreType(), mutateQuery.getDatastoreHost());
+
+        datasetService.notify(new DataNotification(mutateQuery.getDatastoreHost(), mutateQuery.getDatastoreType(),
+            mutateQuery.getDatabaseName(), mutateQuery.getTableName(), 1));
 
         return ResponseEntity.ok().body(queryService.mutateData(info, mutateQuery));
     }
