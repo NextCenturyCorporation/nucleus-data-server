@@ -8,12 +8,14 @@ import com.ncc.neon.adapters.QueryBuilder;
 import com.ncc.neon.models.queries.AndWhereClause;
 import com.ncc.neon.models.queries.FieldClause;
 import com.ncc.neon.models.queries.LimitClause;
+import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.queries.SelectClause;
 import com.ncc.neon.models.queries.SingularWhereClause;
 
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -1036,5 +1038,25 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
         SearchRequest expected = createRequest("testDatabaseA", "testTableX", source);
         assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertMutationByIdQueryTest() {
+        MutateQuery mutateQuery = buildMutationByIdQuery();
+        UpdateRequest actual = ElasticsearchQueryConverter.convertMutationByIdQuery(mutateQuery);
+        UpdateRequest expected = new UpdateRequest("testDatabase", "testTable", "testId")
+            .doc(mutateQuery.getFieldsWithValues());
+        // This test fails without the toString (I don't know why)
+        assertThat(actual.toString()).isEqualTo(expected.toString());
+    }
+
+    @Test
+    public void convertArrayAndObjectMutationByIdQueryTest() {
+        MutateQuery mutateQuery = buildArrayAndObjectMutationByIdQuery();
+        UpdateRequest actual = ElasticsearchQueryConverter.convertMutationByIdQuery(mutateQuery);
+        UpdateRequest expected = new UpdateRequest("testDatabase", "testTable", "testId")
+            .doc(mutateQuery.getFieldsWithValues());
+        // This test fails without the toString (I don't know why)
+        assertThat(actual.toString()).isEqualTo(expected.toString());
     }
 }

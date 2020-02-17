@@ -9,10 +9,12 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import com.ncc.neon.adapters.QueryAdapter;
+import com.ncc.neon.models.queries.ImportQuery;
+import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.Query;
+import com.ncc.neon.models.results.ActionResult;
 import com.ncc.neon.models.results.FieldType;
 import com.ncc.neon.models.results.FieldTypePair;
-import com.ncc.neon.models.results.ImportResult;
 import com.ncc.neon.models.results.TableWithFields;
 import com.ncc.neon.models.results.TabularQueryResult;
 
@@ -33,6 +35,8 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -101,6 +105,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
     }
 
     // TODO: generalize getting flux further?
+    @SuppressWarnings("deprecation")
     @Override
     public Flux<String> showDatabases() {
         GetIndexRequest request = new GetIndexRequest().indices("*");
@@ -268,6 +273,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
     }
 
     /* Every method need to convert into a flux */
+    @SuppressWarnings("deprecation")
     private <T> Flux<T> getMappingRequestToFlux(GetMappingsRequest request,
             BiConsumer<FluxSink<T>, GetMappingsResponse> responseHandler) {
         return Flux.create(sink -> {
@@ -288,32 +294,30 @@ public class ElasticsearchAdapter extends QueryAdapter {
         });
     }
 
-    @SuppressWarnings("deprecation")
     @Override
-    public Mono<ImportResult> addData(String indexName, String mappingName, List<String> sourceData) {        
-
+    public Mono<ActionResult> importData(ImportQuery importQuery) {
         BulkRequest bulkRequest = new BulkRequest();
         bulkRequest.timeout(TimeValue.timeValueMinutes(1));
-        sourceData.forEach((String record) -> {
-            bulkRequest.add(new IndexRequest(indexName, mappingName).source(record, XContentType.JSON));
+        importQuery.getSource().forEach((String record) -> {
+            bulkRequest.add(new IndexRequest(importQuery.getDatabase(), importQuery.getTable())
+                .source(record, XContentType.JSON));
         });
 
         return Mono.create(sink -> {
-        client.bulkAsync(bulkRequest, new ActionListener<BulkResponse>() {
+            client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, new ActionListener<BulkResponse>() {
                 @Override
                 public void onResponse(BulkResponse bulkResponse) {
-                    List<String> recordErrors = new ArrayList<>();
+                    List<String> documentErrors = new ArrayList<>();
 
-                    if (bulkResponse.hasFailures())
-                    {
-                        recordErrors = Arrays.stream(bulkResponse.getItems())
+                    if (bulkResponse.hasFailures()) {
+                        documentErrors = Arrays.stream(bulkResponse.getItems())
                         .filter(item -> item.isFailed()).map((BulkItemResponse item) -> {
                             return String.format("%d,%s", item.getFailure().getSeqNo(), item.getFailure().getMessage());
                         }).collect(Collectors.toList());
                     }
 
-                    sink.success(new ImportResult(recordErrors));
-
+                    String responseText = "Imported " + bulkResponse.getItems().length + " items successfully.";
+                    sink.success(new ActionResult(responseText, documentErrors));
                 }
 
                 @Override
@@ -324,4 +328,47 @@ public class ElasticsearchAdapter extends QueryAdapter {
         });
     }
 
+    @Override
+    public Mono<ActionResult> mutateData(MutateQuery mutateQuery) {
+        // TODO Use an UpdateByQueryRequest here if we need to update multiple documents simultaneously in the future.
+        UpdateRequest updateRequest = ElasticsearchQueryConverter.convertMutationByIdQuery(mutateQuery);
+        return Mono.create(sink -> {
+            client.updateAsync(updateRequest, RequestOptions.DEFAULT, new ActionListener<UpdateResponse>() {
+                @Override
+                public void onResponse(UpdateResponse updateResponse) {
+                    String updateText = "";
+                    boolean updateFailed = false;
+                    switch (updateResponse.getResult()) {
+                        case CREATED:
+                            updateText = "created successfully";
+                            break;
+                        case UPDATED:
+                            updateText = "updated successfully";
+                            break;
+                        case DELETED:
+                            updateText = "deleted successfully";
+                            break;
+                        case NOOP:
+                            updateText = "no operation needed";
+                            break;
+                        case NOT_FOUND:
+                            updateText = "not found";
+                            updateFailed = true;
+                            break;
+                    }
+                    String responseText = "Index " + updateResponse.getIndex() + " ID " + updateResponse.getId() +
+                        " " + updateText + ".";
+                    List<String> documentErrors = updateFailed ? new ArrayList<String>() {{
+                        add(responseText);
+                    }} : new ArrayList<String>();
+                    sink.success(new ActionResult(responseText, documentErrors));
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    sink.error(e);
+                }
+            });
+        });
+    }
 }

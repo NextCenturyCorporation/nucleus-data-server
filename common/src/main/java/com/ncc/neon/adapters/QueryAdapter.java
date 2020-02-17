@@ -3,9 +3,11 @@ package com.ncc.neon.adapters;
 import java.util.List;
 import java.util.Map;
 
+import com.ncc.neon.models.queries.ImportQuery;
+import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.Query;
+import com.ncc.neon.models.results.ActionResult;
 import com.ncc.neon.models.results.FieldTypePair;
-import com.ncc.neon.models.results.ImportResult;
 import com.ncc.neon.models.results.TabularQueryResult;
 
 import lombok.Data;
@@ -115,12 +117,7 @@ public abstract class QueryAdapter {
      */
     public abstract Flux<TableWithFields> getTableAndFieldNames(String databaseName);
 
-    /**
-     *
-     * @param databaseName destination database name
-     * @param tableName destination table name
-     * @param sourceData data to import
-     * @return import result containing total and failed counts
-     */
-    public abstract Mono<ImportResult> addData(String databaseName, String tableName, List<String> sourceData);
+    public abstract Mono<ActionResult> importData(ImportQuery importQuery);
+
+    public abstract Mono<ActionResult> mutateData(MutateQuery mutate);
 }

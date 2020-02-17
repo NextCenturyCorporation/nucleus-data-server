@@ -1,18 +1,20 @@
 package com.ncc.neon.adapters;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 
 import com.ncc.neon.models.queries.AggregateByFieldClause;
 import com.ncc.neon.models.queries.AggregateByGroupCountClause;
 import com.ncc.neon.models.queries.AggregateByTotalCountClause;
 import com.ncc.neon.models.queries.AndWhereClause;
-import com.ncc.neon.models.queries.CompoundWhereClause;
 import com.ncc.neon.models.queries.FieldClause;
 import com.ncc.neon.models.queries.FieldsWhereClause;
 import com.ncc.neon.models.queries.GroupByFieldClause;
 import com.ncc.neon.models.queries.GroupByOperationClause;
 import com.ncc.neon.models.queries.JoinClause;
 import com.ncc.neon.models.queries.LimitClause;
+import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.OffsetClause;
 import com.ncc.neon.models.queries.OrWhereClause;
 import com.ncc.neon.models.queries.Query;
@@ -764,5 +766,45 @@ public class QueryBuilder {
             ))
         ));
         return query;
+    }
+
+    protected MutateQuery buildMutationByIdQuery() {
+        return new MutateQuery("testHost", "testType", "testDatabase", "testTable", "testIdField", "testId",
+            new LinkedHashMap<String, Object>(){{
+                put("testString", "a");
+                put("testZero", 0);
+                put("testInteger", 1);
+                put("testDecimal", 0.5);
+                put("testNegativeInteger", -1);
+                put("testNegativeDecimal", -0.5);
+                put("testTrue", true);
+                put("testFalse", false);
+            }});
+    }
+
+    protected MutateQuery buildArrayAndObjectMutationByIdQuery() {
+        return new MutateQuery("testHost", "testType", "testDatabase", "testTable", "testIdField", "testId",
+            new LinkedHashMap<String, Object>(){{
+                put("testEmptyArray", new ArrayList<Object>());
+                put("testEmptyObject", new LinkedHashMap<String, Object>());
+                put("testArray", new ArrayList<Object>() {{
+                    add("b");
+                    add(2);
+                    add(true);
+                    add(new LinkedHashMap<String, Object>() {{
+                        put("testArrayObjectString", "c");
+                        put("testArrayObjectInteger", 3);
+                    }});
+                }});
+                put("testObject", new LinkedHashMap<String, Object>() {{
+                    put("testObjectString", "d");
+                    put("testObjectInteger", 4);
+                    put("testObjectBoolean", true);
+                    put("testObjectArray", new ArrayList<Object>() {{
+                        add("e");
+                        add(5);
+                    }});
+                }});
+            }});
     }
 }

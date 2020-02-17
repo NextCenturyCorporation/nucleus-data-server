@@ -5,10 +5,12 @@ import java.util.List;
 import java.util.Map;
 
 import com.ncc.neon.adapters.QueryAdapter;
+import com.ncc.neon.models.queries.ImportQuery;
+import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.Query;
+import com.ncc.neon.models.results.ActionResult;
 import com.ncc.neon.models.results.FieldType;
 import com.ncc.neon.models.results.FieldTypePair;
-import com.ncc.neon.models.results.ImportResult;
 import com.ncc.neon.models.results.TableWithFields;
 import com.ncc.neon.models.results.TabularQueryResult;
 
@@ -71,7 +73,12 @@ public class DummyQueryAdapter extends QueryAdapter {
     }
 
     @Override
-    public Mono<ImportResult> addData(String databaseName, String tableName, List<String> sourceData) {
-        return addData(databaseName, tableName, sourceData);
+    public Mono<ActionResult> importData(ImportQuery importQuery) {
+        return Mono.just(new ActionResult());
+    }
+
+    @Override
+    public Mono<ActionResult> mutateData(MutateQuery mutate) {
+        return Mono.just(new ActionResult());
     }
 }
