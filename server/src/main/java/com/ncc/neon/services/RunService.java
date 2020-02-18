@@ -15,12 +15,19 @@ import java.util.Map;
 
 @Component
 public class RunService extends ElasticSearchService<Run> {
-    private static final String index = "run";
-    private static final String dataType = "run";
+    private static final String TRAIN_START_TIME_FIELD = "train_start_time";
+    private static final String TRAIN_END_TIME_FIELD = "train_end_time";
+    private static final String INF_START_TIME_FIELD = "inf_start_time";
+    private static final String INF_END_TIME_FIELD = "inf_end_time";
+    private static final String STATUS_FIELD = "status";
+    private static final String STATUS_MESSAGE_FIELD = "status_message";
+    private static final String OVERALL_SCORE_FIELD = "overall_score";
 
     @Autowired
-    RunService(DatasetService datasetService, @Value("${db_host}") String dbHost) {
-        super(dbHost, index, dataType, Run.class, datasetService);
+    RunService(DatasetService datasetService,
+               @Value("${db_host}") String dbHost,
+               @Value("${run.table}") String runTable) {
+        super(dbHost, runTable, runTable, Run.class, datasetService);
     }
 
     public Mono<Tuple2<String, RestStatus>> initRun(String trainConfigFile, String infConfigFile) {
@@ -30,42 +37,42 @@ public class RunService extends ElasticSearchService<Run> {
 
     public Mono<RestStatus> updateToTrainStatus(String runId) {
         Map<String, Object> data = new HashMap<>();
-        data.put("train_start_time", DateUtil.getCurrentDateTime());
-        data.put("status", RunStatus.TRAINING);
+        data.put(TRAIN_START_TIME_FIELD, DateUtil.getCurrentDateTime());
+        data.put(STATUS_FIELD, RunStatus.TRAINING);
         return updateAndRefresh(data, runId);
     }
 
     public Mono<RestStatus> completeTraining(String runId) {
         Map<String, Object> data = new HashMap<>();
-        data.put("train_end_time", DateUtil.getCurrentDateTime());
+        data.put(TRAIN_END_TIME_FIELD, DateUtil.getCurrentDateTime());
         return updateAndRefresh(data, runId);
     }
 
     public Mono<RestStatus> updateToInferenceStatus(String runId) {
         Map<String, Object> data = new HashMap<>();
-        data.put("status", RunStatus.INFERENCING);
-        data.put("inf_start_time", DateUtil.getCurrentDateTime());
+        data.put(STATUS_FIELD, RunStatus.INFERENCING);
+        data.put(INF_START_TIME_FIELD, DateUtil.getCurrentDateTime());
         return updateAndRefresh(data, runId);
     }
 
     public Mono<RestStatus> updateToScoringStatus(String runId) {
         Map<String, Object> data = new HashMap<>();
-        data.put("inf_end_time", DateUtil.getCurrentDateTime());
-        data.put("status", RunStatus.SCORING);
+        data.put(INF_END_TIME_FIELD, DateUtil.getCurrentDateTime());
+        data.put(STATUS_FIELD, RunStatus.SCORING);
         return updateAndRefresh(data, runId);
     }
 
     public Mono<RestStatus> updateToDoneStatus(String completedRunId, double overallScore) {
         Map<String, Object> data = new HashMap<>();
-        data.put("status", RunStatus.DONE);
-        data.put("overall_score", overallScore);
+        data.put(STATUS_FIELD, RunStatus.DONE);
+        data.put(OVERALL_SCORE_FIELD, overallScore);
         return updateAndRefresh(data, completedRunId);
     }
 
     public Mono<RestStatus> updateToErrorStatus(String runId, String errorMsg) {
         Map<String, Object> data = new HashMap<>();
-        data.put("status", RunStatus.ERROR);
-        data.put("status_message", errorMsg);
+        data.put(STATUS_FIELD, RunStatus.ERROR);
+        data.put(STATUS_MESSAGE_FIELD, errorMsg);
         return updateAndRefresh(data, runId);
     }
 

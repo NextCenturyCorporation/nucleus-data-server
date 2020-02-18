@@ -7,11 +7,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class EvaluationService extends ElasticSearchService<EvaluationOutput> {
-    private static final String index = "evaluation";
-    private static final String dataType = "evaluation";
-
     @Autowired
-    EvaluationService(DatasetService datasetService, @Value("${db_host}") String dbHost) {
-        super(dbHost, index, dataType, EvaluationOutput.class, datasetService);
+    EvaluationService(DatasetService datasetService,
+                      @Value("${db_host}") String dbHost,
+                      @Value("${evaluation.table}") String evalTable) {
+        super(dbHost, evalTable, evalTable, EvaluationOutput.class, datasetService);
     }
 }

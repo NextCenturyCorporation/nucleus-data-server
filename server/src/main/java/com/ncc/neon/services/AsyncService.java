@@ -15,37 +15,39 @@ import reactor.util.function.Tuples;
 @Component
 public class AsyncService {
 
-    private NlpModuleService nlpModuleService;
+    private ModuleService moduleService;
     private RunService runService;
 
     @Autowired
-    public AsyncService(NlpModuleService nlpModuleService, RunService runService) {
-        this.nlpModuleService = nlpModuleService;
+    public AsyncService(ModuleService moduleService, RunService runService) {
+        this.moduleService = moduleService;
         this.runService = runService;
     }
 
     public Mono<?> processEvaluation(String trainConfigFile, String infConfigFile, String module,
                                   boolean infOnly,String refFile) {
-        return nlpModuleService.getNlpModule(module)
-                .flatMap(nlpModule -> runService.initRun(trainConfigFile, infConfigFile)
-                        .flatMap(initialRun -> {
-                            IENlpModule ieNlpModule = (IENlpModule) nlpModule;
-                            Mono<Tuple2<String, IENlpModule>> res = Mono.just(Tuples.of(initialRun.getT1(), ieNlpModule));
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> moduleService.incrementJobCount(nlpModule.getName())
+                    .flatMap(ignored -> runService.initRun(trainConfigFile, infConfigFile)
+                            .flatMap(initialRun -> {
+                                IENlpModule ieNlpModule = (IENlpModule) nlpModule;
+                                Mono<Tuple2<String, IENlpModule>> res = Mono.just(Tuples.of(initialRun.getT1(), ieNlpModule));
 
-                            if (!infOnly) {
-                                return runService.updateToTrainStatus(initialRun.getT1())
-                                        .flatMap(test -> ieNlpModule.performTraining(trainConfigFile, initialRun.getT1()))
-                                        .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())))
-                                        .then(res);
-                            }
+                                if (!infOnly) {
+                                    return runService.updateToTrainStatus(initialRun.getT1())
+                                            .flatMap(test -> ieNlpModule.performTraining(trainConfigFile, initialRun.getT1()))
+                                            .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())))
+                                            .then(res);
+                                }
 
-                            return res;
-                        }))
+                                return res;
+                            })))
                 .flatMap(trainRes -> runService.updateToInferenceStatus(trainRes.getT1())
                         .flatMap(updateRes -> trainRes.getT2().performInference(infConfigFile, trainRes.getT1())
                                 .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
-                                .flatMap(infRes -> runService.updateToScoringStatus(trainRes.getT1()))
-                                .flatMap(updatedRun -> nlpModuleService.getNlpModule("ie_eval")
+                                .flatMap(infRes -> moduleService.decrementJobCount(module)
+                                    .flatMap(ignored -> runService.updateToScoringStatus(trainRes.getT1())))
+                                .flatMap(updatedRun -> moduleService.buildNlpModuleClient(ModuleService.EVAL_SERVICE_NAME)
                                         .flatMap(evalModule -> {
                                             EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
                                             return runService.getInferenceOutput(trainRes.getT1())
@@ -57,16 +59,19 @@ public class AsyncService {
     }
 
     public Flux<?> processTraining(String configFile, String module, String runId) {
-        return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
+        return moduleService.buildNlpModuleClient(module).flatMapMany(nlpModule -> {
             IENlpModule trainNlpModule = (IENlpModule) nlpModule;
             return trainNlpModule.performTraining(configFile, runId);
         });
     }
 
-    public Flux<?> performPreprocess(String file, String module) {
-        return nlpModuleService.getNlpModule(module).flatMapMany(nlpModule -> {
+    public Mono<?> performPreprocess(String file, String module) {
+        return moduleService.buildNlpModuleClient(module).flatMap(nlpModule -> {
             PreprocessorNlpModule preprocessorNlpModule = (PreprocessorNlpModule)nlpModule;
-            return preprocessorNlpModule.performPreprocessing(file);
+
+            return moduleService.incrementJobCount(nlpModule.getName())
+                    .flatMap(ignored -> preprocessorNlpModule.performPreprocessing(file))
+                    .flatMap(ignored -> moduleService.decrementJobCount(nlpModule.getName()));
         });
     }
 }
