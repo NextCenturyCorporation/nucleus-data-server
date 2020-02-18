@@ -16,7 +16,7 @@ public class BetterFileService extends ElasticSearchService<BetterFile> {
     @Autowired
     BetterFileService(DatasetService datasetService,
                       @Value("${db_host}") String dbHost,
-                      @Value("{file.table}") String fileTable) {
+                      @Value("${file.table}") String fileTable) {
         super(dbHost, fileTable, fileTable, BetterFile.class, datasetService);
     }
 
