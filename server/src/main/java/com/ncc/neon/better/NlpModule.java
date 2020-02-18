@@ -2,6 +2,7 @@ package com.ncc.neon.better;
 
 import java.net.ConnectException;
 import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,7 +59,7 @@ public abstract class NlpModule {
     }
 
     public Mono<HttpStatus> getRemoteStatus() {
-        return buildRequest(new HashMap<>(), statusEndpoint)
+        return buildRequest(Collections.EMPTY_MAP, statusEndpoint)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(HttpStatus.class)
