@@ -21,8 +21,8 @@ import java.util.Map;
 
 @Component
 public class ModuleService extends ElasticSearchService<NlpModuleModel> {
-    private static final String index = "module";
-    private static final String dataType = "module";
+    public static final String EVAL_SERVICE_NAME = "ie_eval";
+
     private HashMap<String, NlpModule> nlpModuleCache;
 
     @Autowired
@@ -42,8 +42,11 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
 
 
     @Autowired
-    ModuleService(DatasetService datasetService, @Value("${db_host}") String dbHost, @Value("${status_check_interval_seconds}") int interval) {
-        super(dbHost, index, dataType, NlpModuleModel.class, datasetService);
+    ModuleService(DatasetService datasetService,
+                  @Value("${db_host}") String dbHost,
+                  @Value("${status_check_interval_seconds}") int interval,
+                  @Value("${module.table}") String moduleTable) {
+        super(dbHost, moduleTable, moduleTable, NlpModuleModel.class, datasetService);
         nlpModuleCache = new HashMap<>();
         Flux.interval(Duration.ofSeconds(interval)).flatMap(ignored -> checkAllConnections().retry()).subscribe();
     }

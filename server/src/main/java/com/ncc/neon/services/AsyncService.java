@@ -47,7 +47,7 @@ public class AsyncService {
                                 .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
                                 .flatMap(infRes -> moduleService.decrementJobCount(module)
                                     .flatMap(ignored -> runService.updateToScoringStatus(trainRes.getT1())))
-                                .flatMap(updatedRun -> moduleService.buildNlpModuleClient("ie_eval")
+                                .flatMap(updatedRun -> moduleService.buildNlpModuleClient(ModuleService.EVAL_SERVICE_NAME)
                                         .flatMap(evalModule -> {
                                             EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
                                             return runService.getInferenceOutput(trainRes.getT1())

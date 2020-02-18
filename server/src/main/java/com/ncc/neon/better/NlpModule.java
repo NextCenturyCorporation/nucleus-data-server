@@ -152,6 +152,8 @@ public abstract class NlpModule {
     private WebClient buildNlpWebClient(String name) {
         String url = "http://";
         String host = System.getenv().getOrDefault(name.toUpperCase() + "_HOST", "localhost");
+
+        // Get port from app properties so we don't have to hard-code defaults in the code.
         String port = env.getProperty(name + ".port");
 
         url += host + ":" + port;

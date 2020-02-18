@@ -10,15 +10,14 @@ import reactor.core.publisher.Mono;
 
 @Component
 public class BetterFileService extends ElasticSearchService<BetterFile> {
-    private static final String index = "file";
-    private static final String dataType = "file";
-
     @Autowired
     private DatasetService datasetService;
 
     @Autowired
-    BetterFileService(DatasetService datasetService, @Value("${db_host}") String dbHost) {
-        super(dbHost, index, dataType, BetterFile.class, datasetService);
+    BetterFileService(DatasetService datasetService,
+                      @Value("${db_host}") String dbHost,
+                      @Value("{file.table}") String fileTable) {
+        super(dbHost, fileTable, fileTable, BetterFile.class, datasetService);
     }
 
     public Mono<RestStatus> initMany(String[] filesToAdd) {

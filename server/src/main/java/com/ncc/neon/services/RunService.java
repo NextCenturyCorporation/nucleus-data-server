@@ -15,12 +15,11 @@ import java.util.Map;
 
 @Component
 public class RunService extends ElasticSearchService<Run> {
-    private static final String index = "run";
-    private static final String dataType = "run";
-
     @Autowired
-    RunService(DatasetService datasetService, @Value("${db_host}") String dbHost) {
-        super(dbHost, index, dataType, Run.class, datasetService);
+    RunService(DatasetService datasetService,
+               @Value("${db_host}") String dbHost,
+               @Value("${run.table}") String runTable) {
+        super(dbHost, runTable, runTable, Run.class, datasetService);
     }
 
     public Mono<Tuple2<String, RestStatus>> initRun(String trainConfigFile, String infConfigFile) {
