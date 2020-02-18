@@ -22,6 +22,8 @@ import java.util.Map;
 @Component
 public class ModuleService extends ElasticSearchService<NlpModuleModel> {
     public static final String EVAL_SERVICE_NAME = "ie_eval";
+    public static final String JOB_COUNT_FIELD = "job_count";
+    public static final String STATUS_FIELD = "status";
 
     private HashMap<String, NlpModule> nlpModuleCache;
 
@@ -84,10 +86,10 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
         // First, get the current job count.
         return getJobCount(moduleId).flatMap(count -> {
             Map<String, Object> data = new HashMap<>();
-            data.put("job_count", ++count);
+            data.put(JOB_COUNT_FIELD, ++count);
 
             if (count > 0) {
-                data.put("status", ModuleStatus.BUSY);
+                data.put(STATUS_FIELD, ModuleStatus.BUSY);
             }
 
             return updateAndRefresh(data, moduleId);
@@ -97,10 +99,10 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
     public Mono<RestStatus> decrementJobCount(String moduleId) {
         return getJobCount(moduleId).flatMap(count -> {
             Map<String, Object> data = new HashMap<>();
-            data.put("job_count", --count);
+            data.put(JOB_COUNT_FIELD, --count);
 
             if (count == 0) {
-                data.put("status", ModuleStatus.IDLE);
+                data.put(STATUS_FIELD, ModuleStatus.IDLE);
             }
 
             return updateAndRefresh(data, moduleId);
@@ -109,8 +111,8 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
 
     public Mono<RestStatus> setStatusToDown(String moduleId) {
         Map<String, Object> data = new HashMap<>();
-        data.put("job_count", 0);
-        data.put("status", ModuleStatus.DOWN);
+        data.put(JOB_COUNT_FIELD, 0);
+        data.put(STATUS_FIELD, ModuleStatus.DOWN);
         return updateAndRefresh(data, moduleId);
     }
 
@@ -122,10 +124,10 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
         Map<String, Object> data = new HashMap<>();
 
         if (count == 0) {
-            data.put("status", ModuleStatus.IDLE);
+            data.put(STATUS_FIELD, ModuleStatus.IDLE);
         }
         else {
-            data.put("status", ModuleStatus.BUSY);
+            data.put(STATUS_FIELD, ModuleStatus.BUSY);
         }
 
         return updateAndRefresh(data, moduleId);
