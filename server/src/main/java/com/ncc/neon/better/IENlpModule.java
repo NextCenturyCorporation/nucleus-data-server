@@ -7,14 +7,13 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.ncc.neon.models.NlpModuleModel;
+import com.ncc.neon.services.*;
 import org.elasticsearch.rest.RestStatus;
+import org.springframework.core.env.Environment;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ncc.neon.services.BetterFileService;
-import com.ncc.neon.services.DatasetService;
-import com.ncc.neon.services.FileShareService;
-import com.ncc.neon.services.RunService;
 
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
@@ -27,15 +26,16 @@ public class IENlpModule extends NlpModule {
     private RunService runService;
     private Path shareDir;
 
-    public IENlpModule(DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, RunService runService) {
-        super(datasetService, fileShareService, betterFileService);
+    public IENlpModule(NlpModuleModel moduleModel, DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, RunService runService, ModuleService moduleService, Environment env) {
+        super(moduleModel, datasetService, fileShareService, betterFileService, moduleService, env);
         this.runService = runService;
         shareDir = fileShareService.getSharePath();
     }
 
     @SuppressWarnings("incomplete-switch")
 	@Override
-    public void setEndpoints(HttpEndpoint[] endpoints) {
+    protected void initEndpoints(HttpEndpoint[] endpoints) {
+        super.initEndpoints(endpoints);
         for (HttpEndpoint endpoint : endpoints) {
             switch (endpoint.getType()) {
                 case TRAIN:

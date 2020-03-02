@@ -2,7 +2,6 @@ package com.ncc.neon.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.exception.UpsertException;
-import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.DataNotification;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -13,12 +12,18 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
@@ -32,6 +37,7 @@ public abstract class ElasticSearchService<T> {
     private final String dataType;
     private final Class<T> type;
     private final DatasetService datasetService;
+    private final DataNotification notification;
 
     ElasticSearchService(String host, String index, String dataType, Class<T> type, DatasetService datasetService) {
         this.elasticSearchClient = new RestHighLevelClient(RestClient.builder(
@@ -41,6 +47,31 @@ public abstract class ElasticSearchService<T> {
         this.dataType = dataType;
         this.type = type;
         this.datasetService = datasetService;
+        notification = new DataNotification();
+        notification.setTableName(index);
+    }
+
+    public Flux<T> getAll() {
+        SearchRequest sr = new SearchRequest(index);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+        sr.source(searchSourceBuilder);
+
+        return Flux.create(tFluxSink -> {
+            try {
+                SearchResponse response = elasticSearchClient.search(sr, RequestOptions.DEFAULT);
+                SearchHit[] hits = response.getHits().getHits();
+
+                for (SearchHit hit : hits) {
+                    T res = new ObjectMapper().readValue(hit.getSourceAsString(), type);
+                    tFluxSink.next(res);
+                }
+
+                tFluxSink.complete();
+            } catch (Exception e) {
+                tFluxSink.error(e);
+            }
+        });
     }
 
     public Mono<T> getById(String id) {
@@ -70,6 +101,18 @@ public abstract class ElasticSearchService<T> {
         return completeIndexRequest(indexRequest);
     }
 
+    public Mono<RestStatus> insertAndRefresh(T itemToInsert) {
+        return insert(itemToInsert)
+                .then(refreshIndex().retry(3))
+                .doOnSuccess(status -> datasetService.notify(notification));
+    }
+
+    public Mono<RestStatus> upsertAndRefresh(T itemToAdd, String id) {
+        return upsert(itemToAdd, id)
+                .then(refreshIndex().retry(3))
+                .doOnSuccess(status -> datasetService.notify(notification));
+    }
+
     public Mono<Tuple2<String, RestStatus>> upsert(T itemToAdd, String id) {
         // Serialize item to json map.
         Map<String, Object> itemMap = new ObjectMapper().convertValue(itemToAdd, Map.class);
@@ -81,7 +124,7 @@ public abstract class ElasticSearchService<T> {
     public Mono<RestStatus> updateAndRefresh(Map<String, Object> data, String docId) {
         return update(data, docId)
                 .then(refreshIndex().retry(3))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+                .doOnSuccess(status -> datasetService.notify(notification));
     }
 
     public Mono<RestStatus> update(Map<String, Object> data, String docId) {
@@ -95,6 +138,12 @@ public abstract class ElasticSearchService<T> {
                 sink.error(e);
             }
         });
+    }
+
+    public Mono<RestStatus> deleteByIdAndRefresh(String id) {
+        return deleteById(id)
+                .then(refreshIndex().retry(3))
+                .doOnSuccess(status -> datasetService.notify(notification));
     }
 
     public Mono<RestStatus> deleteById(String id) {

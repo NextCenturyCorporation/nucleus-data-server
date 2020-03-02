@@ -2,11 +2,9 @@ package com.ncc.neon.controllers;
 
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.BetterFile;
-import com.ncc.neon.models.DataNotification;
 import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.*;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -31,16 +29,24 @@ public class BetterController {
     private DatasetService datasetService;
     private FileShareService fileShareService;
     private BetterFileService betterFileService;
+    private ModuleService moduleService;
     private AsyncService asyncService;
 
     BetterController(DatasetService datasetService,
                      FileShareService fileShareService,
                      BetterFileService betterFileService,
+                     ModuleService moduleService,
                      AsyncService asyncService) {
         this.datasetService = datasetService;
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
+        this.moduleService = moduleService;
         this.asyncService = asyncService;
+    }
+
+    @GetMapping(path = "status")
+    Mono<HttpStatus> status() {
+        return moduleService.checkAllConnections();
     }
 
     @PostMapping(path = "upload")
@@ -51,10 +57,7 @@ public class BetterController {
                 .flatMap(filePart -> {
                     // Create pending file in ES.
                     BetterFile pendingFile = new BetterFile(filePart.filename(), 0);
-                    return betterFileService.upsert(pendingFile)
-                            .onErrorResume(Mono::error)
-                            .then(betterFileService.refreshFilesIndex().retry(3))
-                            .doOnSuccess(status -> datasetService.notify(new DataNotification()))
+                    return betterFileService.upsertAndRefresh(pendingFile, pendingFile.getFilename())
                             // Write file part to share.
                             .then(fileShareService.writeFilePart(filePart));
                 })
@@ -67,10 +70,8 @@ public class BetterController {
                                 .flatMap(errorFile -> {
                                     errorFile.setStatus(FileStatus.ERROR);
                                     errorFile.setStatus_message(onError.getClass() + ": " + onError.getMessage());
-                                    return betterFileService.upsert(errorFile);
-                                })
-                                .then(betterFileService.refreshFilesIndex().retry(3))
-                                .doOnSuccess(status -> datasetService.notify(new DataNotification())))
+                                    return betterFileService.insertAndRefresh(errorFile);
+                                }))
                                 .then(Mono.just(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error writing file to share.")))
                                 .subscribe();
                     }
@@ -81,11 +82,9 @@ public class BetterController {
                     fileToAdd.setStatus(FileStatus.READY);
 
                     // Update entries in ES.
-                    return betterFileService.upsert(fileToAdd)
+                    return betterFileService.upsertAndRefresh(fileToAdd, fileToAdd.getFilename())
                             // Delete file if update fails.
                             .doOnError(onError -> fileShareService.delete(file.getName()))
-                            .then(betterFileService.refreshFilesIndex().retry(3))
-                            .doOnSuccess(status -> datasetService.notify(new DataNotification()))
                             .then(Mono.just(ResponseEntity.ok().build()));
                 });
     }
@@ -99,10 +98,8 @@ public class BetterController {
                     }
                     return fileShareService.delete(fileToDelete.getFilename());
                 })
-                .then(betterFileService.deleteById(id))
-                .then(betterFileService.refreshFilesIndex().retry(3))
-                .then(Mono.just(ResponseEntity.ok().build()))
-                .doOnSuccess(status -> datasetService.notify(new DataNotification()));
+                .then(betterFileService.deleteByIdAndRefresh(id))
+                .then(Mono.just(ResponseEntity.ok().build()));
     }
 
     @GetMapping(path = "download")
@@ -130,7 +127,7 @@ public class BetterController {
     }
 
     @GetMapping(path="preprocess")
-    ResponseEntity preprocess(@RequestParam("file") String file, @RequestParam("module") String module) {
+    ResponseEntity<Object> preprocess(@RequestParam("file") String file, @RequestParam("module") String module) {
         asyncService.performPreprocess(file, module)
                 .subscribeOn(Schedulers.newSingle("thread"))
                 .subscribe();
@@ -139,7 +136,7 @@ public class BetterController {
     }
 
     @GetMapping(path="train")
-    ResponseEntity train(@RequestParam("configFile") String configFile, @RequestParam("module") String module, @RequestParam("runId") String runId) {
+    ResponseEntity<Object> train(@RequestParam("configFile") String configFile, @RequestParam("module") String module, @RequestParam("runId") String runId) {
         asyncService.processTraining(configFile, module, runId)
                 .subscribeOn(Schedulers.newSingle("thread"))
                 .subscribe();
@@ -148,7 +145,7 @@ public class BetterController {
     }
 
     @GetMapping(path="eval")
-    ResponseEntity eval(@RequestParam("trainConfigFile") String trainConfigFile,
+    ResponseEntity<Object> eval(@RequestParam("trainConfigFile") String trainConfigFile,
                           @RequestParam("infConfigFile") String infConfigFile, @RequestParam("module") String module,
                           @RequestParam("infOnly") boolean infOnly, @RequestParam("refFile") String refFile) {
         asyncService.processEvaluation(trainConfigFile, infConfigFile, module, infOnly, refFile)
