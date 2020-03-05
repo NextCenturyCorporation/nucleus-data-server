@@ -63,7 +63,7 @@ public class AsyncService {
                 .flatMap(nlpModule -> runService.initRun(trainConfigFile, infConfigFile)
                         .flatMap(initialRun -> {
                             IENlpModule ieNlpModule = (IENlpModule) nlpModule;
-                            Mono<Tuple2<String, IENlpModule>> res = Mono.just(Tuples.of(initialRun.getT1(), ieNlpModule));
+                            Mono<String> res = Mono.just(initialRun.getT1());
                             return runService.updateToTrainStatus(initialRun.getT1())
                                     .flatMap(test -> ieNlpModule.performTraining(trainConfigFile, initialRun.getT1()))
                                     .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())))
