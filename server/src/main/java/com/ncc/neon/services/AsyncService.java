@@ -82,7 +82,7 @@ public class AsyncService {
                     return Mono.just(Tuples.of(runId, ieNlpModule));
                 })
                     .flatMap(initialRun -> runService.updateToInferenceStatus(initialRun.getT1())
-                        .flatMap(updateRes -> initialRun.getT2().performInference(infConfigFile, initialRun.getT1())
+                        .flatMap(updateRes -> initialRun.getT2().performInference(infConfigFile, initialRun.getT1())    // T1 = runId for this run; T2 = IENlpModule used to perform inference
                             .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
                             ));
     }
