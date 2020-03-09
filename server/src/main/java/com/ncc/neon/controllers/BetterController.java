@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -152,5 +153,20 @@ public class BetterController {
                 .subscribe();
 
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping(path="synctrain")
+    Mono<?> syncTrain(@RequestParam("trainConfigFile") String trainConfigFile,
+                                   @RequestParam("infConfigFile") String infConfigFile,
+                                   @RequestParam("module") String module) {
+        return asyncService.processTraining(trainConfigFile, infConfigFile, module);
+    }
+
+    @GetMapping(path="syncinf")
+    Mono<?> syncInf(@RequestParam("trainConfigFile") String trainConfigFile,
+                    @RequestParam("infConfigFile") String infConfigFile,
+                    @RequestParam("module") String module,
+                    @RequestParam(required = false, name = "runId") String runId) {
+        return asyncService.processInference(trainConfigFile, infConfigFile, module, runId);
     }
 }

@@ -58,11 +58,33 @@ public class AsyncService {
                 );
     }
 
-    public Flux<?> processTraining(String configFile, String module, String runId) {
-        return moduleService.buildNlpModuleClient(module).flatMapMany(nlpModule -> {
-            IENlpModule trainNlpModule = (IENlpModule) nlpModule;
-            return trainNlpModule.performTraining(configFile, runId);
-        });
+    public Mono<?> processTraining(String trainConfigFile, String infConfigFile, String module) {
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> runService.initRun(trainConfigFile, infConfigFile)
+                        .flatMap(initialRun -> {
+                            IENlpModule ieNlpModule = (IENlpModule) nlpModule;
+                            Mono<String> res = Mono.just(initialRun.getT1());
+                            return runService.updateToTrainStatus(initialRun.getT1())
+                                    .flatMap(test -> ieNlpModule.performTraining(trainConfigFile, initialRun.getT1()))
+                                    .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())))
+                                    .then(res);
+                        }));
+    }
+
+    public Mono<?> processInference(String trainConfigFile, String infConfigFile, String module, String runId) {
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> {
+                    IENlpModule ieNlpModule = (IENlpModule) nlpModule;
+                    if (runId == null) {
+                        return runService.initRun(trainConfigFile, infConfigFile)
+                        .flatMap(initRun -> Mono.just(Tuples.of(initRun.getT1(), ieNlpModule)));
+                    }
+                    return Mono.just(Tuples.of(runId, ieNlpModule));
+                })
+                    .flatMap(initialRun -> runService.updateToInferenceStatus(initialRun.getT1())
+                        .flatMap(updateRes -> initialRun.getT2().performInference(infConfigFile, initialRun.getT1())    // T1 = runId for this run; T2 = IENlpModule used to perform inference
+                            .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
+                            ));
     }
 
     public Mono<?> performPreprocess(String file, String module) {
