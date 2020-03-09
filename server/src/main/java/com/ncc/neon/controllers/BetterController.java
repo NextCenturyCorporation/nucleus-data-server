@@ -159,7 +159,7 @@ public class BetterController {
     }
 
     @GetMapping(path="score")
-    Mono<Score> score(@RequestParam("runId") String evalId) {
-        return evaluationService.getOverallScore(evalId);
+    Mono<?> score(@RequestParam("runId") String runId) {
+        return evaluationService.getOverallScoreByRunId(runId);
     }
 }

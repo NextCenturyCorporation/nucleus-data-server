@@ -32,7 +32,7 @@ import java.io.IOException;
 import java.util.Map;
 
 public abstract class ElasticSearchService<T> {
-    private final RestHighLevelClient elasticSearchClient;
+    protected final RestHighLevelClient elasticSearchClient;
     private final String index;
     private final String dataType;
     private final Class<T> type;
