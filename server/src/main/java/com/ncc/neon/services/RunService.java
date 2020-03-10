@@ -1,7 +1,9 @@
 package com.ncc.neon.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.models.Run;
 import com.ncc.neon.models.RunStatus;
+import com.ncc.neon.models.Score;
 import com.ncc.neon.util.DateUtil;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,8 @@ public class RunService extends ElasticSearchService<Run> {
     private static final String STATUS_FIELD = "status";
     private static final String STATUS_MESSAGE_FIELD = "status_message";
     private static final String OVERALL_SCORE_FIELD = "overall_score";
+
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @Autowired
     RunService(DatasetService datasetService,
@@ -62,10 +66,11 @@ public class RunService extends ElasticSearchService<Run> {
         return updateAndRefresh(data, runId);
     }
 
-    public Mono<RestStatus> updateToDoneStatus(String completedRunId, double overallScore) {
+    public Mono<RestStatus> updateToDoneStatus(String completedRunId, Score overallScore) {
         Map<String, Object> data = new HashMap<>();
+        Map<String, Object> scoreData = mapper.convertValue(overallScore, Map.class);
         data.put(STATUS_FIELD, RunStatus.DONE);
-        data.put(OVERALL_SCORE_FIELD, overallScore);
+        data.put(OVERALL_SCORE_FIELD, scoreData);
         return updateAndRefresh(data, completedRunId);
     }
 

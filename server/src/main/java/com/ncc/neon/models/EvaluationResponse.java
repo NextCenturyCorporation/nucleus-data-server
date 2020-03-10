@@ -7,7 +7,7 @@ public class EvaluationResponse {
     private final Score[] evaluation;
     private final BetterFile[] files;
 
-    public double getOverallScore() {
-        return evaluation[evaluation.length - 1].getCombinedScore();
+    public Score getOverallScore() {
+        return evaluation[evaluation.length - 1];
     }
 }
