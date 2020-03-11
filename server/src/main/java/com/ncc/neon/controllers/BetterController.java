@@ -157,9 +157,4 @@ public class BetterController {
 
         return ResponseEntity.ok().build();
     }
-
-    @GetMapping(path="score")
-    Mono<?> score(@RequestParam("runId") String runId) {
-        return evaluationService.getOverallScoreByRunId(runId);
-    }
 }
