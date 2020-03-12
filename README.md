@@ -4,16 +4,16 @@ The NUCLEUS Data Server is a REST server that is used with [NUCLEUS](https://git
 
 ## Table of Content
 
-* [Initial Setup Instructions](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#initial-setup-instructions)
-* [Datastore Authentication](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#datastore-authentication)
-* [Local Development Instructions](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#local-development-instructions)
-* [Production Deployment Instructions](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#production-deployment-instructions)
-* [Datastore Support](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#datastore-support)
-* [Datastore Configuration](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#datastore-configuration)
-* [Technical Stack](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#technical-stack)
-* [Architecture Documentation](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#architecture-documentation)
-* [License](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#apache-2-open-source-license)
-* [Contact Us](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#contact-us)
+* [Initial Setup Instructions](https://github.com/NextCenturyCorporation/nucleus-data-server/blob/master/README.md#initial-setup-instructions)
+* [Datastore Authentication](https://github.com/NextCenturyCorporation/nucleus-data-server/blob/master/README.md#datastore-authentication)
+* [Local Development Instructions](https://github.com/NextCenturyCorporation/nucleus-data-server/blob/master/README.md#local-development-instructions)
+* [Production Deployment Instructions](https://github.com/NextCenturyCorporation/nucleus-data-server/blob/master/README.md#production-deployment-instructions)
+* [Datastore Support](https://github.com/NextCenturyCorporation/nucleus-data-server/blob/master/README.md#datastore-support)
+* [Datastore Configuration](https://github.com/NextCenturyCorporation/nucleus-data-server/blob/master/README.md#datastore-configuration)
+* [Technical Stack](https://github.com/NextCenturyCorporation/nucleus-data-server/blob/master/README.md#technical-stack)
+* [Architecture Documentation](https://github.com/NextCenturyCorporation/nucleus-data-server/blob/master/README.md#architecture-documentation)
+* [License](https://github.com/NextCenturyCorporation/nucleus-data-server/blob/master/README.md#apache-2-open-source-license)
+* [Contact Us](https://github.com/NextCenturyCorporation/nucleus-data-server/blob/master/README.md#contact-us)
 
 ## Initial Setup Instructions
 
@@ -21,17 +21,17 @@ The NUCLEUS Data Server is a REST server that is used with [NUCLEUS](https://git
 
 - [Java 9+](https://www.oracle.com/technetwork/java/javase/downloads/jdk12-downloads-5295953.html) (Tested on OpenJDK versions 11 and 12)
 - [Docker](https://docs.docker.com/v17.12/install/)
-- A [supported datastore](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#datastore-support)
+- A [supported datastore](https://github.com/NextCenturyCorporation/nucleus-data-server/blob/master/README.md#datastore-support)
 
 ### Download Source Code
 
-`git clone https://github.com/NextCenturyCorporation/neon-server.git; cd neon-server`
+`git clone https://github.com/NextCenturyCorporation/nucleus-data-server.git; cd nucleus-data-server`
 
 ### Load Data
 
 If you were given a sample data bundle by the Neon / NUCLEUS Development Team, please download it and follow the specific instructions in its README file.
 
-If you want to use your own data, please see the [Datastore Configuration](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#datastore-configuration) for more information.
+If you want to use your own data, please see the [Datastore Configuration](https://github.com/NextCenturyCorporation/nucleus-data-server/blob/master/README.md#datastore-configuration) for more information.
 
 ### Customize Build (Optional)
 
@@ -73,13 +73,13 @@ The NUCLEUS Data Server is deployed as an docker container independent from othe
 
 #### 1. Perform All Initial Setup
 
-Follow the [Initial Setup Instructions](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#initial-setup-instructions) above.
+Follow the [Initial Setup Instructions](https://github.com/NextCenturyCorporation/nucleus-data-server/blob/master/README.md#initial-setup-instructions) above.
 
 #### 2. (Optional) Update the NUCLEUS Data Server's Port
 
 By default, the NUCLEUS Data Server runs on port `8090`.  If you want to use a different port:
 
-- In `<neon-server>/server/src/main/resources/application.properties`, change the line `server.port=8090` to use your port
+- In `<nucleus-data-server>/server/src/main/resources/application.properties`, change the line `server.port=8090` to use your port
 - In `Dockerfile`, change the line `EXPOSE 8090` to use your port
 
 #### 3. Build the Docker Image
@@ -105,7 +105,7 @@ The NUCLEUS Data Server supports the following datastores:
 
 Elasticsearch support provided by the official [Java High Level REST Client](https://www.elastic.co/guide/en/elasticsearch/client/java-rest/master/java-rest-high.html).  SQL support provided by [R2DBC drivers](https://r2dbc.io).
 
-*Want us to support another datastore?  [Please let us know!](https://github.com/NextCenturyCorporation/neon-server/blob/master/README.md#contact-us)*
+*Want us to support another datastore?  [Please let us know!](https://github.com/NextCenturyCorporation/nucleus-data-server/blob/master/README.md#contact-us)*
 
 ## Datastore Configuration
 
@@ -327,8 +327,6 @@ NUCLEUS is made available by [Next Century](http://www.nextcentury.com) under th
 
 ## Contact Us
 
-Email: [neon-support@nextcentury.com](mailto:neon-support@nextcentury.com)
-
-Website: http://neonframework.org
+Email: [neon-and-nucleus-support@caci.com](mailto:neon-and-nucleus-support@caci.com)
 
 Copyright 2019 Next Century Corporation
