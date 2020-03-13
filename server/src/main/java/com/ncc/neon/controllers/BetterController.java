@@ -3,6 +3,7 @@ package com.ncc.neon.controllers;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.FileStatus;
+import com.ncc.neon.models.Score;
 import com.ncc.neon.services.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -31,17 +32,20 @@ public class BetterController {
     private BetterFileService betterFileService;
     private ModuleService moduleService;
     private AsyncService asyncService;
+    private EvaluationService evaluationService;
 
     BetterController(DatasetService datasetService,
                      FileShareService fileShareService,
                      BetterFileService betterFileService,
                      ModuleService moduleService,
-                     AsyncService asyncService) {
+                     AsyncService asyncService,
+                     EvaluationService evaluationService) {
         this.datasetService = datasetService;
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
         this.moduleService = moduleService;
         this.asyncService = asyncService;
+        this.evaluationService = evaluationService;
     }
 
     @GetMapping(path = "status")

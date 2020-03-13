@@ -29,6 +29,8 @@ public class Score {
     private double argMatches;
     @JsonProperty("arg-precision")
     private double argPrecision;
+    @JsonProperty("arg-recall")
+    private double argRecall;
     @JsonProperty("arg-fmeasure")
     private double argFmeasure;
     @JsonProperty("combined-score")
