@@ -3,9 +3,9 @@ package com.ncc.neon.better;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
+import com.ncc.neon.exception.InvalidConfigDataTypeException;
 import com.ncc.neon.models.*;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.FileStatus;
@@ -134,9 +134,15 @@ public abstract class NlpModule {
         if (endpoint.getMethod() == HttpMethod.GET) {
             // Build Http Headers for query params.
             HttpHeaders params = new HttpHeaders();
+            try {
+                for (Map.Entry<String, String> entry : data.entrySet()) {
+                        params.add(entry.getKey(), entry.getValue());
 
-            for (Map.Entry<String, String> entry : data.entrySet()) {
-                params.add(entry.getKey(), entry.getValue());
+                }
+            }
+            catch (ClassCastException e) {
+                // Get the class name of the invalid data type.
+                throw new InvalidConfigDataTypeException(e.getMessage().split(" ")[1]);
             }
 
             return client.get().uri(uriBuilder -> {
