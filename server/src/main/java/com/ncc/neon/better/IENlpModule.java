@@ -73,7 +73,11 @@ public class IENlpModule extends NlpModule {
                                     .doOnError(onError -> {
                                         handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
                                         handleErrorDuringRun(onError, runId);
-                                    })));
+                                    }))
+                    .doOnError(onError -> {
+                        reportErrorInPendingFiles(onError.getMessage(), pendingFiles);
+                        handleErrorDuringRun(onError, runId);
+                    }));
         }
         catch (IOException e) {
             return Mono.error(e);
