@@ -20,12 +20,16 @@ import reactor.core.scheduler.Schedulers;
 
 import java.net.MalformedURLException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("better")
 @Slf4j
 public class BetterController {
+
+    public static final String SHARE_DIR = System.getenv().getOrDefault("SHARE_DIR", "share");
+    public static final Path SHARE_PATH = Paths.get(".").resolve(SHARE_DIR);
 
     private DatasetService datasetService;
     private FileShareService fileShareService;
@@ -151,8 +155,8 @@ public class BetterController {
     @GetMapping(path="eval")
     ResponseEntity<Object> eval(@RequestParam("trainConfigFile") String trainConfigFile,
                           @RequestParam("infConfigFile") String infConfigFile, @RequestParam("module") String module,
-                          @RequestParam("infOnly") boolean infOnly, @RequestParam("refFile") String refFile) {
-        asyncService.processEvaluation(trainConfigFile, infConfigFile, module, infOnly, refFile)
+                          @RequestParam("infOnly") boolean infOnly, @RequestParam("refFile") String refFile, @RequestParam("configFile") String configFile) {
+        asyncService.processEvaluation(trainConfigFile, infConfigFile, module, infOnly, refFile, configFile)
                 .subscribeOn(Schedulers.newSingle("thread"))
                 .subscribe();
 

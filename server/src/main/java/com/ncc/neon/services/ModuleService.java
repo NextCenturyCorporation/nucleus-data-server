@@ -50,7 +50,7 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
                   @Value("${module.table}") String moduleTable) {
         super(dbHost, moduleTable, moduleTable, NlpModuleModel.class, datasetService);
         nlpModuleCache = new HashMap<>();
-        Flux.interval(Duration.ofSeconds(interval)).flatMap(ignored -> checkAllConnections().retry()).subscribe();
+//        Flux.interval(Duration.ofSeconds(interval)).flatMap(ignored -> checkAllConnections().retry()).subscribe();
     }
 
     public Mono<NlpModule> buildNlpModuleClient(String name) {

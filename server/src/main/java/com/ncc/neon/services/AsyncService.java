@@ -1,6 +1,8 @@
 package com.ncc.neon.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.better.EvalNlpModule;
+import com.ncc.neon.better.ExperimentConfig;
 import com.ncc.neon.better.IENlpModule;
 import com.ncc.neon.better.PreprocessorNlpModule;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +13,14 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
+
+import static com.ncc.neon.controllers.BetterController.SHARE_PATH;
 
 @Component
 public class AsyncService {
@@ -25,7 +35,16 @@ public class AsyncService {
     }
 
     public Mono<?> processEvaluation(String trainConfigFile, String infConfigFile, String module,
-                                  boolean infOnly,String refFile) {
+                                  boolean infOnly,String refFile, String configFile) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        File confFile = new File(Paths.get(SHARE_PATH.toString(), configFile).toString());
+        Map<String, List<String>> configMap = null;
+        try {
+            configMap = objectMapper.readValue(confFile, Map.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        ExperimentConfig experimentConfig = new ExperimentConfig(configMap);
         return moduleService.buildNlpModuleClient(module)
                 .flatMap(nlpModule -> moduleService.incrementJobCount(nlpModule.getName())
                     .flatMap(ignored -> runService.initRun(trainConfigFile, infConfigFile)
