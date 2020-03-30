@@ -1,22 +1,84 @@
 package com.ncc.neon.better;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ncc.neon.models.ExperimentForm;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class ExperimentConfig {
-    private Map<String, List<String>> rawConfig;
-    private Collection<ArrayList<String>> trainConfigs;
-    private Object[] infConfigs;
+import static com.ncc.neon.controllers.BetterController.SHARE_PATH;
 
-    public ExperimentConfig(Map<String, List<String>> configMap) {
-        this.rawConfig = configMap;
-        parseConfig();
+public class ExperimentConfig {
+    public String module;
+
+    private String name;
+    private String trainFile;
+    private String devFile;
+    private String testFile;
+    private Map<String, List<String>> rawConfig;
+    private ArrayList<EvalConfig> evalConfigs;
+
+    public ExperimentConfig(ExperimentForm experimentForm) throws IOException {
+        this.module = experimentForm.getModule();
+        trainFile = experimentForm.getTrainFile();
+        devFile = experimentForm.getDevFile();
+        testFile = experimentForm.getTestFile();
+
+        // Read config file.
+        ObjectMapper objectMapper = new ObjectMapper();
+        File configFile = new File(Paths.get(SHARE_PATH.toString(), experimentForm.getConfigFile()).toString());
+
+        rawConfig = objectMapper.readValue(configFile, Map.class);
+        evalConfigs = new ArrayList<>();
+
+        initName();
+
+        if (rawConfig.size() == 0) {
+            // Add a single config with only required parameters.
+            evalConfigs.add(EvalConfig.buildConfig(module, trainFile, devFile, testFile, name, new ArrayList<>()));
+        }
+        else {
+            parseConfig(experimentForm.getTrainFile(), experimentForm.getDevFile(), experimentForm.getTestFile());
+        }
     }
 
-    private void parseConfig() {
+    public EvalConfig[] getEvalConfigs() {
+        return evalConfigs.toArray(new EvalConfig[0]);
+    }
+
+    public String getTrainFile() {
+        return trainFile;
+    }
+
+    public String getDevFile() {
+        return devFile;
+    }
+
+    public String getTestFile() {
+        return testFile;
+    }
+
+    private void initName() {
+        TimeZone tz = TimeZone.getTimeZone("UTC");
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
+        df.setTimeZone(tz);
+        name = module + "_experiment_" + df.format(new Date());
+    }
+
+    private void parseConfig(String trainFile, String devFile, String testFile) {
         // Extract atomic data from hash map.
         ArrayList<List<String>> values = new ArrayList<>(rawConfig.values());
-        Collection<ArrayList<String>> configs = crossProduct(values);
-        trainConfigs = configs;
+        ArrayList<ArrayList<String>> configs = crossProduct(values);
+
+        for (int i = 0; i < configs.size(); i++) {
+            String outputFilePrefix = name + i;
+            EvalConfig currConfig = EvalConfig.buildConfig(module, trainFile, devFile, testFile, outputFilePrefix, configs.get(i));
+            evalConfigs.add(currConfig);
+        }
     }
 
     private ArrayList<ArrayList<String>> crossProduct(ArrayList<List<String>> matrix) {
