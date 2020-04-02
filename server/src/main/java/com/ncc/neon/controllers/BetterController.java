@@ -60,8 +60,7 @@ public class BetterController {
         return filePartMono
                 .flatMap(filePart -> {
                     // Create pending file in ES.
-                    BetterFile pendingFile = new BetterFile(filePart.filename(), 0);
-                    return betterFileService.upsertAndRefresh(pendingFile, pendingFile.getFilename())
+                    return betterFileService.initMany(new String[] {filePart.filename()})
                             // Write file part to share.
                             .then(fileShareService.writeFilePart(filePart));
                 })
