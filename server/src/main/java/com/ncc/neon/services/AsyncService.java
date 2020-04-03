@@ -22,19 +22,11 @@ public class AsyncService {
         this.runService = runService;
     }
 
-//    public Flux<Object> processExperiment(ExperimentConfig experimentConfig, boolean infOnly) {
-//        return moduleService.buildNlpModuleClient(experimentConfig.module)
-//                .flatMap(nlpModule -> {
-//                    for (EvalConfig config : experimentConfig.getEvalConfigs()) {
-//
-//                    }
-//                })
-//    }
-
     public Mono<Object> processExperiment(ExperimentConfig experimentConfig, boolean infOnly) {
         return moduleService.buildNlpModuleClient(experimentConfig.module)
                 .flatMap(nlpModule -> Flux.fromArray(experimentConfig.getEvalConfigs())
-                    .flatMap(config -> moduleService.incrementJobCount(experimentConfig.module)
+                    // Sequential maintains source ordering with a specified max concurrency.
+                    .flatMapSequential(config -> moduleService.incrementJobCount(experimentConfig.module)
                         .flatMap(ignored -> runService.initRun(config.getTrainConfigFilename(), config.getInfConfigFilename())
                             .flatMap(initialRun -> {
                                 IENlpModule ieNlpModule = (IENlpModule) nlpModule;
@@ -64,38 +56,10 @@ public class AsyncService {
                                                     }))
                                     )
                             )
-                    ).collectList()
+                    // Notice max concurrency argument.
+                    , 1).collectList()
                 );
     }
-
-//    public Mono<?> processTraining(String trainConfigFile, String infConfigFile, String module) {
-//        return moduleService.buildNlpModuleClient(module)
-//                .flatMap(nlpModule -> runService.initRun(trainConfigFile, infConfigFile)
-//                        .flatMap(initialRun -> {
-//                            IENlpModule ieNlpModule = (IENlpModule) nlpModule;
-//                            Mono<String> res = Mono.just(initialRun.getT1());
-//                            return runService.updateToTrainStatus(initialRun.getT1())
-//                                    .flatMap(test -> ieNlpModule.performTraining(trainConfigFile, initialRun.getT1()))
-//                                    .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())))
-//                                    .then(res);
-//                        }));
-//    }
-//
-//    public Mono<?> processInference(String trainConfigFile, String infConfigFile, String module, String runId) {
-//        return moduleService.buildNlpModuleClient(module)
-//                .flatMap(nlpModule -> {
-//                    IENlpModule ieNlpModule = (IENlpModule) nlpModule;
-//                    if (runId == null) {
-//                        return runService.initRun(trainConfigFile, infConfigFile)
-//                        .flatMap(initRun -> Mono.just(Tuples.of(initRun.getT1(), ieNlpModule)));
-//                    }
-//                    return Mono.just(Tuples.of(runId, ieNlpModule));
-//                })
-//                    .flatMap(initialRun -> runService.updateToInferenceStatus(initialRun.getT1())
-//                        .flatMap(updateRes -> initialRun.getT2().performInference(infConfigFile, initialRun.getT1())    // T1 = runId for this run; T2 = IENlpModule used to perform inference
-//                            .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
-//                            ));
-//    }
 
     public Mono<?> performPreprocess(String file, String module) {
         return moduleService.buildNlpModuleClient(module).flatMap(nlpModule -> {

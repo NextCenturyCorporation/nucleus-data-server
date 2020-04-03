@@ -129,6 +129,7 @@ public abstract class ElasticSearchService<T> {
 
     public Mono<RestStatus> update(Map<String, Object> data, String docId) {
         UpdateRequest request = new UpdateRequest(index, dataType, docId).doc(data);
+        request.retryOnConflict(3);
         return Mono.create(sink -> {
             UpdateResponse response = null;
             try {

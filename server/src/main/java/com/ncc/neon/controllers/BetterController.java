@@ -147,15 +147,6 @@ public class BetterController {
         return ResponseEntity.ok().build();
     }
 
-//    @GetMapping(path="train")
-//    ResponseEntity<Object> train(@RequestParam("configFile") String configFile, @RequestParam("module") String module, @RequestParam("runId") String runId) {
-//        asyncService.processTraining(configFile, module, runId)
-//                .subscribeOn(Schedulers.newSingle("thread"))
-//                .subscribe();
-//
-//        return ResponseEntity.ok().build();
-//    }
-
     @PostMapping(path="experiment")
     ResponseEntity<Object> experiment(@RequestBody ExperimentForm experimentForm) {
         try {
@@ -182,19 +173,4 @@ public class BetterController {
         }
         return asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly());
     }
-
-//    @GetMapping(path="synctrain")
-//    Mono<?> syncTrain(@RequestParam("trainConfigFile") String trainConfigFile,
-//                                   @RequestParam("infConfigFile") String infConfigFile,
-//                                   @RequestParam("module") String module) {
-//        return asyncService.processTraining(trainConfigFile, infConfigFile, module);
-//    }
-//
-//    @GetMapping(path="syncinf")
-//    Mono<?> syncInf(@RequestParam("trainConfigFile") String trainConfigFile,
-//                    @RequestParam("infConfigFile") String infConfigFile,
-//                    @RequestParam("module") String module,
-//                    @RequestParam(required = false, name = "runId") String runId) {
-//        return asyncService.processInference(trainConfigFile, infConfigFile, module, runId);
-//    }
 }
