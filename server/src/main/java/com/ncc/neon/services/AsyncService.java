@@ -2,6 +2,7 @@ package com.ncc.neon.services;
 
 import com.ncc.neon.better.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
@@ -10,11 +11,16 @@ import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
+import java.util.Objects;
+
 @Component
 public class AsyncService {
 
     private ModuleService moduleService;
     private RunService runService;
+
+    @Autowired
+    private Environment env;
 
     @Autowired
     public AsyncService(ModuleService moduleService, RunService runService) {
@@ -57,7 +63,7 @@ public class AsyncService {
                                     )
                             )
                     // Notice max concurrency argument.
-                    , 1).collectList()
+                    , Integer.parseInt(Objects.requireNonNull(env.getProperty("server_gpu_count")))).collectList()
                 );
     }
 

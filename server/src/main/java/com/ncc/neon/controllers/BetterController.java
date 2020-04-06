@@ -35,25 +35,19 @@ public class BetterController {
     public static final String SHARE_DIR = System.getenv().getOrDefault("SHARE_DIR", "share");
     public static final Path SHARE_PATH = Paths.get(".").resolve(SHARE_DIR);
 
-    private DatasetService datasetService;
     private FileShareService fileShareService;
     private BetterFileService betterFileService;
     private ModuleService moduleService;
     private AsyncService asyncService;
-    private EvaluationService evaluationService;
 
-    BetterController(DatasetService datasetService,
-                     FileShareService fileShareService,
+    BetterController(FileShareService fileShareService,
                      BetterFileService betterFileService,
                      ModuleService moduleService,
-                     AsyncService asyncService,
-                     EvaluationService evaluationService) {
-        this.datasetService = datasetService;
+                     AsyncService asyncService) {
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
         this.moduleService = moduleService;
         this.asyncService = asyncService;
-        this.evaluationService = evaluationService;
     }
 
     @GetMapping(path = "status")
