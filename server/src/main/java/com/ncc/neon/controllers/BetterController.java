@@ -3,7 +3,6 @@ package com.ncc.neon.controllers;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.FileStatus;
-import com.ncc.neon.models.Score;
 import com.ncc.neon.services.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -14,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -60,7 +58,7 @@ public class BetterController {
         return filePartMono
                 .flatMap(filePart -> {
                     // Create pending file in ES.
-                    return betterFileService.initMany(new String[] {filePart.filename()})
+                    return betterFileService.initFile(filePart.filename())
                             // Write file part to share.
                             .then(fileShareService.writeFilePart(filePart));
                 })

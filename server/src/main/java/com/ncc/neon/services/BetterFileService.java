@@ -21,12 +21,16 @@ public class BetterFileService extends ElasticSearchService<BetterFile> {
         super(dbHost, fileTable, fileTable, BetterFile.class, datasetService);
     }
 
+    public Mono<RestStatus> initFile(String fileToAdd) {
+        BetterFile betterFileToAdd = new BetterFile(fileToAdd, 0);
+        betterFileToAdd.setTimestamp(DateUtil.getCurrentDateTime());
+        return upsertAndRefresh(betterFileToAdd, fileToAdd);
+    }
+
     public Mono<RestStatus> initMany(String[] filesToAdd) {
         return Flux.fromArray(filesToAdd)
                 .flatMap(fileToAdd -> {
-                    BetterFile betterFileToAdd = new BetterFile(fileToAdd, 0);
-                    betterFileToAdd.setTimestamp(DateUtil.getCurrentDateTime());
-                    return upsertAndRefresh(betterFileToAdd, fileToAdd);
+                    return initFile(fileToAdd);
                 })
                 .then(Mono.just(RestStatus.OK));
     }
