@@ -62,6 +62,8 @@ public class ExperimentConfig {
         return testFile;
     }
 
+    public String getName() { return name; }
+
     private void initName() {
         TimeZone tz = TimeZone.getTimeZone("UTC");
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");

@@ -13,7 +13,7 @@ public class Run {
     private String train_end_time;
     private String inf_start_time;
     private String inf_end_time;
-    private String overall_score;
+    private Score overall_score;
     private RunStatus status;
     private String status_message;
 }

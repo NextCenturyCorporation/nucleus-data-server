@@ -17,7 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EvalNlpModule extends NlpModule {
-    private final String EVAL_OUTPUT_KEY = "eval_output";
+    private final String EVAL_OUTPUTS_KEY = "eval_outputs";
 
     private HttpEndpoint evalEndpoint;
     private HttpEndpoint evalListEndpoint;
@@ -67,7 +67,7 @@ public class EvalNlpModule extends NlpModule {
         return this.performListOperation(sysFile, evalListEndpoint)
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
                 .flatMap(pendingFiles -> this.initPendingFiles(pendingFiles)
-                        .then(runService.updateOutputs(runId, EVAL_OUTPUT_KEY, pendingFiles))
+                        .then(runService.updateOutputs(runId, EVAL_OUTPUTS_KEY, pendingFiles))
                         .flatMap(response -> this.performEvalOperation(params, evalEndpoint)
                             .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))
                             .flatMap(res -> runService.updateToDoneStatus(runId, res.getOverallScore())
