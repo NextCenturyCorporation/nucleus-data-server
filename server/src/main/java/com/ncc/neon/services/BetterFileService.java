@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 public class BetterFileService extends ElasticSearchService<BetterFile> {
     @Autowired
     private DatasetService datasetService;
+    public static final String STATUS_FIELD = "status";
 
     @Autowired
     BetterFileService(DatasetService datasetService,

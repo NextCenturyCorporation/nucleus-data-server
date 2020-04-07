@@ -18,6 +18,8 @@ import reactor.core.scheduler.Schedulers;
 
 import java.net.MalformedURLException;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.HashMap;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -79,11 +81,11 @@ public class BetterController {
                 })
                 .flatMap(file -> {
                     // File successfully written.  Set file status to ready.
-                    BetterFile fileToAdd = new BetterFile(file.getName(), file.length());
-                    fileToAdd.setStatus(FileStatus.READY);
+                    Map<String, Object> data = new HashMap<>();
+                    data.put(BetterFileService.STATUS_FIELD, FileStatus.READY);
 
                     // Update entries in ES.
-                    return betterFileService.upsertAndRefresh(fileToAdd, fileToAdd.getFilename())
+                    return betterFileService.updateAndRefresh(data, file.getName())
                             // Delete file if update fails.
                             .doOnError(onError -> fileShareService.delete(file.getName()))
                             .then(Mono.just(ResponseEntity.ok().build()));
