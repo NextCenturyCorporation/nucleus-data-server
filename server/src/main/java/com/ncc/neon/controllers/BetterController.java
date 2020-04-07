@@ -3,7 +3,6 @@ package com.ncc.neon.controllers;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.FileStatus;
-import com.ncc.neon.models.Score;
 import com.ncc.neon.services.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -14,12 +13,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.net.MalformedURLException;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.HashMap;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -60,8 +60,7 @@ public class BetterController {
         return filePartMono
                 .flatMap(filePart -> {
                     // Create pending file in ES.
-                    BetterFile pendingFile = new BetterFile(filePart.filename(), 0);
-                    return betterFileService.upsertAndRefresh(pendingFile, pendingFile.getFilename())
+                    return betterFileService.initFile(filePart.filename())
                             // Write file part to share.
                             .then(fileShareService.writeFilePart(filePart));
                 })
@@ -82,11 +81,11 @@ public class BetterController {
                 })
                 .flatMap(file -> {
                     // File successfully written.  Set file status to ready.
-                    BetterFile fileToAdd = new BetterFile(file.getName(), file.length());
-                    fileToAdd.setStatus(FileStatus.READY);
+                    Map<String, Object> data = new HashMap<>();
+                    data.put(BetterFileService.STATUS_FIELD, FileStatus.READY);
 
                     // Update entries in ES.
-                    return betterFileService.upsertAndRefresh(fileToAdd, fileToAdd.getFilename())
+                    return betterFileService.updateAndRefresh(data, file.getName())
                             // Delete file if update fails.
                             .doOnError(onError -> fileShareService.delete(file.getName()))
                             .then(Mono.just(ResponseEntity.ok().build()));

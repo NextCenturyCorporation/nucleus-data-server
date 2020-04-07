@@ -1,6 +1,7 @@
 package com.ncc.neon.services;
 
 import com.ncc.neon.models.BetterFile;
+import com.ncc.neon.util.DateUtil;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +13,7 @@ import reactor.core.publisher.Mono;
 public class BetterFileService extends ElasticSearchService<BetterFile> {
     @Autowired
     private DatasetService datasetService;
+    public static final String STATUS_FIELD = "status";
 
     @Autowired
     BetterFileService(DatasetService datasetService,
@@ -20,9 +22,15 @@ public class BetterFileService extends ElasticSearchService<BetterFile> {
         super(dbHost, fileTable, fileTable, BetterFile.class, datasetService);
     }
 
+    public Mono<RestStatus> initFile(String fileToAdd) {
+        BetterFile betterFileToAdd = new BetterFile(fileToAdd, 0);
+        betterFileToAdd.setTimestamp(DateUtil.getCurrentDateTime());
+        return upsertAndRefresh(betterFileToAdd, fileToAdd);
+    }
+
     public Mono<RestStatus> initMany(String[] filesToAdd) {
         return Flux.fromArray(filesToAdd)
-                .flatMap(fileToAdd -> upsertAndRefresh(new BetterFile(fileToAdd, 0), fileToAdd))
+                .flatMap(this::initFile)
                 .then(Mono.just(RestStatus.OK));
     }
 }
