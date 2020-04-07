@@ -37,7 +37,7 @@ public class AsyncService {
                 .flatMap(insertRes -> Flux.fromArray(experimentConfig.getEvalConfigs())
                         .flatMapSequential(config -> experimentService.incrementCurrRun(insertRes.getT1())
                                 .flatMap(ignored -> processEvaluation(config, nlpModule, infOnly, experimentConfig.getTestFile())
-                                .flatMap(completedRun -> experimentService.updateOnRunComplete(completedRun, insertRes.getT1()))),
+                                .flatMap(completedRunId -> experimentService.updateOnRunComplete(completedRunId, insertRes.getT1()))),
                         Integer.parseInt(Objects.requireNonNull(env.getProperty("server_gpu_count")))).collectList()));
     }
 
@@ -51,7 +51,7 @@ public class AsyncService {
         });
     }
 
-    private Mono<Run> processEvaluation(EvalConfig config, NlpModule module, boolean infOnly, String testFile) {
+    private Mono<String> processEvaluation(EvalConfig config, NlpModule module, boolean infOnly, String testFile) {
         return moduleService.incrementJobCount(module.getName())
                 .flatMap(ignored -> runService.initRun(config.getTrainConfigFilename(), config.getInfConfigFilename())
                     .flatMap(initialRun -> {
@@ -80,7 +80,7 @@ public class AsyncService {
                                                     .flatMap(sysFile -> evalNlpModule.performEval(testFile, sysFile, trainRes.getT1())
                                                             .doOnError(evalError -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage()))));
                                         }))
-                        ).flatMap(ignored -> runService.getById(trainRes.getT1()))
+                        ).flatMap(ignored -> Mono.just(trainRes.getT1()))
                 );
     }
 }

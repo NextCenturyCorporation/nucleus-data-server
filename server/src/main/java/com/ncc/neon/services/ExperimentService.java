@@ -3,6 +3,7 @@ package com.ncc.neon.services;
 import com.ncc.neon.better.ExperimentConfig;
 import com.ncc.neon.models.Experiment;
 import com.ncc.neon.models.Run;
+import com.ncc.neon.util.DateUtil;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,15 +14,19 @@ import reactor.util.function.Tuple2;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.ncc.neon.models.Experiment.CURR_RUN_KEY;
+import static com.ncc.neon.models.Experiment.*;
 
 @Component
 public class ExperimentService extends ElasticSearchService<Experiment> {
+    private RunService runService;
+
     @Autowired
     ExperimentService(DatasetService datasetService,
+                      RunService runService,
                       @Value("${db_host}") String dbHost,
                       @Value("${experiment.table}") String experimentTable) {
         super(dbHost, experimentTable, experimentTable, Experiment.class, datasetService);
+        this.runService = runService;
     }
 
     public Mono<Tuple2<String, RestStatus>> insertNew(ExperimentConfig config) {
@@ -40,12 +45,34 @@ public class ExperimentService extends ElasticSearchService<Experiment> {
                 });
     }
 
-    public Mono<RestStatus> updateOnRunComplete(Run completedRun, String experimentId) {
+    public Mono<RestStatus> updateOnRunComplete(String completedRunId, String experimentId) {
         return getById(experimentId)
-                .flatMap(experiment -> {
-                    // TODO: Find running min and max scores and corresponding run IDs.
+                .flatMap(experiment -> runService.getById(completedRunId)
+                    .flatMap(completedRun -> {
                     Map<String, Object> data = new HashMap<>();
+
+                    Double currScore = completedRun.getOverallScore().getCombinedScore();
+
+                    // Check for a new best score.
+                    if (currScore >= experiment.getBestScore()) {
+                        data.put(BEST_SCORE_KEY, currScore);
+                        data.put(BEST_RUN_ID_KEY, completedRunId);
+                    }
+
+                    // Check for a new worst score.
+                    if (currScore <= experiment.getWorstScore()) {
+                        data.put(WORST_SCORE_KEY, currScore);
+                        data.put(WORST_RUN_ID_KEY, completedRunId);
+                    }
+
+                    // Check if we are done with all the runs.
+                    if (experiment.getCurrRun() == experiment.getTotalRuns()) {
+                        data.put(END_TIME_KEY, DateUtil.getCurrentDateTime());
+                    }
+
                     return updateAndRefresh(data, experimentId);
-                });
+                }));
     }
+
+
 }
