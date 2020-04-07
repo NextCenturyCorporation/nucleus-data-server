@@ -34,8 +34,8 @@ public class RunService extends ElasticSearchService<Run> {
         super(dbHost, runTable, runTable, Run.class, datasetService);
     }
 
-    public Mono<Tuple2<String, RestStatus>> initRun(String trainConfigFile, String infConfigFile) {
-        Run run = new Run(trainConfigFile, infConfigFile);
+    public Mono<Tuple2<String, RestStatus>> initRun(String experimentId, String trainConfigFile, String infConfigFile) {
+        Run run = new Run(experimentId, trainConfigFile, infConfigFile);
         return insert(run);
     }
 
