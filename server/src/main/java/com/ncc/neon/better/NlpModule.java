@@ -5,6 +5,7 @@ import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Map;
 
+import com.ncc.neon.exception.InvalidConfigDataTypeException;
 import com.ncc.neon.models.*;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.FileStatus;
@@ -113,24 +114,34 @@ public abstract class NlpModule {
     }
 
     protected Disposable handleNlpOperationError(WebClientResponseException err, String[] pendingFiles) {
+        return reportErrorInPendingFiles(err.getResponseBodyAsString(), pendingFiles).subscribe();
+    }
+
+    protected Flux<Object> reportErrorInPendingFiles(String errorMessage, String[] pendingFiles) {
         return Flux.fromArray(pendingFiles)
                 .flatMap(pendingFile -> fileShareService.delete(pendingFile)
-                    .then(betterFileService.getById(pendingFile))
-                    .flatMap(fileToUpdate -> {
-                        // Set status of files to error.
-                        fileToUpdate.setStatus(FileStatus.ERROR);
-                        fileToUpdate.setStatus_message(err.getResponseBodyAsString());
-                        return betterFileService.upsertAndRefresh(fileToUpdate, fileToUpdate.getFilename());
-                    }))
-                .subscribe();
+                        .then(betterFileService.getById(pendingFile))
+                        .flatMap(fileToUpdate -> {
+                            // Set status of files to error.
+                            fileToUpdate.setStatus(FileStatus.ERROR);
+                            fileToUpdate.setStatus_message(errorMessage);
+                            return betterFileService.upsertAndRefresh(fileToUpdate, fileToUpdate.getFilename());
+                        }));
     }
 
     protected WebClient.RequestHeadersSpec<?> buildRequest(Map<String, String> data, HttpEndpoint endpoint) {
         if (endpoint.getMethod() == HttpMethod.GET) {
             // Build Http Headers for query params.
             HttpHeaders params = new HttpHeaders();
-            for (Map.Entry<String, String> entry : data.entrySet()) {
-                params.add(entry.getKey(), entry.getValue());
+            try {
+                for (Map.Entry<String, String> entry : data.entrySet()) {
+                        params.add(entry.getKey(), entry.getValue());
+
+                }
+            }
+            catch (ClassCastException e) {
+                // Get the class name of the invalid data type.
+                throw new InvalidConfigDataTypeException(e.getMessage().split(" ")[1]);
             }
 
             return client.get().uri(uriBuilder -> {
