@@ -5,7 +5,9 @@ import lombok.Data;
 
 @Data
 public class Run {
-    @JsonProperty("experiment_id")
+    public static final String EXPERIMENT_ID_KEY = "experiment_id";
+
+    @JsonProperty(EXPERIMENT_ID_KEY)
     private final String experimentId;
     @JsonProperty("train_config")
     private final String trainConfig;

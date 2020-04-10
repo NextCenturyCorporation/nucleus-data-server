@@ -11,11 +11,14 @@ public class Experiment {
     public static final String BEST_RUN_ID_KEY = "best_run_id";
     public static final String WORST_SCORE_KEY = "worst_score";
     public static final String WORST_RUN_ID_KEY = "worst_run_id";
+    public static final String ERROR_RUNS_KEY = "error_runs";
     public static final String END_TIME_KEY = "end_time";
 
     private final String name;
     @JsonProperty("total_runs")
     private final int totalRuns;
+    @JsonProperty(ERROR_RUNS_KEY)
+    private int errorRuns;
     @JsonProperty(BEST_SCORE_KEY)
     private Double bestScore = 0.0;
     @JsonProperty(BEST_RUN_ID_KEY)

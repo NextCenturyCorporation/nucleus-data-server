@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.ncc.neon.models.Experiment.*;
+import static com.ncc.neon.models.Run.EXPERIMENT_ID_KEY;
 
 @Component
 public class ExperimentService extends ElasticSearchService<Experiment> {
@@ -65,14 +66,32 @@ public class ExperimentService extends ElasticSearchService<Experiment> {
                         data.put(WORST_RUN_ID_KEY, completedRunId);
                     }
 
-                    // Check if we are done with all the runs.
+                    return updateAndRefresh(data, experimentId);
+                }));
+    }
+
+    public Mono<RestStatus> checkForComplete(String experimentId) {
+        return getById(experimentId)
+                .flatMap(experiment -> {
+                    Map<String, Object> data = new HashMap<>();
+
                     if (experiment.getCurrRun() == experiment.getTotalRuns()) {
                         data.put(END_TIME_KEY, DateUtil.getCurrentDateTime());
                     }
 
                     return updateAndRefresh(data, experimentId);
-                }));
+                });
     }
 
+    public Mono<RestStatus> countErrorEvals(String experimentId) {
+        Map<String, Object> searchFields = new HashMap<>();
+        searchFields.put(EXPERIMENT_ID_KEY, experimentId);
 
+        Map<String, Object> errCountField = new HashMap<>();
+
+        return runService.count(searchFields).flatMap(errCount -> {
+            errCountField.put(ERROR_RUNS_KEY, errCount);
+            return updateAndRefresh(errCountField, experimentId);
+        });
+    }
 }

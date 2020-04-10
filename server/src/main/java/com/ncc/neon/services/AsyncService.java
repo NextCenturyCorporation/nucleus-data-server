@@ -37,8 +37,11 @@ public class AsyncService {
                 .flatMap(insertRes -> Flux.fromArray(experimentConfig.getEvalConfigs())
                         .flatMapSequential(config -> experimentService.incrementCurrRun(insertRes.getT1())
                                 .flatMap(ignored -> processEvaluation(insertRes.getT1(), config, nlpModule, infOnly, experimentConfig.getTestFile())
-                                .onErrorResume(err -> Mono.empty())
-                                .flatMap(completedRunId -> experimentService.updateOnRunComplete(completedRunId, insertRes.getT1()))),
+                                .onErrorResume(err -> experimentService.countErrorEvals(insertRes.getT1())
+                                        .then(experimentService.checkForComplete(insertRes.getT1()))
+                                        .then(Mono.empty()))
+                                .flatMap(completedRunId -> experimentService.updateOnRunComplete(completedRunId, insertRes.getT1())
+                                        .then(experimentService.checkForComplete(insertRes.getT1())))),
                         Integer.parseInt(Objects.requireNonNull(env.getProperty("server_gpu_count")))).collectList()));
     }
 

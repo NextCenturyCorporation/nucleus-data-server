@@ -93,6 +93,29 @@ public abstract class ElasticSearchService<T> {
         });
     }
 
+    public Mono<Long> count(Map<String, Object> fields) {
+        // Pass the index to limit the search to just that index.
+        SearchRequest searchRequest = new SearchRequest(index);
+
+        // Set information for the source builder.
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+
+        for (Map.Entry<String, Object> entry : fields.entrySet()) {
+            searchSourceBuilder.query(QueryBuilders.termQuery(entry.getKey(), entry.getValue()));
+        }
+
+        searchRequest.source(searchSourceBuilder);
+
+        return Mono.create(sink -> {
+            try {
+                SearchResponse searchResponse = elasticSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+                sink.success(searchResponse.getHits().getTotalHits());
+            } catch (IOException e) {
+                sink.error(e);
+            }
+        });
+    }
+
     public Mono<Tuple2<String, RestStatus>> insert(T itemToAdd) {
         // Serialize item to json map.
         Map<String, Object> itemMap = new ObjectMapper().convertValue(itemToAdd, Map.class);
