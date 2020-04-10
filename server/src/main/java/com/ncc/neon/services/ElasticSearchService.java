@@ -19,6 +19,7 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
@@ -95,15 +96,18 @@ public abstract class ElasticSearchService<T> {
 
     public Mono<Long> count(Map<String, Object> fields) {
         // Pass the index to limit the search to just that index.
-        SearchRequest searchRequest = new SearchRequest(index);
+//        MultiSearchRequest multiSearchRequest = new MultiSearchRequest();
 
-        // Set information for the source builder.
+        SearchRequest searchRequest = new SearchRequest();
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.from(0);
+        BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
 
         for (Map.Entry<String, Object> entry : fields.entrySet()) {
-            searchSourceBuilder.query(QueryBuilders.termQuery(entry.getKey(), entry.getValue()));
+            boolQueryBuilder = boolQueryBuilder.must(QueryBuilders.matchQuery(entry.getKey(), entry.getValue()));
         }
 
+        searchSourceBuilder.query(boolQueryBuilder);
         searchRequest.source(searchSourceBuilder);
 
         return Mono.create(sink -> {

@@ -34,15 +34,14 @@ public class AsyncService {
     public Mono<Object> processExperiment(ExperimentConfig experimentConfig, boolean infOnly) {
         return moduleService.buildNlpModuleClient(experimentConfig.module)
                 .flatMap(nlpModule -> experimentService.insertNew(experimentConfig)
-                .flatMap(insertRes -> Flux.fromArray(experimentConfig.getEvalConfigs())
-                        .flatMapSequential(config -> experimentService.incrementCurrRun(insertRes.getT1())
-                                .flatMap(ignored -> processEvaluation(insertRes.getT1(), config, nlpModule, infOnly, experimentConfig.getTestFile())
-                                .onErrorResume(err -> experimentService.countErrorEvals(insertRes.getT1())
-                                        .then(experimentService.checkForComplete(insertRes.getT1()))
-                                        .then(Mono.empty()))
-                                .flatMap(completedRunId -> experimentService.updateOnRunComplete(completedRunId, insertRes.getT1())
-                                        .then(experimentService.checkForComplete(insertRes.getT1())))),
-                        Integer.parseInt(Objects.requireNonNull(env.getProperty("server_gpu_count")))).collectList()));
+                        .flatMap(insertRes -> Flux.fromArray(experimentConfig.getEvalConfigs())
+                                .flatMapSequential(config -> experimentService.incrementCurrRun(insertRes.getT1())
+                                                .flatMap(ignored -> processEvaluation(insertRes.getT1(), config, nlpModule, infOnly, experimentConfig.getTestFile())
+                                                        .flatMap(completedRunId -> experimentService.updateOnRunComplete(completedRunId, insertRes.getT1())
+                                                                .then(experimentService.checkForComplete(insertRes.getT1())))
+                                                        .onErrorResume(err -> experimentService.countErrorEvals(insertRes.getT1())
+                                                                .then(experimentService.checkForComplete(insertRes.getT1())))),
+                                        Integer.parseInt(Objects.requireNonNull(env.getProperty("server_gpu_count")))).collectList()));
     }
 
     public Mono<?> performPreprocess(String file, String module) {
@@ -82,7 +81,10 @@ public class AsyncService {
                                             EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
                                             return runService.getInferenceOutput(trainRes.getT1())
                                                     .flatMap(sysFile -> evalNlpModule.performEval(testFile, sysFile, trainRes.getT1())
-                                                            .doOnError(evalError -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage()))));
+                                                            .doOnError(evalError -> {
+                                                                evalNlpModule.handleErrorDuringRun(evalError, trainRes.getT1());
+                                                                Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage()));
+                                                            }));
                                         }))
                         ).flatMap(ignored -> Mono.just(trainRes.getT1()))
                 );

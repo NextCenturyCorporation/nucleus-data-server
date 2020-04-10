@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -69,12 +70,21 @@ public class EvalNlpModule extends NlpModule {
                 .flatMap(pendingFiles -> this.initPendingFiles(pendingFiles)
                         .then(runService.updateOutputs(runId, EVAL_OUTPUTS_KEY, pendingFiles))
                         .flatMap(response -> this.performEvalOperation(params, evalEndpoint)
-                            .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))
+                            .doOnError(onError -> {
+                                handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
+                                handleErrorDuringRun(onError, runId);
+                            })
                             .flatMap(res -> runService.updateToDoneStatus(runId, res.getOverallScore())
                                     .flatMap(ignored -> {
                                         EvaluationOutput evaluationOutput = new EvaluationOutput(runId, res.getEvaluation());
                                         return evaluationService.insert(evaluationOutput)
                                                 .flatMap(evaluation -> handleNlpOperationSuccess(res.getFiles()));
                                     }))));
+    }
+
+    public Disposable handleErrorDuringRun(Throwable err, String runId) {
+        return runService.updateToErrorStatus(runId, err.getMessage())
+                .then(runService.refreshIndex())
+                .subscribe();
     }
 }

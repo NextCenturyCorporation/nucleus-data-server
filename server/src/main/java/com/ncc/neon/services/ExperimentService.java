@@ -2,7 +2,7 @@ package com.ncc.neon.services;
 
 import com.ncc.neon.better.ExperimentConfig;
 import com.ncc.neon.models.Experiment;
-import com.ncc.neon.models.Run;
+import com.ncc.neon.models.RunStatus;
 import com.ncc.neon.util.DateUtil;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +16,7 @@ import java.util.Map;
 
 import static com.ncc.neon.models.Experiment.*;
 import static com.ncc.neon.models.Run.EXPERIMENT_ID_KEY;
+import static com.ncc.neon.models.Run.STATUS_KEY;
 
 @Component
 public class ExperimentService extends ElasticSearchService<Experiment> {
@@ -86,6 +87,7 @@ public class ExperimentService extends ElasticSearchService<Experiment> {
     public Mono<RestStatus> countErrorEvals(String experimentId) {
         Map<String, Object> searchFields = new HashMap<>();
         searchFields.put(EXPERIMENT_ID_KEY, experimentId);
+        searchFields.put(STATUS_KEY, RunStatus.ERROR.toString());
 
         Map<String, Object> errCountField = new HashMap<>();
 

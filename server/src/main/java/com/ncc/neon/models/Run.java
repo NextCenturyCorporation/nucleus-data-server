@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 public class Run {
     public static final String EXPERIMENT_ID_KEY = "experiment_id";
+    public static final String STATUS_KEY = "status";
 
     @JsonProperty(EXPERIMENT_ID_KEY)
     private final String experimentId;
@@ -29,7 +30,7 @@ public class Run {
     private String infEndTime;
     @JsonProperty("overall_score")
     private Score overallScore;
-    @JsonProperty("status")
+    @JsonProperty(STATUS_KEY)
     private RunStatus status;
     @JsonProperty("status_message")
     private String statusMessage;
