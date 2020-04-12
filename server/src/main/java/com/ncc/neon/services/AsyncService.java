@@ -56,7 +56,7 @@ public class AsyncService {
 
     private Mono<String> processEvaluation(String experimentId, EvalConfig config, NlpModule module, boolean infOnly, String testFile) {
         return moduleService.incrementJobCount(module.getName())
-                .flatMap(ignored -> runService.initRun(experimentId, config.getTrainConfigFilename(), config.getInfConfigFilename())
+                .flatMap(ignored -> runService.initRun(experimentId, config.getTrainConfigParams(), config.getInfConfigParams())
                     .flatMap(initialRun -> {
                         IENlpModule ieNlpModule = (IENlpModule) module;
 

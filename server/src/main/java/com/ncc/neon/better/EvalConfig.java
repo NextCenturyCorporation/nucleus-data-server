@@ -11,53 +11,34 @@ public abstract class EvalConfig {
 
     protected Map<String, String> trainConfigParams = new HashMap<>();
     protected Map<String, String> infConfigParams = new HashMap<>();
-
-    private String trainFile;
-    private String devFile;
-    private String testFile;
-    private String trainConfigFilename;
-    private String infConfigFilename;
     protected String outputFilePrefix;
 
     abstract void initConfigParams(ArrayList<String> configParams);
 
-    public static EvalConfig buildConfig(String module, String trainFile, String devFile, String testFile, String outputFilePrefix, ArrayList<String> configParams) {
+    public static EvalConfig buildConfig(String module, String trainFile, String devFile, String outputFilePrefix, ArrayList<String> configParams) {
         switch (module) {
             case "mbert":
-                return new MbertEvalConfig(trainFile, devFile, testFile, outputFilePrefix, configParams);
+                return new MbertEvalConfig(trainFile, devFile, outputFilePrefix, configParams);
             default:
-                return new DummyEvalConfig(testFile);
+                return new DummyEvalConfig(trainFile, devFile);
         }
     }
 
-    public EvalConfig(String trainFile, String devFile, String testFile, String outputFilePrefix, ArrayList<String> configParams) {
-        this.trainFile = trainFile;
-        this.devFile = devFile;
-        this.testFile = testFile;
+    public EvalConfig(String trainFile, String devFile, String outputFilePrefix, ArrayList<String> configParams) {
         this.outputFilePrefix = outputFilePrefix;
-        trainConfigFilename = outputFilePrefix + "_train_config.json";
-        infConfigFilename = outputFilePrefix + "_inf_config.json";
 
         trainConfigParams.put(TRAIN_FILE_PARAM_KEY, trainFile);
         trainConfigParams.put(DEV_FILE_PARAM_KEY, devFile);
         trainConfigParams.put(OUTPUT_FILE_PREFIX_PARAM_KEY, this.outputFilePrefix);
 
         initConfigParams(configParams);
-
-        // TODO: Add train, dev, and test config params.
-
-        // TODO: Write config files to share.
     }
 
-    public String getTrainConfigFilename() {
-        return trainConfigFilename;
+    public Map<String, String> getTrainConfigParams() {
+        return trainConfigParams;
     }
 
-    public String getInfConfigFilename() {
-        return infConfigFilename;
-    }
-
-    private void writeToShare() {
-
+    public Map<String, String> getInfConfigParams() {
+        return infConfigParams;
     }
 }

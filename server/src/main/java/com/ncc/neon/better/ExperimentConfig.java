@@ -39,10 +39,10 @@ public class ExperimentConfig {
 
         if (rawConfig.size() == 0) {
             // Add a single config with only required parameters.
-            evalConfigs.add(EvalConfig.buildConfig(module, trainFile, devFile, testFile, name, new ArrayList<>()));
+            evalConfigs.add(EvalConfig.buildConfig(module, trainFile, devFile, name, new ArrayList<>()));
         }
         else {
-            parseConfig(experimentForm.getTrainFile(), experimentForm.getDevFile(), experimentForm.getTestFile());
+            parseConfig(experimentForm.getTrainFile(), experimentForm.getDevFile());
         }
     }
 
@@ -71,14 +71,14 @@ public class ExperimentConfig {
         name = module + "_experiment_" + df.format(new Date());
     }
 
-    private void parseConfig(String trainFile, String devFile, String testFile) {
+    private void parseConfig(String trainFile, String devFile) {
         // Extract atomic data from hash map.
         ArrayList<List<String>> values = new ArrayList<>(rawConfig.values());
         ArrayList<ArrayList<String>> configs = crossProduct(values);
 
         for (int i = 0; i < configs.size(); i++) {
             String outputFilePrefix = name + i;
-            EvalConfig currConfig = EvalConfig.buildConfig(module, trainFile, devFile, testFile, outputFilePrefix, configs.get(i));
+            EvalConfig currConfig = EvalConfig.buildConfig(module, trainFile, devFile, outputFilePrefix, configs.get(i));
             evalConfigs.add(currConfig);
         }
     }
