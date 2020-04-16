@@ -58,6 +58,8 @@ public class AsyncService {
         return moduleService.incrementJobCount(module.getName())
                 .flatMap(ignored -> runService.initRun(experimentId, config.getTrainConfigParams(), config.getInfConfigParams())
                     .flatMap(initialRun -> {
+                        // Set job id equal to the new run id.
+                        config.setJobIdParam(initialRun.getT1());
                         IENlpModule ieNlpModule = (IENlpModule) module;
 
                         Mono<Tuple2<String, IENlpModule>> res = Mono.just(Tuples.of(initialRun.getT1(), ieNlpModule));

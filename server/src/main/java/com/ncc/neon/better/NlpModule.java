@@ -130,32 +130,42 @@ public abstract class NlpModule {
     }
 
     protected WebClient.RequestHeadersSpec<?> buildRequest(Map<String, String> data, HttpEndpoint endpoint) {
-        if (endpoint.getMethod() == HttpMethod.GET) {
-            // Build Http Headers for query params.
-            HttpHeaders params = new HttpHeaders();
-            try {
-                for (Map.Entry<String, String> entry : data.entrySet()) {
-                        params.add(entry.getKey(), entry.getValue());
+        switch (endpoint.getMethod()) {
+            case GET:
+                return client.get().uri(uriBuilder -> {
+                    uriBuilder.pathSegment(endpoint.getPathSegment());
+                    uriBuilder.queryParams(convertMapToHeaders(data));
+                    return uriBuilder.build();
+                });
+            case DELETE:
+                return client.delete().uri(uriBuilder -> {
+                    uriBuilder.pathSegment(endpoint.getPathSegment());
+                    uriBuilder.queryParams(convertMapToHeaders(data));
+                    return uriBuilder.build();
+                });
+            // Default to post request.
+            default:
+                return client.post()
+                        .uri(uriBuilder -> uriBuilder.pathSegment(endpoint.getPathSegment()).build())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(BodyInserters.fromValue(data));
+        }
+    }
 
-                }
+    private HttpHeaders convertMapToHeaders(Map<String, String> data) {
+        // Build Http Headers for query params.
+        HttpHeaders params = new HttpHeaders();
+        try {
+            for (Map.Entry<String, String> entry : data.entrySet()) {
+                params.add(entry.getKey(), entry.getValue());
             }
-            catch (ClassCastException e) {
-                // Get the class name of the invalid data type.
-                throw new InvalidConfigDataTypeException(e.getMessage().split(" ")[1]);
-            }
-
-            return client.get().uri(uriBuilder -> {
-                uriBuilder.pathSegment(endpoint.getPathSegment());
-                uriBuilder.queryParams(params);
-                return uriBuilder.build();
-            });
+        }
+        catch (ClassCastException e) {
+            // Get the class name of the invalid data type.
+            throw new InvalidConfigDataTypeException(e.getMessage().split(" ")[1]);
         }
 
-        // Otherwise, we are doing a post.
-        return client.post()
-                .uri(uriBuilder -> uriBuilder.pathSegment(endpoint.getPathSegment()).build())
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(data));
+        return params;
     }
 
     private WebClient buildNlpWebClient(String name) {

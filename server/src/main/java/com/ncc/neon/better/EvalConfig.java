@@ -8,6 +8,7 @@ public abstract class EvalConfig {
     private final String TRAIN_FILE_PARAM_KEY = "train_file";
     private final String DEV_FILE_PARAM_KEY = "dev_file";
     private final String OUTPUT_FILE_PREFIX_PARAM_KEY = "output_file_prefix";
+    private final String JOB_ID_KEY = "job_id";
 
     protected Map<String, String> trainConfigParams = new HashMap<>();
     protected Map<String, String> infConfigParams = new HashMap<>();
@@ -40,5 +41,9 @@ public abstract class EvalConfig {
 
     public Map<String, String> getInfConfigParams() {
         return infConfigParams;
+    }
+
+    public void setJobIdParam(String jobId) {
+        trainConfigParams.put(JOB_ID_KEY, jobId);
     }
 }

@@ -1,6 +1,5 @@
 package com.ncc.neon.better;
 
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,6 +7,8 @@ import com.ncc.neon.models.NlpModuleModel;
 import com.ncc.neon.services.*;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import reactor.core.Disposable;
@@ -21,6 +22,7 @@ public class IENlpModule extends NlpModule {
     private HttpEndpoint trainListEndpoint;
     private HttpEndpoint infEndpoint;
     private HttpEndpoint infListEndpoint;
+    private HttpEndpoint cancelEndpoint;
     private RunService runService;
 
     public IENlpModule(NlpModuleModel moduleModel, FileShareService fileShareService, BetterFileService betterFileService, RunService runService, ModuleService moduleService, Environment env) {
@@ -53,6 +55,9 @@ public class IENlpModule extends NlpModule {
                 case INF_LIST:
                     infListEndpoint = endpoint;
                     break;
+                case CANCEL:
+                    cancelEndpoint = endpoint;
+                    break;
             }
         }
     }
@@ -83,6 +88,16 @@ public class IENlpModule extends NlpModule {
                                     handleErrorDuringRun(onError, runId);
                                 })));
 
+    }
+
+    public Mono<String> cancelEval(String jobId) {
+        Map<String, String> cancelParams = new HashMap();
+        cancelParams.put("job_id", jobId);
+
+        return buildRequest(cancelParams, cancelEndpoint)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(String.class);
     }
 
     private Disposable handleErrorDuringRun(Throwable err, String runId) {

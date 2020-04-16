@@ -1,6 +1,7 @@
 package com.ncc.neon.controllers;
 
 import com.ncc.neon.better.ExperimentConfig;
+import com.ncc.neon.better.IENlpModule;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.ExperimentForm;
 import com.ncc.neon.models.FileStatus;
@@ -163,5 +164,14 @@ public class BetterController {
             return Mono.error(e);
         }
         return asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly());
+    }
+
+    @DeleteMapping(path="cancel")
+    Mono<Object> cancelEval(@RequestParam("module") String module, @RequestParam("job_id") String jobId) {
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> {
+                    IENlpModule ieNlpModule = (IENlpModule) nlpModule;
+                    return ieNlpModule.cancelEval(jobId);
+                });
     }
 }
