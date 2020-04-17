@@ -74,6 +74,12 @@ public class RunService extends ElasticSearchService<Run> {
         return updateAndRefresh(data, completedRunId);
     }
 
+    public Mono<RestStatus> updateToCanceledStatus(String canceledRunId) {
+        Map<String, Object> data = new HashMap<>();
+        data.put(STATUS_FIELD, RunStatus.CANCELED);
+        return updateAndRefresh(data, canceledRunId);
+    }
+
     public Mono<RestStatus> updateToErrorStatus(String runId, String errorMsg) {
         Map<String, Object> data = new HashMap<>();
         data.put(STATUS_FIELD, RunStatus.ERROR);

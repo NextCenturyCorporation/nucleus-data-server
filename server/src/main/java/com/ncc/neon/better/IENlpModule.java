@@ -7,7 +7,6 @@ import com.ncc.neon.models.NlpModuleModel;
 import com.ncc.neon.services.*;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -17,6 +16,7 @@ import reactor.core.publisher.Mono;
 public class IENlpModule extends NlpModule {
     private final String TRAIN_OUTPUTS_KEY = "train_outputs";
     private final String INF_OUTPUTS_KEY = "inf_outputs";
+    private final String JOB_ID_KEY = "job_id";
 
     private HttpEndpoint trainEndpoint;
     private HttpEndpoint trainListEndpoint;
@@ -90,14 +90,15 @@ public class IENlpModule extends NlpModule {
 
     }
 
-    public Mono<String> cancelEval(String jobId) {
+    public Mono<String> cancelEval(String runId) {
         Map<String, String> cancelParams = new HashMap();
-        cancelParams.put("job_id", jobId);
+        cancelParams.put(JOB_ID_KEY, runId);
 
         return buildRequest(cancelParams, cancelEndpoint)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToMono(String.class);
+                .bodyToMono(String.class)
+                .doOnSuccess(res -> runService.updateToCanceledStatus(runId));
     }
 
     private Disposable handleErrorDuringRun(Throwable err, String runId) {

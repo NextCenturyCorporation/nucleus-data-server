@@ -166,12 +166,12 @@ public class BetterController {
         return asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly());
     }
 
-    @DeleteMapping(path="cancel")
-    Mono<Object> cancelEval(@RequestParam("module") String module, @RequestParam("job_id") String jobId) {
+    @DeleteMapping(path="eval/cancel")
+    Mono<Object> cancelEval(@RequestParam("module") String module, @RequestParam("run_id") String runId) {
         return moduleService.buildNlpModuleClient(module)
                 .flatMap(nlpModule -> {
                     IENlpModule ieNlpModule = (IENlpModule) nlpModule;
-                    return ieNlpModule.cancelEval(jobId);
+                    return ieNlpModule.cancelEval(runId);
                 });
     }
 }
