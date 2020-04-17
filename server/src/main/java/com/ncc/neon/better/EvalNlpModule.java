@@ -1,5 +1,6 @@
 package com.ncc.neon.better;
 
+import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.EvaluationOutput;
 import com.ncc.neon.models.EvaluationResponse;
 import com.ncc.neon.models.NlpModuleModel;
@@ -8,6 +9,7 @@ import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.Disposable;
@@ -36,6 +38,11 @@ public class EvalNlpModule extends NlpModule {
         HashMap<String, String> res = new HashMap<>();
         res.put("sysfile", filePrefix);
         return res;
+    }
+
+    @Override
+    protected Mono<RestStatus> handleNlpOperationSuccess(ClientResponse nlpResponse) {
+        return nlpResponse.bodyToMono(BetterFile[].class).flatMap(this::updateFilesToReady);
     }
 
     @Override
@@ -77,8 +84,8 @@ public class EvalNlpModule extends NlpModule {
                             .flatMap(res -> runService.updateToDoneStatus(runId, res.getOverallScore())
                                     .flatMap(ignored -> {
                                         EvaluationOutput evaluationOutput = new EvaluationOutput(runId, res.getEvaluation());
-                                        return evaluationService.insert(evaluationOutput)
-                                                .flatMap(evaluation -> handleNlpOperationSuccess(res.getFiles()));
+                                        return evaluationService.insert(evaluationOutput).then(Mono.just(RestStatus.OK));
+//                                                .flatMap(evaluation -> handleNlpOperationSuccess(res.getFiles()));
                                     }))));
     }
 

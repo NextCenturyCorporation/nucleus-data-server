@@ -2,6 +2,7 @@ package com.ncc.neon.services;
 
 import com.ncc.neon.better.*;
 import com.ncc.neon.models.Run;
+import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
@@ -35,12 +36,12 @@ public class AsyncService {
         return moduleService.buildNlpModuleClient(experimentConfig.module)
                 .flatMap(nlpModule -> experimentService.insertNew(experimentConfig)
                         .flatMap(insertRes -> Flux.fromArray(experimentConfig.getEvalConfigs())
-                                .flatMapSequential(config -> experimentService.incrementCurrRun(insertRes.getT1())
-                                                .flatMap(ignored -> processEvaluation(insertRes.getT1(), config, nlpModule, infOnly, experimentConfig.getTestFile())
-                                                        .flatMap(completedRunId -> experimentService.updateOnRunComplete(completedRunId, insertRes.getT1())
-                                                                .then(experimentService.checkForComplete(insertRes.getT1())))
-                                                        .onErrorResume(err -> experimentService.countErrorEvals(insertRes.getT1())
-                                                                .then(experimentService.checkForComplete(insertRes.getT1())))),
+                                .flatMapSequential(config -> experimentService.incrementCurrRun(insertRes)
+                                                .flatMap(ignored -> processEvaluation(insertRes, config, (IENlpModule) nlpModule, infOnly, experimentConfig.getTestFile())
+                                                        .flatMap(completedRunId -> experimentService.updateOnRunComplete(completedRunId, insertRes)
+                                                                .then(experimentService.checkForComplete(insertRes)))
+                                                        .onErrorResume(err -> experimentService.countErrorEvals(insertRes)
+                                                                .then(experimentService.checkForComplete(insertRes)))),
                                         Integer.parseInt(Objects.requireNonNull(env.getProperty("server_gpu_count")))).collectList()));
     }
 
@@ -54,13 +55,48 @@ public class AsyncService {
         });
     }
 
-    private Mono<String> processEvaluation(String experimentId, EvalConfig config, NlpModule module, boolean infOnly, String testFile) {
-        return moduleService.incrementJobCount(module.getName())
+    private Mono<String> processEvaluation(String experimentId, EvalConfig config, IENlpModule ieNlpModule1, boolean infOnly, String testFile) {
+        String runId = runService.initRun(experimentId, config.getTrainConfigParams(), config.getInfConfigParams()).block();
+
+        Mono<Object> trainMono = moduleService.incrementJobCount(ieNlpModule1.getName())
+                .flatMap(ignored -> {
+                    // Set job id equal to the new run id.
+                    config.setJobIdParam(runId);
+
+                    if (!infOnly) {
+                        return runService.updateToTrainStatus(runId)
+                                .flatMap(test -> ieNlpModule1.performTraining(config, runId))
+                                .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())));
+                    }
+
+                    return Mono.empty();
+                });
+
+        Mono<RestStatus> infMono = runService.updateToInferenceStatus(runId)
+                .flatMap(updateRes -> ieNlpModule1.performInference(config, runId)
+                        .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
+                        .flatMap(infRes -> moduleService.decrementJobCount(ieNlpModule1.getName())));
+
+        Mono<RestStatus> evalMono = runService.updateToScoringStatus(runId)
+                .flatMap(updatedRun -> moduleService.buildNlpModuleClient(ModuleService.EVAL_SERVICE_NAME)
+                        .flatMap(evalModule -> {
+                            EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
+                            return runService.getInferenceOutput(runId)
+                                    .flatMap(sysFile -> evalNlpModule.performEval(testFile, sysFile, runId)
+                                            .doOnError(evalError -> {
+                                                evalNlpModule.handleErrorDuringRun(evalError, runId);
+                                                Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage()));
+                                            }));
+                        }));
+
+        return trainMono.flatMap(ignored -> )
+
+        return moduleService.incrementJobCount(ieNlpModule1.getName())
                 .flatMap(ignored -> runService.initRun(experimentId, config.getTrainConfigParams(), config.getInfConfigParams())
                     .flatMap(initialRun -> {
                         // Set job id equal to the new run id.
                         config.setJobIdParam(initialRun.getT1());
-                        IENlpModule ieNlpModule = (IENlpModule) module;
+                        IENlpModule ieNlpModule = (IENlpModule) ieNlpModule1;
 
                         Mono<Tuple2<String, IENlpModule>> res = Mono.just(Tuples.of(initialRun.getT1(), ieNlpModule));
 
@@ -73,10 +109,11 @@ public class AsyncService {
 
                         return res;
                     })
-                ).flatMap(trainRes -> runService.updateToInferenceStatus(trainRes.getT1())
+                )
+                .flatMap(trainRes -> runService.updateToInferenceStatus(trainRes.getT1())
                         .flatMap(updateRes -> trainRes.getT2().performInference(config, trainRes.getT1())
                                 .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
-                                .flatMap(infRes -> moduleService.decrementJobCount(module.getName())
+                                .flatMap(infRes -> moduleService.decrementJobCount(ieNlpModule1.getName())
                                         .flatMap(ignored -> runService.updateToScoringStatus(trainRes.getT1())))
                                 .flatMap(updatedRun -> moduleService.buildNlpModuleClient(ModuleService.EVAL_SERVICE_NAME)
                                         .flatMap(evalModule -> {

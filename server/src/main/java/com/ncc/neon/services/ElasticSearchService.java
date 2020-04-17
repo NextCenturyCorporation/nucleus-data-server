@@ -120,7 +120,7 @@ public abstract class ElasticSearchService<T> {
         });
     }
 
-    public Mono<Tuple2<String, RestStatus>> insert(T itemToAdd) {
+    public Mono<String> insert(T itemToAdd) {
         // Serialize item to json map.
         Map<String, Object> itemMap = new ObjectMapper().convertValue(itemToAdd, Map.class);
 
@@ -140,7 +140,7 @@ public abstract class ElasticSearchService<T> {
                 .doOnSuccess(status -> datasetService.notify(notification));
     }
 
-    public Mono<Tuple2<String, RestStatus>> upsert(T itemToAdd, String id) {
+    public Mono<String> upsert(T itemToAdd, String id) {
         // Serialize item to json map.
         Map<String, Object> itemMap = new ObjectMapper().convertValue(itemToAdd, Map.class);
 
@@ -198,7 +198,7 @@ public abstract class ElasticSearchService<T> {
         });
     }
 
-    private Mono<Tuple2<String, RestStatus>> completeIndexRequest(IndexRequest request) {
+    private Mono<String> completeIndexRequest(IndexRequest request) {
         return Mono.create(sink -> {
             try {
                 IndexResponse indexResponse = elasticSearchClient.index(request, RequestOptions.DEFAULT);
@@ -206,7 +206,7 @@ public abstract class ElasticSearchService<T> {
                 if (indexResponse.status() != RestStatus.CREATED && indexResponse.status() != RestStatus.OK) {
                     sink.error(new UpsertException(request.id(), indexResponse.status().toString()));
                 } else {
-                    sink.success(Tuples.of(indexResponse.getId(), indexResponse.status()));
+                    sink.success(indexResponse.getId());
                 }
             } catch (Exception e) {
                 sink.error(new UpsertException(request.id(), e.getMessage()));

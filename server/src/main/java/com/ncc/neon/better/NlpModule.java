@@ -19,6 +19,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.Disposable;
@@ -50,6 +51,7 @@ public abstract class NlpModule {
     }
 
     protected abstract Map<String, String> getListEndpointParams(String filePrefix);
+    protected abstract Mono<RestStatus> handleNlpOperationSuccess(ClientResponse nlpResponse);
 
     public String getName() { return this.name; }
 
@@ -94,27 +96,53 @@ public abstract class NlpModule {
         return Mono.just(files).flatMap(fileList -> betterFileService.initMany(fileList));
     }
 
-    protected Mono<BetterFile[]> performNlpOperation(Map<String, String> data, HttpEndpoint endpoint) {
+    protected Mono<ClientResponse> performNlpOperation(Map<String, String> data, HttpEndpoint endpoint) {
         return buildRequest(data, endpoint)
                 .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(BetterFile[].class)
+                .exchange()
+                .doOnSuccess(this::handleNlpOperationSuccess)
                 .doOnError(this::handleHttpError);
+//                .retrieve()
+//                .bodyToMono(BetterFile[].class)
+//                .doOnError(this::handleHttpError);
     }
 
-    protected Mono<RestStatus> handleNlpOperationSuccess(BetterFile[] readyFiles) {
-        // Set status to ready.
-        for (BetterFile readyFile : readyFiles) {
-            readyFile.setStatus(FileStatus.READY);
-        }
+//    protected Mono<RestStatus> handleNlpOperationSuccess(ClientResponse response) {
+//        HttpStatus resposneStatus = response.statusCode();
+//
+//        // Check if nlp operation was canceled.
+//        if (resposneStatus == HttpStatus.PARTIAL_CONTENT) {
+//
+//        }
+//
+//        // Assume files were returned otherwise.
+//        return response.bodyToMono(BetterFile[].class).flatMap(this::updateFilesToReady);
+//    }
 
-        return Flux.fromArray(readyFiles)
-                .flatMap(readyFile -> betterFileService.upsertAndRefresh(readyFile, readyFile.getFilename()))
-                .then(Mono.just(RestStatus.OK));
-    }
+//    protected Mono<RestStatus> handleNlpOperationSuccess(BetterFile[] readyFiles) {
+//        // Set status to ready.
+//        for (BetterFile readyFile : readyFiles) {
+//            readyFile.setStatus(FileStatus.READY);
+//        }
+//
+//        return Flux.fromArray(readyFiles)
+//                .flatMap(readyFile -> betterFileService.upsertAndRefresh(readyFile, readyFile.getFilename()))
+//                .then(Mono.just(RestStatus.OK));
+//    }
 
     protected Disposable handleNlpOperationError(WebClientResponseException err, String[] pendingFiles) {
         return reportErrorInPendingFiles(err.getResponseBodyAsString(), pendingFiles).subscribe();
+    }
+
+    protected Mono<RestStatus> updateFilesToReady(BetterFile[] files) {
+        // Set status to ready.
+        for (BetterFile readyFile : files) {
+            readyFile.setStatus(FileStatus.READY);
+        }
+
+        return Flux.fromArray(files)
+                .flatMap(readyFile -> betterFileService.upsertAndRefresh(readyFile, readyFile.getFilename()))
+                .then(Mono.just(RestStatus.OK));
     }
 
     protected Flux<Object> reportErrorInPendingFiles(String errorMessage, String[] pendingFiles) {

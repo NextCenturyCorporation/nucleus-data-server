@@ -3,11 +3,15 @@ package com.ncc.neon.better;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.NlpModuleModel;
+import com.ncc.neon.models.RunStatus;
 import com.ncc.neon.services.*;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import reactor.core.Disposable;
@@ -37,6 +41,19 @@ public class IENlpModule extends NlpModule {
         return res;
     }
 
+    @Override
+    protected Mono<RestStatus> handleNlpOperationSuccess(ClientResponse nlpResponse) {
+        HttpStatus responseStatus = nlpResponse.statusCode();
+
+        // Check if nlp operation was canceled.
+        if (responseStatus == HttpStatus.RESET_CONTENT) {
+            return nlpResponse.bodyToMono(String.class).flatMap(runService::updateToCanceledStatus);
+        }
+
+        // Assume files were returned otherwise.
+        return nlpResponse.bodyToMono(BetterFile[].class).flatMap(this::updateFilesToReady);
+    }
+
     @SuppressWarnings("incomplete-switch")
 	@Override
     protected void initEndpoints(HttpEndpoint[] endpoints) {
@@ -62,31 +79,34 @@ public class IENlpModule extends NlpModule {
         }
     }
 
-    public Mono<RestStatus> performTraining(EvalConfig config, String runId) {
+    public Mono<Object> performTraining(EvalConfig config, String runId) {
         return performListOperation(config.outputFilePrefix, trainListEndpoint)
                 .doOnError(onError -> handleErrorDuringRun(onError, runId))
                 .flatMap(pendingFiles -> initPendingFiles(pendingFiles)
                         .then(runService.updateOutputs(runId, TRAIN_OUTPUTS_KEY, pendingFiles))
                         .flatMap(initRes -> performNlpOperation(config.trainConfigParams, trainEndpoint)
-                                .flatMap(this::handleNlpOperationSuccess)
-                                .flatMap(ignored -> runService.completeTraining(runId))
+//                                .flatMap(this::handleNlpOperationSuccess)
+//                                .flatMap(ignored -> runService.completeTraining(runId))
                                 .doOnError(onError -> {
                                     handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
                                     handleErrorDuringRun(onError, runId);
                                 })));
     }
 
-    public Mono<RestStatus> performInference(EvalConfig config, String runId) {
+    public Mono<Object> performInference(EvalConfig config, String runId) {
         return performListOperation(config.outputFilePrefix, infListEndpoint)
                 .doOnError(onError -> handleErrorDuringRun(onError, runId))
                 .flatMap(pendingFiles -> initPendingFiles(pendingFiles)
                         .then(runService.updateOutputs(runId, INF_OUTPUTS_KEY, pendingFiles))
-                        .then(performNlpOperation(config.infConfigParams, infEndpoint)
-                        .flatMap(this::handleNlpOperationSuccess)
-                                .doOnError(onError -> {
-                                    handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
-                                    handleErrorDuringRun(onError, runId);
-                                })));
+                        .flatMap(ignored -> performNlpOperation(config.infConfigParams, infEndpoint)
+                            .doOnError(infError -> handleNlpOperationError((WebClientResponseException) infError, pendingFiles))));
+//                        .then(runService.updateOutputs(runId, INF_OUTPUTS_KEY, pendingFiles))
+//                        .then(performNlpOperation(config.infConfigParams, infEndpoint)
+////                        .flatMap(this::handleNlpOperationSuccess)
+//                                .doOnError(onError -> {
+//                                    handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
+//                                    handleErrorDuringRun(onError, runId);
+//                                })));
 
     }
 
@@ -98,18 +118,12 @@ public class IENlpModule extends NlpModule {
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(String.class)
-                .doOnSuccess(res -> runService.updateToCanceledStatus(runId));
+                .doOnSuccess(res -> runService.updateToCanceledStatus(runId).subscribe());
     }
 
     private Disposable handleErrorDuringRun(Throwable err, String runId) {
         return runService.updateToErrorStatus(runId, err.getMessage())
                 .then(runService.refreshIndex())
                 .subscribe();
-    }
-
-    private Map<String, String> getListParams(String outputFilePrefix) {
-        Map<String, String> res = new HashMap<>();
-        res.put("output_file_prefix", outputFilePrefix);
-        return res;
     }
 }
