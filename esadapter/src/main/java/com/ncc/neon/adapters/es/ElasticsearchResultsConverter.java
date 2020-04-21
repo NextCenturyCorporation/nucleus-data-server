@@ -1,5 +1,6 @@
 package com.ncc.neon.adapters.es;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -20,8 +21,13 @@ import com.ncc.neon.models.queries.OrderByClause;
 import com.ncc.neon.models.queries.OrderByFieldClause;
 import com.ncc.neon.models.results.TabularQueryResult;
 
+import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.DocValueFormat;
+import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
@@ -94,7 +100,26 @@ public class ElasticsearchResultsConverter {
         return results;
     }
 
-    private static List<Map<String, Object>> extractHitsFromResults(SearchResponse response) {
+    public static List<Map<String, Object>> getScrolledResults(Scroll scroll, SearchResponse response, RestHighLevelClient client) throws IOException {
+        String scrollId = response.getScrollId();
+        List<Map<String, Object>> allHits = new ArrayList<>();
+        allHits.addAll(ElasticsearchResultsConverter.extractHitsFromResults(response));
+
+        while (response.getHits().getHits() != null && response.getHits().getHits().length > 0) {
+            SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+            scrollRequest.scroll(scroll);
+            response = client.scroll(scrollRequest, RequestOptions.DEFAULT);
+            allHits.addAll(ElasticsearchResultsConverter.extractHitsFromResults(response));
+            scrollId = response.getScrollId();
+        }
+
+        ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+        clearScrollRequest.addScrollId(scrollId);
+        client.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+        return allHits;
+    }
+
+    public static List<Map<String, Object>> extractHitsFromResults(SearchResponse response) {
         return Arrays.stream(response.getHits().getHits()).map(searchHit -> {
             // Copy the map since it may be immutable.
             // Do not use Collectors.toMap because it does not work with null values.
