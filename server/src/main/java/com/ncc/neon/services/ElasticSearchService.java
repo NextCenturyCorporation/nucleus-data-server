@@ -1,5 +1,6 @@
 package com.ncc.neon.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.DataNotification;
@@ -94,10 +95,14 @@ public abstract class ElasticSearchService<T> {
         });
     }
 
-    public Mono<Long> count(Map<String, Object> fields) {
-        // Pass the index to limit the search to just that index.
-//        MultiSearchRequest multiSearchRequest = new MultiSearchRequest();
+    public T getByIdSync(String id) throws IOException {
+        GetRequest gr = new GetRequest(index, dataType, id);
+        GetResponse response = elasticSearchClient.get(gr, RequestOptions.DEFAULT);
 
+        return new ObjectMapper().readValue(response.getSourceAsString(), type);
+    }
+
+    public Mono<Long> count(Map<String, Object> fields) {
         SearchRequest searchRequest = new SearchRequest();
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.from(0);
@@ -126,6 +131,14 @@ public abstract class ElasticSearchService<T> {
 
         IndexRequest indexRequest = new IndexRequest(index, dataType).source(itemMap);
         return completeIndexRequest(indexRequest);
+    }
+
+    public String insertSync(T itemToAdd) throws UpsertException {
+        // Serialize item to json map.
+        Map<String, Object> itemMap = new ObjectMapper().convertValue(itemToAdd, Map.class);
+
+        IndexRequest indexRequest = new IndexRequest(index, dataType).source(itemMap);
+        return completeIndexRequestSync(indexRequest);
     }
 
     public Mono<RestStatus> insertAndRefresh(T itemToInsert) {
@@ -212,5 +225,18 @@ public abstract class ElasticSearchService<T> {
                 sink.error(new UpsertException(request.id(), e.getMessage()));
             }
         });
+    }
+
+    private String completeIndexRequestSync(IndexRequest request) throws UpsertException {
+        try {
+            IndexResponse indexResponse = elasticSearchClient.index(request, RequestOptions.DEFAULT);
+
+            if (indexResponse.status() != RestStatus.CREATED && indexResponse.status() != RestStatus.OK) {
+                throw new UpsertException(request.id(), indexResponse.status().toString());
+            }
+            return indexResponse.getId();
+        } catch (IOException e) {
+            throw new UpsertException(request.id(), e.getMessage());
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.ncc.neon.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.Run;
 import com.ncc.neon.models.RunStatus;
 import com.ncc.neon.models.Score;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,6 +39,11 @@ public class RunService extends ElasticSearchService<Run> {
     public Mono<String> initRun(String experimentId, Map<String, String> trainConfigParams, Map<String, String> infConfigParams) {
         Run run = new Run(experimentId, trainConfigParams, infConfigParams);
         return insert(run);
+    }
+
+    public String initRunSync(String experimentId, Map<String, String> trainConfigParams, Map<String, String> infConfigParams) throws UpsertException {
+        Run run = new Run(experimentId, trainConfigParams, infConfigParams);
+        return insertSync(run);
     }
 
     public Mono<RestStatus> updateToTrainStatus(String runId) {
@@ -101,7 +108,8 @@ public class RunService extends ElasticSearchService<Run> {
 
     }
 
-    public Mono<Boolean> isCanceled(String runId) {
-        return getById(runId).flatMap(run -> Mono.just(run.getStatus() == RunStatus.CANCELED));
+    public Boolean isCanceledSync(String runId) throws IOException {
+        Run run  = getByIdSync(runId);
+        return run.getStatus() == RunStatus.CANCELED;
     }
 }
