@@ -10,6 +10,14 @@
     "operator": "!=",
     "rhs": -1234
   },
+  "clusterClause": {
+    "count": 0,
+    "type": "testType",
+    "clusters": [[0, 25], [26, 50]],
+    "aggregationName": "testAggregationName",
+    "fieldType": "testFieldType",
+    "fieldNames": ["testFieldName1", "testFieldName2"]
+  },
   "aggregateClauses": [],
   "groupByClauses": [],
   "orderByClauses": [],

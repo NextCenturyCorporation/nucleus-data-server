@@ -306,6 +306,14 @@ Query Example:
     "operator": "!=",
     "rhs": null
   },
+  "clusterClause": {
+    "count": 0,
+    "type": "testType",
+    "clusters": [[0, 25], [26, 50]],
+    "aggregationName": "testAggregationName",
+    "fieldType": "testFieldType",
+    "fieldNames": ["testFieldName1", "testFieldName2"]
+  },
   "aggregateClauses": [
     { "type": "field", "operation": "count", "label": "testAggregateLabel", "fieldClause": { "database": "testDatabase", "table": "testTable", "field": "testAggregateField" } }
   ],

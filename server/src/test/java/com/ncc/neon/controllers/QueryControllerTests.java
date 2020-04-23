@@ -5,20 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.ncc.neon.NeonServerApplication;
-import com.ncc.neon.models.queries.AggregateByFieldClause;
-import com.ncc.neon.models.queries.AggregateClause;
-import com.ncc.neon.models.queries.FieldClause;
-import com.ncc.neon.models.queries.GroupByClause;
-import com.ncc.neon.models.queries.GroupByFieldClause;
-import com.ncc.neon.models.queries.LimitClause;
-import com.ncc.neon.models.queries.OffsetClause;
-import com.ncc.neon.models.queries.Query;
-import com.ncc.neon.models.queries.SelectClause;
-import com.ncc.neon.models.queries.SingularWhereClause;
-import com.ncc.neon.models.queries.WhereClause;
-import com.ncc.neon.models.queries.OrderByClause;
-import com.ncc.neon.models.queries.OrderByFieldClause;
-import com.ncc.neon.models.queries.Order;
+import com.ncc.neon.models.queries.*;
 import com.ncc.neon.models.results.TabularQueryResult;
 
 import org.assertj.core.api.Assertions;
@@ -107,6 +94,9 @@ public class QueryControllerTests {
         SelectClause selectClause = new SelectClause("testDatabase", "testTable");
         WhereClause whereClause = SingularWhereClause.fromNull(
             new FieldClause("testDatabase", "testTable", "testWhereField"), "!=");
+        ClusterClause clusterClause = new ClusterClause(0, "testType",
+                List.of(List.of(Integer.valueOf(0), Integer.valueOf(25)), List.of(Integer.valueOf(26), Integer.valueOf(50))),
+                "testAggregationName", "testFieldType", List.of("testFieldName1", "testFieldName2"));
         List<AggregateClause> aggregateClauses = List.of(new AggregateByFieldClause(
             new FieldClause("testDatabase", "testTable", "testAggregateField"), "testAggregateLabel", "count"));
         List<GroupByClause> groupByClauses = List.of(new GroupByFieldClause(
@@ -117,7 +107,7 @@ public class QueryControllerTests {
         OffsetClause offsetClause = new OffsetClause(34);
         boolean isDistinct = false;
 
-        Query query = new Query(selectClause, whereClause, aggregateClauses, groupByClauses, orderByClauses,
+        Query query = new Query(selectClause, whereClause, clusterClause, aggregateClauses, groupByClauses, orderByClauses,
             limitClause, offsetClause, List.of(), isDistinct);
 
         this.webClient.post()
