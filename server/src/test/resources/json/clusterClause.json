@@ -1,0 +1,7 @@
+{
+  "type": "aggregation",
+  "count": 5,
+  "aggregationName": "aggregation",
+  "fieldType": "number",
+  "fieldNames": ["group_primary"]
+}
