@@ -1,6 +1,5 @@
 package com.ncc.neon.better;
 
-import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.EvaluationOutput;
 import com.ncc.neon.models.EvaluationResponse;
 import com.ncc.neon.models.NlpModuleModel;
@@ -8,7 +7,6 @@ import com.ncc.neon.services.*;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
@@ -41,8 +39,8 @@ public class EvalNlpModule extends NlpModule {
     }
 
     @Override
-    protected Mono<RestStatus> handleNlpOperationSuccess(ClientResponse nlpResponse) {
-        return nlpResponse.bodyToMono(BetterFile[].class).flatMap(this::updateFilesToReady);
+    protected Mono<EvaluationResponse> handleNlpOperationSuccess(ClientResponse nlpResponse) {
+        return nlpResponse.bodyToMono(EvaluationResponse.class);
     }
 
     @Override
@@ -60,33 +58,35 @@ public class EvalNlpModule extends NlpModule {
         }
     }
 
-    protected Mono<EvaluationResponse> performEvalOperation(Map<String, String> data, HttpEndpoint endpoint) {
-        return buildRequest(data, endpoint)
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(EvaluationResponse.class);
-    }
-
     public Mono<RestStatus> performEval(String refFile, String sysFile, String runId) {
         HashMap<String, String> params = new HashMap<>();
         params.put("sysfile", sysFile);
         params.put("reffile", refFile);
 
-        return runService.updateToScoringStatus(runId).flatMap(updatedRun ->
-                performListOperation(sysFile, evalListEndpoint)
-                .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
-                .flatMap(pendingFiles -> this.initPendingFiles(pendingFiles)
-                        .then(runService.updateOutputs(runId, EVAL_OUTPUTS_KEY, pendingFiles))
-                        .flatMap(response -> this.performEvalOperation(params, evalEndpoint)
-                            .doOnError(onError -> {
-                                handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
-                                handleErrorDuringRun(onError, runId);
-                            })
-                            .flatMap(res -> runService.updateToDoneStatus(runId, res.getOverallScore())
-                                    .flatMap(ignored -> {
-                                        EvaluationOutput evaluationOutput = new EvaluationOutput(runId, res.getEvaluation());
-                                        return evaluationService.insert(evaluationOutput).then(Mono.just(RestStatus.OK));
-                                    })))));
+        return runService.isCanceled(runId).flatMap(isCanceled -> {
+            if (isCanceled) {
+                return Mono.empty();
+            }
+
+            return runService.updateToScoringStatus(runId).flatMap(updatedRun ->
+                    performListOperation(sysFile, evalListEndpoint)
+                            .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
+                            .flatMap(pendingFiles -> initPendingFiles(pendingFiles)
+                                    .then(runService.updateOutputs(runId, EVAL_OUTPUTS_KEY, pendingFiles))
+                                    .flatMap(response -> performNlpOperation(params, evalEndpoint)
+                                            .doOnError(onError -> {
+                                                handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
+                                                handleErrorDuringRun(onError, runId);
+                                            })
+                                            .flatMap(res -> {
+                                                EvaluationResponse evalRes = (EvaluationResponse) res;
+                                                return runService.updateToDoneStatus(runId, evalRes.getOverallScore())
+                                                        .flatMap(ignored -> {
+                                                            EvaluationOutput evaluationOutput = new EvaluationOutput(runId, evalRes.getEvaluation());
+                                                            return evaluationService.insert(evaluationOutput).then(Mono.just(RestStatus.OK));
+                                                        });
+                                            }))));
+        });
     }
 
     public Disposable handleErrorDuringRun(Throwable err, String runId) {

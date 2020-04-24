@@ -49,7 +49,7 @@ public class PreprocessorNlpModule extends NlpModule {
         }
     }
 
-    public Mono<RestStatus> performPreprocessing(String filename) {
+    public Mono<?> performPreprocessing(String filename) {
         HashMap<String, String> params = new HashMap<>();
         params.put("file", filename);
         return this.performListOperation(filename, listEndpoint)

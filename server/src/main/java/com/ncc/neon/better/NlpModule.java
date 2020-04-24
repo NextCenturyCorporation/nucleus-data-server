@@ -56,7 +56,7 @@ public abstract class NlpModule {
     Each NLP module may have their own way for dealing with the response of their operation, so
     let the concrete classes implement this handling logic.
      */
-    protected abstract Mono<RestStatus> handleNlpOperationSuccess(ClientResponse nlpResponse);
+    protected abstract Mono<?> handleNlpOperationSuccess(ClientResponse nlpResponse);
 
     public String getName() { return this.name; }
 
@@ -101,10 +101,11 @@ public abstract class NlpModule {
         return Mono.just(files).flatMap(fileList -> betterFileService.initMany(fileList));
     }
 
-    protected Mono<RestStatus> performNlpOperation(Map<String, String> data, HttpEndpoint endpoint) {
+    protected Mono<?> performNlpOperation(Map<String, String> data, HttpEndpoint endpoint) {
         return buildRequest(data, endpoint)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
+                // Use flatMap so the success handling runs before the next step in the sequence.
                 .flatMap(this::handleNlpOperationSuccess)
                 .doOnError(this::handleHttpError);
     }
