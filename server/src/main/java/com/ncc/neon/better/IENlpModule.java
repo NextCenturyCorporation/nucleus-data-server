@@ -5,7 +5,6 @@ import java.util.Map;
 
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.NlpModuleModel;
-import com.ncc.neon.models.RunStatus;
 import com.ncc.neon.services.*;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.env.Environment;
@@ -85,8 +84,6 @@ public class IENlpModule extends NlpModule {
                 .flatMap(pendingFiles -> initPendingFiles(pendingFiles)
                         .then(runService.updateOutputs(runId, TRAIN_OUTPUTS_KEY, pendingFiles))
                         .flatMap(initRes -> performNlpOperation(config.trainConfigParams, trainEndpoint)
-//                                .flatMap(this::handleNlpOperationSuccess)
-//                                .flatMap(ignored -> runService.completeTraining(runId))
                                 .doOnError(onError -> {
                                     handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
                                     handleErrorDuringRun(onError, runId);
@@ -94,20 +91,19 @@ public class IENlpModule extends NlpModule {
     }
 
     public Mono<Object> performInference(EvalConfig config, String runId) {
-        return performListOperation(config.outputFilePrefix, infListEndpoint)
-                .doOnError(onError -> handleErrorDuringRun(onError, runId))
-                .flatMap(pendingFiles -> initPendingFiles(pendingFiles)
-                        .then(runService.updateOutputs(runId, INF_OUTPUTS_KEY, pendingFiles))
-                        .flatMap(ignored -> performNlpOperation(config.infConfigParams, infEndpoint)
-                            .doOnError(infError -> handleNlpOperationError((WebClientResponseException) infError, pendingFiles))));
-//                        .then(runService.updateOutputs(runId, INF_OUTPUTS_KEY, pendingFiles))
-//                        .then(performNlpOperation(config.infConfigParams, infEndpoint)
-////                        .flatMap(this::handleNlpOperationSuccess)
-//                                .doOnError(onError -> {
-//                                    handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
-//                                    handleErrorDuringRun(onError, runId);
-//                                })));
+        return runService.isCanceled(runId).flatMap(isCanceled -> {
+            if (isCanceled) {
+                return Mono.empty();
+            }
 
+            return runService.updateToInferenceStatus(runId)
+                    .then(performListOperation(config.outputFilePrefix, infListEndpoint)
+                            .doOnError(onError -> handleErrorDuringRun(onError, runId))
+                            .flatMap(pendingFiles -> initPendingFiles(pendingFiles)
+                                    .then(runService.updateOutputs(runId, INF_OUTPUTS_KEY, pendingFiles))
+                                    .flatMap(ignored -> performNlpOperation(config.infConfigParams, infEndpoint)
+                                            .doOnError(infError -> handleNlpOperationError((WebClientResponseException) infError, pendingFiles)))));
+        });
     }
 
     public Mono<String> cancelEval(String runId) {

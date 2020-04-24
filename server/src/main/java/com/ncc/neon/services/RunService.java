@@ -11,9 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
-
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,12 +47,6 @@ public class RunService extends ElasticSearchService<Run> {
         Map<String, Object> data = new HashMap<>();
         data.put(TRAIN_START_TIME_FIELD, DateUtil.getCurrentDateTime());
         data.put(STATUS_FIELD, RunStatus.TRAINING);
-        return updateAndRefresh(data, runId);
-    }
-
-    public Mono<RestStatus> completeTraining(String runId) {
-        Map<String, Object> data = new HashMap<>();
-        data.put(TRAIN_END_TIME_FIELD, DateUtil.getCurrentDateTime());
         return updateAndRefresh(data, runId);
     }
 
@@ -108,8 +99,7 @@ public class RunService extends ElasticSearchService<Run> {
 
     }
 
-    public Boolean isCanceledSync(String runId) throws IOException {
-        Run run  = getByIdSync(runId);
-        return run.getStatus() == RunStatus.CANCELED;
+    public Mono<Boolean> isCanceled(String runId) {
+        return getById(runId).flatMap(run -> Mono.just(run.getStatus() == RunStatus.CANCELED));
     }
 }

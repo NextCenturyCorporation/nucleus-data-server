@@ -55,7 +55,6 @@ public class PreprocessorNlpModule extends NlpModule {
         return this.performListOperation(filename, listEndpoint)
                 .flatMap(pendingFiles -> this.initPendingFiles(pendingFiles)
                 .then(this.performNlpOperation(params, preprocessEndpoint)
-                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)))
-                .flatMap(this::handleNlpOperationSuccess));
+                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))));
     }
 }

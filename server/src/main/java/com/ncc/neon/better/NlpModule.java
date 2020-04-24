@@ -51,6 +51,11 @@ public abstract class NlpModule {
     }
 
     protected abstract Map<String, String> getListEndpointParams(String filePrefix);
+
+    /*
+    Each NLP module may have their own way for dealing with the response of their operation, so
+    let the concrete classes implement this handling logic.
+     */
     protected abstract Mono<RestStatus> handleNlpOperationSuccess(ClientResponse nlpResponse);
 
     public String getName() { return this.name; }
@@ -96,39 +101,13 @@ public abstract class NlpModule {
         return Mono.just(files).flatMap(fileList -> betterFileService.initMany(fileList));
     }
 
-    protected Mono<ClientResponse> performNlpOperation(Map<String, String> data, HttpEndpoint endpoint) {
+    protected Mono<RestStatus> performNlpOperation(Map<String, String> data, HttpEndpoint endpoint) {
         return buildRequest(data, endpoint)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
-                .doOnSuccess(this::handleNlpOperationSuccess)
+                .flatMap(this::handleNlpOperationSuccess)
                 .doOnError(this::handleHttpError);
-//                .retrieve()
-//                .bodyToMono(BetterFile[].class)
-//                .doOnError(this::handleHttpError);
     }
-
-//    protected Mono<RestStatus> handleNlpOperationSuccess(ClientResponse response) {
-//        HttpStatus resposneStatus = response.statusCode();
-//
-//        // Check if nlp operation was canceled.
-//        if (resposneStatus == HttpStatus.PARTIAL_CONTENT) {
-//
-//        }
-//
-//        // Assume files were returned otherwise.
-//        return response.bodyToMono(BetterFile[].class).flatMap(this::updateFilesToReady);
-//    }
-
-//    protected Mono<RestStatus> handleNlpOperationSuccess(BetterFile[] readyFiles) {
-//        // Set status to ready.
-//        for (BetterFile readyFile : readyFiles) {
-//            readyFile.setStatus(FileStatus.READY);
-//        }
-//
-//        return Flux.fromArray(readyFiles)
-//                .flatMap(readyFile -> betterFileService.upsertAndRefresh(readyFile, readyFile.getFilename()))
-//                .then(Mono.just(RestStatus.OK));
-//    }
 
     protected Disposable handleNlpOperationError(WebClientResponseException err, String[] pendingFiles) {
         return reportErrorInPendingFiles(err.getResponseBodyAsString(), pendingFiles).subscribe();

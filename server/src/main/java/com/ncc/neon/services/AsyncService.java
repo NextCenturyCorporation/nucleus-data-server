@@ -11,7 +11,6 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.Objects;
 
 @Component
@@ -55,6 +54,7 @@ public class AsyncService {
     }
 
     private Mono<String> processEvaluation(String experimentId, EvalConfig config, IENlpModule ieNlpModule1, boolean infOnly, String testFile) {
+        // Get the run id for the entire evaluation.
         String runId;
         try {
             runId = runService.initRunSync(experimentId, config.getTrainConfigParams(), config.getInfConfigParams());
@@ -62,7 +62,9 @@ public class AsyncService {
             return Mono.error(e);
         }
 
+        // Variables used in flatMaps must be final.
         String finalRunId = runId;
+
         Mono<Object> trainMono = moduleService.incrementJobCount(ieNlpModule1.getName())
                 .flatMap(ignored -> {
                     // Set job id equal to the new run id.
@@ -77,13 +79,11 @@ public class AsyncService {
                     return Mono.empty();
                 });
 
-        Mono<RestStatus> infMono = runService.updateToInferenceStatus(runId)
-                .flatMap(updateRes -> ieNlpModule1.performInference(config, runId)
+        Mono<RestStatus> infMono = ieNlpModule1.performInference(config, runId)
                         .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
-                        .flatMap(infRes -> moduleService.decrementJobCount(ieNlpModule1.getName())));
+                        .flatMap(infRes -> moduleService.decrementJobCount(ieNlpModule1.getName()));
 
-        Mono<RestStatus> evalMono = runService.updateToScoringStatus(runId)
-                .flatMap(updatedRun -> moduleService.buildNlpModuleClient(ModuleService.EVAL_SERVICE_NAME)
+        Mono<RestStatus> evalMono = moduleService.buildNlpModuleClient(ModuleService.EVAL_SERVICE_NAME)
                         .flatMap(evalModule -> {
                             EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
                             return runService.getInferenceOutput(runId)
@@ -92,26 +92,11 @@ public class AsyncService {
                                                 evalNlpModule.handleErrorDuringRun(evalError, runId);
                                                 Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage()));
                                             }));
-                        }));
+                        });
 
-        return trainMono.flatMap(ignored -> {
-            try {
-                if (!runService.isCanceledSync(runId)) {
-                    return infMono.flatMap(infRes -> {
-                        try {
-                            if (!runService.isCanceledSync(runId)) {
-                                return evalMono.then(Mono.just(runId));
-                            }
-                            return Mono.just(runId);
-                        } catch (IOException e) {
-                            return Mono.error(e);
-                        }
-                    });
-                }
-                return Mono.just(runId);
-            } catch (IOException e) {
-                return Mono.error(e);
-            }
-        });
+        return trainMono
+                .flatMap(trainRes -> infMono
+                        .flatMap(infRes -> evalMono
+                            .flatMap(evalRes -> Mono.just(runId))));
     }
 }

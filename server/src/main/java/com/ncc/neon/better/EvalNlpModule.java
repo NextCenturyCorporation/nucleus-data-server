@@ -72,7 +72,8 @@ public class EvalNlpModule extends NlpModule {
         params.put("sysfile", sysFile);
         params.put("reffile", refFile);
 
-        return this.performListOperation(sysFile, evalListEndpoint)
+        return runService.updateToScoringStatus(runId).flatMap(updatedRun ->
+                performListOperation(sysFile, evalListEndpoint)
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
                 .flatMap(pendingFiles -> this.initPendingFiles(pendingFiles)
                         .then(runService.updateOutputs(runId, EVAL_OUTPUTS_KEY, pendingFiles))
@@ -85,8 +86,7 @@ public class EvalNlpModule extends NlpModule {
                                     .flatMap(ignored -> {
                                         EvaluationOutput evaluationOutput = new EvaluationOutput(runId, res.getEvaluation());
                                         return evaluationService.insert(evaluationOutput).then(Mono.just(RestStatus.OK));
-//                                                .flatMap(evaluation -> handleNlpOperationSuccess(res.getFiles()));
-                                    }))));
+                                    })))));
     }
 
     public Disposable handleErrorDuringRun(Throwable err, String runId) {
