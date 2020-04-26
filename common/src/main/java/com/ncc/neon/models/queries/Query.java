@@ -21,6 +21,7 @@ import lombok.NoArgsConstructor;
 public class Query {
     SelectClause selectClause;
     WhereClause whereClause;
+    ClusterClause clusterClause;
     List<AggregateClause> aggregateClauses = new ArrayList<>();
     List<GroupByClause> groupByClauses = new ArrayList<>();
     List<OrderByClause> orderByClauses = new ArrayList<>();
