@@ -1,7 +1,5 @@
 package com.ncc.neon.services;
 
-import java.util.List;
-
 import com.ncc.neon.adapters.QueryAdapter;
 import com.ncc.neon.models.ConnectionInfo;
 import com.ncc.neon.models.queries.ImportQuery;
@@ -12,6 +10,7 @@ import com.ncc.neon.models.results.FieldTypePair;
 import com.ncc.neon.models.results.TabularQueryResult;
 import com.ncc.neon.models.results.TableWithFields;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import reactor.core.publisher.Flux;
@@ -22,13 +21,23 @@ public class QueryService {
 
     private QueryAdapterLocator queryAdapterLocator;
 
-    QueryService(QueryAdapterLocator queryExecutorLocator) {
+    private ClusterService clusterService;
+
+    @Autowired
+    QueryService(QueryAdapterLocator queryExecutorLocator, ClusterService clusterService) {
         this.queryAdapterLocator = queryExecutorLocator;
+        this.clusterService = clusterService;
     }
 
     public Mono<TabularQueryResult> executeQuery(ConnectionInfo ci, Query query) {
         QueryAdapter adapter = this.queryAdapterLocator.getAdapter(ci);
-        return adapter.execute(query);
+
+        if (query.getClusterClause() != null) {
+            this.clusterService.setClusterClause(query.getClusterClause());
+            return adapter.execute(query).flatMap(this.clusterService::clusterIntoMono);
+        } else {
+            return adapter.execute(query);
+        }
     }
 
     public Flux<String> getDatabaseNames(ConnectionInfo ci) {
