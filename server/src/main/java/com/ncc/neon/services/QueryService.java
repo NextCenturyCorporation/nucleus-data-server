@@ -34,7 +34,7 @@ public class QueryService {
 
         if (query.getClusterClause() != null) {
             this.clusterService.setClusterClause(query.getClusterClause());
-            return adapter.execute(query).flatMap(this.clusterService::cluster);
+            return adapter.execute(query).flatMap(this.clusterService::clusterIntoMono);
         } else {
             return adapter.execute(query);
         }
