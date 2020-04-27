@@ -2,8 +2,14 @@ package com.ncc.neon.services;
 
 import com.ncc.neon.models.queries.ClusterClause;
 import com.ncc.neon.models.results.TabularQueryResult;
+import org.springframework.boot.actuate.endpoint.web.Link;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+
+import java.lang.reflect.Array;
+import java.math.BigDecimal;
+import java.nio.FloatBuffer;
+import java.util.*;
 
 @Component
 public class ClusterService {
@@ -23,14 +29,175 @@ public class ClusterService {
     /**
      * Clusters the results from the query.
      *
-     * TODO: Currently returns the same results i.e. method is a passthrough right now
-     *
      * @param tabularQueryResult the result of the unclustered query
      * @return the new clustered results
      */
     public TabularQueryResult cluster(TabularQueryResult tabularQueryResult) {
+        if (this.clusterClause.getFieldType().equals("number")) {
+            return this.aggregateNumber(tabularQueryResult);
+        }
+
         this.clusterClause = null; // reset cluster clause
         return tabularQueryResult;
+    }
+
+    /**
+     * Clusters results by number aggregation.
+     *
+     * @param tabularQueryResult the original results
+     * @return the tabularqueryresult aggregated by numbers with the specifications given by the cluster clause
+     */
+    private TabularQueryResult aggregateNumber(TabularQueryResult tabularQueryResult) {
+        // establish keys
+        String fieldNameKey = this.clusterClause.getFieldNames().get(0);
+        String aggregationNameKey = this.clusterClause.getAggregationName();
+
+        List<Map<String, Object>> data = tabularQueryResult.getData();
+
+        // determine ordering
+        Map<String, Object> first = data.get(0);
+        Map<String, Object> last = data.get(data.size() - 1);
+        BigDecimal firstGroup = new BigDecimal(first.get(fieldNameKey).toString()); // assume number because 'number' fieldType
+        BigDecimal lastGroup = new BigDecimal(last.get(fieldNameKey).toString());
+        String order = "asc";
+        if (firstGroup.compareTo(lastGroup) == 1) {
+            order = "des";
+        }
+
+        // determine count
+        int count = 50; // default count
+        if (this.clusterClause.getCount() != 0) {
+            count = this.clusterClause.getCount();
+        }
+
+        // data is small enough
+        if (this.clusterClause.getClusters() == null && count > data.size()) {
+            return tabularQueryResult;
+        }
+
+        List<Map<String, Object>> newData = getNewDataBins(fieldNameKey, firstGroup, lastGroup, count);
+
+        Map<String, Object> extraKeySets = getExtraKeySetsMap(fieldNameKey, aggregationNameKey, data);
+
+        aggregateNumbersInNewData(fieldNameKey, aggregationNameKey, data, newData, extraKeySets);
+
+        this.clusterClause = null;
+        return new TabularQueryResult(newData);
+    }
+
+    /**
+     * Traverses the original data and puts it in the correct bins in the new data.
+     *
+     * @param fieldNameKey the key that corresponds with the field name
+     * @param aggregationNameKey the key that corresponds with the overall counts of each bin
+     * @param data the original result data
+     * @param newData the newly clustered data
+     * @param extraKeySets the
+     */
+    private void aggregateNumbersInNewData(String fieldNameKey, String aggregationNameKey, List<Map<String,
+            Object>> data, List<Map<String, Object>> newData, Map<String, Object> extraKeySets) {
+        Iterator<Map<String, Object>> newDataIter = newData.iterator();
+        int oldDataIndex = 0;
+        while (newDataIter.hasNext()) {
+            // reset the extra keys for each new bin
+            for (String key : extraKeySets.keySet()) {
+                extraKeySets.put(key, new HashSet<>());
+            }
+
+            // determine the boundaries and aggregated count for this bin
+            BigDecimal currAgg = new BigDecimal("0");
+            Map currNewBin = newDataIter.next();
+            ArrayList alo = (ArrayList) currNewBin.get(fieldNameKey);
+            BigDecimal start = (BigDecimal) alo.get(0);
+            BigDecimal end = (BigDecimal) alo.get(1);
+
+            // traverse the old data a total of one time
+            while (oldDataIndex < data.size()) {
+                // retrieve the old data's field name
+                BigDecimal oldBinValue = new BigDecimal(data.get(oldDataIndex).get(fieldNameKey).toString());
+
+                // if old >= new start && old <= new end
+                if (oldBinValue.compareTo(start) != -1
+                        && oldBinValue.compareTo(end) != 1) {
+
+                    // check extra keys
+                    for (String key : extraKeySets.keySet()) {
+                        ((Set) extraKeySets.get(key)).add(data.get(oldDataIndex).get(key));
+                    }
+
+                    // accumulate aggregate numbers
+                    BigDecimal oldAgg = new BigDecimal(data.get(oldDataIndex).get(aggregationNameKey).toString());
+                    currAgg = currAgg.add(oldAgg);
+
+                    // move to the next data in the old results
+                    oldDataIndex++;
+                } else if (oldBinValue.compareTo(end) == 1) { // old > new end i.e. old bin moved past this curr new bin
+                    break;
+                }
+            }
+
+            // update the aggregated count
+            currNewBin.put(aggregationNameKey, currAgg);
+
+            // update the extra key sets
+            for (String key : extraKeySets.keySet()) {
+                currNewBin.put(key, extraKeySets.get(key));
+            }
+        }
+    }
+
+    /**
+     * Calculates the spacing between the different bins in the new data set results.
+     *
+     * @param fieldNameKey the key that corresponds with the field name
+     * @param firstGroup the first group of data in the original result data
+     * @param lastGroup the last group of data in the original result data
+     * @param count how many bins there should be in the new data set
+     * @return the new data set ready to be filled
+     */
+    private List<Map<String, Object>> getNewDataBins(String fieldNameKey, BigDecimal firstGroup, BigDecimal lastGroup,
+                                                     int count) {
+        List<Map<String, Object>> newData = new ArrayList<>();
+        if (this.clusterClause.getClusters() == null) {
+            BigDecimal gap = (lastGroup.subtract(firstGroup)).divide(new BigDecimal(count));
+            BigDecimal step = new BigDecimal(".01");
+            BigDecimal currentBin = firstGroup;
+            for (int i = 0; i < count; i++) {
+                LinkedHashMap map = new LinkedHashMap<>();
+                ArrayList range = new ArrayList<>();
+                if (i != 0) {
+                    range.add(currentBin.add(step));
+                } else {
+                    range.add(currentBin);
+                }
+                range.add(currentBin = currentBin.add(gap));
+                map.put(fieldNameKey, range);
+                newData.add(map);
+            }
+        } else {
+            // TODO: use given clusters
+        }
+        return newData;
+    }
+
+    /**
+     * Setup any extra keys
+     *
+     * @param fieldNameKey fieldname key given by the cluster clause
+     * @param aggregationNameKey aggregation name key given by the cluster clause
+     * @param data original result data
+     * @return the extra key sets map for storing additional keys
+     */
+    private Map<String, Object> getExtraKeySetsMap(String fieldNameKey, String aggregationNameKey,
+                                                   List<Map<String, Object>> data) {
+        Map<String, Object> datum = data.get(0);
+        Map<String, Object> extraKeySets = new HashMap<>();
+        for (String key : datum.keySet()) {
+            if (!key.equals(aggregationNameKey) && !key.equals(fieldNameKey)) {
+                extraKeySets.put(key, new HashSet<>());
+            }
+        }
+        return extraKeySets;
     }
 
     /**
