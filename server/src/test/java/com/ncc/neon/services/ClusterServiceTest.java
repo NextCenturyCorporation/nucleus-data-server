@@ -30,7 +30,6 @@ public class ClusterServiceTest {
     private JacksonTester<List<Map<String, Object>>> inputJson;
 
     private static ClusterService clusterService;
-    private TabularQueryResult expectedOutput;
 
     @BeforeClass
     public static void setup() {
@@ -43,8 +42,8 @@ public class ClusterServiceTest {
             ClusterClause clusterClause = this.json.read("/json/clusterClause.json").getObject();
             clusterService.setClusterClause(clusterClause);
             TabularQueryResult input = new TabularQueryResult(this.inputJson.read("/json/numberAggregationInput1.json").getObject());
-            this.expectedOutput = new TabularQueryResult(this.inputJson.read("/json/numberAggregationOutput1.json").getObject());
-            clusterService.cluster(input).subscribe(this::isEqualToExpectedOutput);
+            TabularQueryResult expectedOutput = new TabularQueryResult(this.inputJson.read("/json/numberAggregationOutput1.json").getObject());
+            assertEquals(expectedOutput, clusterService.cluster(input));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -56,15 +55,10 @@ public class ClusterServiceTest {
             ClusterClause clusterClause = this.json.read("/json/clusterClause.json").getObject();
             clusterService.setClusterClause(clusterClause);
             TabularQueryResult input = new TabularQueryResult(this.inputJson.read("/json/numberAggregationInput2.json").getObject());
-            this.expectedOutput = new TabularQueryResult(this.inputJson.read("/json/numberAggregationOutput2.json").getObject());
-            clusterService.cluster(input).subscribe(this::isEqualToExpectedOutput);
+            TabularQueryResult expectedOutput = new TabularQueryResult(this.inputJson.read("/json/numberAggregationOutput2.json").getObject());
+            assertEquals(expectedOutput, clusterService.cluster(input));
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private void isEqualToExpectedOutput(TabularQueryResult clusteredInput) {
-        assertEquals(this.expectedOutput, clusteredInput);
-        this.expectedOutput = null;
     }
 }
