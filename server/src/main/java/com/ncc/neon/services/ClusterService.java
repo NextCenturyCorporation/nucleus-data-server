@@ -17,7 +17,6 @@ public class ClusterService {
      * @return a mono containing the new clustered results
      */
     public Mono<? extends TabularQueryResult> clusterIntoMono(TabularQueryResult tabularQueryResult) {
-        this.clusterClause = null; // reset cluster clause
         return Mono.just(this.cluster(tabularQueryResult));
     }
 
@@ -30,6 +29,7 @@ public class ClusterService {
      * @return the new clustered results
      */
     public TabularQueryResult cluster(TabularQueryResult tabularQueryResult) {
+        this.clusterClause = null; // reset cluster clause
         return tabularQueryResult;
     }
 
