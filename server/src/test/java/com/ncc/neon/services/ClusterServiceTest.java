@@ -41,7 +41,7 @@ public class ClusterServiceTest {
     @Test
     public void numberAggregationTest1() {
         try {
-            ClusterClause clusterClause = this.json.read("/json/clusterClause1.json").getObject();
+            ClusterClause clusterClause = this.json.read("/json/numberAggregationClusterClause1.json").getObject();
             clusterService.setClusterClause(clusterClause);
             TabularQueryResult input = new TabularQueryResult(this.inputJson
                     .read("/json/numberAggregationInput1.json").getObject());
@@ -59,7 +59,7 @@ public class ClusterServiceTest {
     @Test
     public void numberAggregationTest2() {
         try {
-            ClusterClause clusterClause = this.json.read("/json/clusterClause1.json").getObject();
+            ClusterClause clusterClause = this.json.read("/json/numberAggregationClusterClause1.json").getObject();
             clusterService.setClusterClause(clusterClause);
             TabularQueryResult input = new TabularQueryResult(this.inputJson
                     .read("/json/numberAggregationInput2.json").getObject());
@@ -77,7 +77,7 @@ public class ClusterServiceTest {
     @Test
     public void numberAggregationTest3() {
         try {
-            ClusterClause clusterClause = this.json.read("/json/clusterClause2.json").getObject();
+            ClusterClause clusterClause = this.json.read("/json/numberAggregationClusterClause2.json").getObject();
             clusterService.setClusterClause(clusterClause);
             TabularQueryResult input = new TabularQueryResult(this.inputJson
                     .read("/json/numberAggregationInput3.json").getObject());
