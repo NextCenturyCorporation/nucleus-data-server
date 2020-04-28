@@ -2,13 +2,10 @@ package com.ncc.neon.services;
 
 import com.ncc.neon.models.queries.ClusterClause;
 import com.ncc.neon.models.results.TabularQueryResult;
-import org.springframework.boot.actuate.endpoint.web.Link;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-import java.lang.reflect.Array;
 import java.math.BigDecimal;
-import java.nio.FloatBuffer;
 import java.util.*;
 
 @Component
@@ -48,6 +45,8 @@ public class ClusterService {
      * @return the tabularqueryresult aggregated by numbers with the specifications given by the cluster clause
      */
     private TabularQueryResult aggregateNumber(TabularQueryResult tabularQueryResult) {
+        List<List<Object>> clusters = this.clusterClause.getClusters();
+
         // establish keys
         String fieldNameKey = this.clusterClause.getFieldNames().get(0);
         String aggregationNameKey = this.clusterClause.getAggregationName();
@@ -71,18 +70,83 @@ public class ClusterService {
         }
 
         // data is small enough
-        if (this.clusterClause.getClusters() == null && count > data.size()) {
+        if (clusters == null && count > data.size()) {
             return tabularQueryResult;
         }
 
-        List<Map<String, Object>> newData = getNewDataBins(fieldNameKey, firstGroup, lastGroup, count);
+        // find new clusters
+        List<Map<String, Object>> newData = getNewDataBins(fieldNameKey, firstGroup, lastGroup, count, clusters);
 
+        // take care of extra keys that may be present
         Map<String, Object> extraKeySets = getExtraKeySetsMap(fieldNameKey, aggregationNameKey, data);
 
+        // aggregate data into the new clusters
         aggregateNumbersInNewData(fieldNameKey, aggregationNameKey, data, newData, extraKeySets);
 
         this.clusterClause = null;
         return new TabularQueryResult(newData);
+    }
+
+    /**
+     * Calculates the spacing between the different bins in the new data set results.
+     *
+     * @param fieldNameKey the key that corresponds with the field name
+     * @param firstGroup the first group of data in the original result data
+     * @param lastGroup the last group of data in the original result data
+     * @param count how many bins there should be in the new data set
+     * @param clusters clusters specified by the cluster clause if available
+     * @return the new data set ready to be filled
+     */
+    private List<Map<String, Object>> getNewDataBins(String fieldNameKey, BigDecimal firstGroup, BigDecimal lastGroup,
+                                                     int count, List<List<Object>> clusters) {
+        List<Map<String, Object>> newData = new ArrayList<>();
+        if (clusters == null) {
+            BigDecimal gap = (lastGroup.subtract(firstGroup)).divide(new BigDecimal(count));
+            BigDecimal step = new BigDecimal(".01");
+            BigDecimal currentBin = firstGroup;
+            for (int i = 0; i < count; i++) {
+                LinkedHashMap map = new LinkedHashMap<>();
+                ArrayList range = new ArrayList<>();
+                if (i != 0) {
+                    range.add(currentBin.add(step));
+                } else {
+                    range.add(currentBin);
+                }
+                range.add(currentBin = currentBin.add(gap));
+                map.put(fieldNameKey, range);
+                newData.add(map);
+            }
+        } else {
+            for (int i = 0; i < clusters.size(); i++) {
+                LinkedHashMap map = new LinkedHashMap<>();
+                ArrayList range = new ArrayList();
+                range.add(new BigDecimal(clusters.get(i).get(0).toString()));
+                range.add(new BigDecimal(clusters.get(i).get(1).toString()));
+                map.put(fieldNameKey, range);
+                newData.add(map);
+            }
+        }
+        return newData;
+    }
+
+    /**
+     * Setup any extra keys
+     *
+     * @param fieldNameKey fieldname key given by the cluster clause
+     * @param aggregationNameKey aggregation name key given by the cluster clause
+     * @param data original result data
+     * @return the extra key sets map for storing additional keys
+     */
+    private Map<String, Object> getExtraKeySetsMap(String fieldNameKey, String aggregationNameKey,
+                                                   List<Map<String, Object>> data) {
+        Map<String, Object> datum = data.get(0);
+        Map<String, Object> extraKeySets = new HashMap<>();
+        for (String key : datum.keySet()) {
+            if (!key.equals(aggregationNameKey) && !key.equals(fieldNameKey)) {
+                extraKeySets.put(key, new HashSet<>());
+            }
+        }
+        return extraKeySets;
     }
 
     /**
@@ -144,60 +208,6 @@ public class ClusterService {
                 currNewBin.put(key, extraKeySets.get(key));
             }
         }
-    }
-
-    /**
-     * Calculates the spacing between the different bins in the new data set results.
-     *
-     * @param fieldNameKey the key that corresponds with the field name
-     * @param firstGroup the first group of data in the original result data
-     * @param lastGroup the last group of data in the original result data
-     * @param count how many bins there should be in the new data set
-     * @return the new data set ready to be filled
-     */
-    private List<Map<String, Object>> getNewDataBins(String fieldNameKey, BigDecimal firstGroup, BigDecimal lastGroup,
-                                                     int count) {
-        List<Map<String, Object>> newData = new ArrayList<>();
-        if (this.clusterClause.getClusters() == null) {
-            BigDecimal gap = (lastGroup.subtract(firstGroup)).divide(new BigDecimal(count));
-            BigDecimal step = new BigDecimal(".01");
-            BigDecimal currentBin = firstGroup;
-            for (int i = 0; i < count; i++) {
-                LinkedHashMap map = new LinkedHashMap<>();
-                ArrayList range = new ArrayList<>();
-                if (i != 0) {
-                    range.add(currentBin.add(step));
-                } else {
-                    range.add(currentBin);
-                }
-                range.add(currentBin = currentBin.add(gap));
-                map.put(fieldNameKey, range);
-                newData.add(map);
-            }
-        } else {
-            // TODO: use given clusters
-        }
-        return newData;
-    }
-
-    /**
-     * Setup any extra keys
-     *
-     * @param fieldNameKey fieldname key given by the cluster clause
-     * @param aggregationNameKey aggregation name key given by the cluster clause
-     * @param data original result data
-     * @return the extra key sets map for storing additional keys
-     */
-    private Map<String, Object> getExtraKeySetsMap(String fieldNameKey, String aggregationNameKey,
-                                                   List<Map<String, Object>> data) {
-        Map<String, Object> datum = data.get(0);
-        Map<String, Object> extraKeySets = new HashMap<>();
-        for (String key : datum.keySet()) {
-            if (!key.equals(aggregationNameKey) && !key.equals(fieldNameKey)) {
-                extraKeySets.put(key, new HashSet<>());
-            }
-        }
-        return extraKeySets;
     }
 
     /**

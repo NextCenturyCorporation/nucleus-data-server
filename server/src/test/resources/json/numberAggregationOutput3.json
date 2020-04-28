@@ -1,0 +1,10 @@
+[{
+  "aggregation": 10,
+  "group_primary": [0, 0.3]
+}, {
+  "aggregation": 5,
+  "group_primary": [0.31, 0.6]
+}, {
+  "aggregation": 10,
+  "group_primary": [0.61, 1]
+}]
