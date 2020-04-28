@@ -100,7 +100,8 @@ public class ElasticsearchResultsConverter {
         return results;
     }
 
-    public static List<Map<String, Object>> getScrolledResults(Scroll scroll, SearchResponse response, RestHighLevelClient client) throws IOException {
+    public static List<Map<String, Object>> getScrolledResults(Scroll scroll, SearchResponse response,
+                                                               RestHighLevelClient client) throws IOException {
         String scrollId = response.getScrollId();
         List<Map<String, Object>> allHits = new ArrayList<>();
         allHits.addAll(ElasticsearchResultsConverter.extractHitsFromResults(response));

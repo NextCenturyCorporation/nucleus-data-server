@@ -331,7 +331,7 @@ public class ElasticsearchQueryConverter {
         int offset = getOffset(query);
         int size = getLimit(query);
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-                .explain(false).from(offset).size(size);
+                .explain(false).from(offset).size(size).terminateAfter(getLimit(query, true));
         return searchSourceBuilder;
     }
 

@@ -49,6 +49,8 @@ import reactor.core.publisher.Mono;
 public class ElasticsearchAdapter extends QueryAdapter {
     static final int DEFAULT_PORT = 9200;
 
+    static final int ES_BATCH_LIMIT = 10000;
+
     private RestHighLevelClient client;
 
     public ElasticsearchAdapter(String host, String usernameFromConfig, String passwordFromConfig) {
@@ -93,7 +95,9 @@ public class ElasticsearchAdapter extends QueryAdapter {
 
         try {
             response = this.client.search(request, RequestOptions.DEFAULT);
-            scrolledResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
+            if (query.getLimitClause().getLimit() > ES_BATCH_LIMIT) {
+                scrolledResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
