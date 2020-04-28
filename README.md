@@ -64,6 +64,28 @@ my_datastore_type.auth={'hostname1':'username1:password1','hostname2':'username2
 
 This will run `bootRun` from the [Spring Boot Gradle plugin](https://docs.spring.io/spring-boot/docs/current/reference/html/using-boot-running-your-application.html#using-boot-running-with-the-gradle-plugin).  To pass custom arguments into `bootRun` from the command line, use `--args='<arguments>'.  For example, to run on a specific port: `./runLocal.sh --args='--server.port=1234'`
 
+### Development Issues
+
+#### IntelliJ
+Download the Lombok plugin if you are having issues with Lombok imports
+
+https://plugins.jetbrains.com/plugin/6317-lombok
+
+#### VSCode
+Here's a list of recommended VSCode extensions:
+  
+- Gradle language support
+-	Java dependency viewer
+-	Java extention pack
+-	Java test runner
+-	Language support for java
+-	Lomok annotations support
+-	Maven for java
+-	Spring boot dashboard
+-	Spring boot extention pack
+-	Spring boot tools
+-	Spring initializr java support 
+
 ## Production Deployment Instructions
 
 The NUCLEUS Data Server is deployed as an docker container independent from other applications (like the Neon Dashboard).
