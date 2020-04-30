@@ -80,7 +80,7 @@ public class ClusterServiceTest {
             ClusterClause clusterClause = this.json.read("/json/numberAggregationClusterClause2.json").getObject();
             clusterService.setClusterClause(clusterClause);
             TabularQueryResult input = new TabularQueryResult(this.inputJson
-                    .read("/json/numberAggregationInput3.json").getObject());
+                    .read("/json/numberAggregationInput1.json").getObject());
             TabularQueryResult output = clusterService.cluster(input);
             String expectedOutputJson = this.inputJson.write(this.inputJson
                     .read("/json/numberAggregationOutput3.json").getObject()).getJson();
