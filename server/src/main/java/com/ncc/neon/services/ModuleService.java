@@ -63,13 +63,13 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
             // Build the concrete module based on the type.
             switch(moduleModel.getType()) {
                 case PREPROCESSOR:
-                    res = new PreprocessorNlpModule(moduleModel, datasetService, fileShareService, betterFileService, moduleService, env);
+                    res = new PreprocessorNlpModule(moduleModel, fileShareService, betterFileService, moduleService, env);
                     break;
                 case IE:
-                    res = new IENlpModule(moduleModel, datasetService, fileShareService, betterFileService, runService, moduleService, env);
+                    res = new IENlpModule(moduleModel, fileShareService, betterFileService, runService, moduleService, env);
                     break;
                 case EVALUATION:
-                    res = new EvalNlpModule(moduleModel, datasetService, fileShareService, betterFileService, runService, evaluationService, moduleService, env);
+                    res = new EvalNlpModule(moduleModel, fileShareService, betterFileService, runService, evaluationService, moduleService, env);
                     break;
             }
 

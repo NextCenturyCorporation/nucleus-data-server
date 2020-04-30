@@ -19,6 +19,7 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
@@ -93,6 +94,29 @@ public abstract class ElasticSearchService<T> {
         });
     }
 
+    public Mono<Long> count(Map<String, Object> fields) {
+        SearchRequest searchRequest = new SearchRequest();
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.from(0);
+        BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
+
+        for (Map.Entry<String, Object> entry : fields.entrySet()) {
+            boolQueryBuilder = boolQueryBuilder.must(QueryBuilders.matchQuery(entry.getKey(), entry.getValue()));
+        }
+
+        searchSourceBuilder.query(boolQueryBuilder);
+        searchRequest.source(searchSourceBuilder);
+
+        return Mono.create(sink -> {
+            try {
+                SearchResponse searchResponse = elasticSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+                sink.success(searchResponse.getHits().getTotalHits());
+            } catch (IOException e) {
+                sink.error(e);
+            }
+        });
+    }
+
     public Mono<Tuple2<String, RestStatus>> insert(T itemToAdd) {
         // Serialize item to json map.
         Map<String, Object> itemMap = new ObjectMapper().convertValue(itemToAdd, Map.class);
@@ -129,6 +153,7 @@ public abstract class ElasticSearchService<T> {
 
     public Mono<RestStatus> update(Map<String, Object> data, String docId) {
         UpdateRequest request = new UpdateRequest(index, dataType, docId).doc(data);
+        request.retryOnConflict(3);
         return Mono.create(sink -> {
             UpdateResponse response = null;
             try {

@@ -10,7 +10,6 @@ import com.ncc.neon.models.*;
 import com.ncc.neon.models.BetterFile;
 import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.BetterFileService;
-import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.FileShareService;
 import com.ncc.neon.services.ModuleService;
 import org.elasticsearch.rest.RestStatus;
@@ -35,14 +34,12 @@ public abstract class NlpModule {
     private String name;
     private HttpEndpoint statusEndpoint;
     private WebClient client;
-    private DatasetService datasetService;
     private FileShareService fileShareService;
     private BetterFileService betterFileService;
     private ModuleService moduleService;
     private Environment env;
 
-    NlpModule(NlpModuleModel moduleModel, DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService, Environment env) {
-        this.datasetService = datasetService;
+    NlpModule(NlpModuleModel moduleModel, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService, Environment env) {
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
         this.moduleService = moduleService;
@@ -51,6 +48,8 @@ public abstract class NlpModule {
         client = buildNlpWebClient(name);
         initEndpoints(moduleModel.getEndpoints());
     }
+
+    protected abstract Map<String, String> getListEndpointParams(String filePrefix);
 
     public String getName() { return this.name; }
 
@@ -83,8 +82,8 @@ public abstract class NlpModule {
         }
     };
 
-    protected Mono<String[]> performListOperation(Map<String, String> data, HttpEndpoint endpoint) {
-        return buildRequest(data, endpoint)
+    protected Mono<String[]> performListOperation(String filePrefix, HttpEndpoint endpoint) {
+        return buildRequest(getListEndpointParams(filePrefix), endpoint)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(String[].class)

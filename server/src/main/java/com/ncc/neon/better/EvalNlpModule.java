@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -17,15 +18,24 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EvalNlpModule extends NlpModule {
+    private final String EVAL_OUTPUTS_KEY = "eval_outputs";
+
     private HttpEndpoint evalEndpoint;
     private HttpEndpoint evalListEndpoint;
     private RunService runService;
     private EvaluationService evaluationService;
 
-    public EvalNlpModule(NlpModuleModel moduleModel, DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, RunService runService, EvaluationService evaluationService, ModuleService moduleService, Environment env) {
-        super(moduleModel, datasetService, fileShareService, betterFileService, moduleService, env);
+    public EvalNlpModule(NlpModuleModel moduleModel, FileShareService fileShareService, BetterFileService betterFileService, RunService runService, EvaluationService evaluationService, ModuleService moduleService, Environment env) {
+        super(moduleModel, fileShareService, betterFileService, moduleService, env);
         this.runService = runService;
         this.evaluationService = evaluationService;
+    }
+
+    @Override
+    protected Map<String, String> getListEndpointParams(String filePrefix) {
+        HashMap<String, String> res = new HashMap<>();
+        res.put("sysfile", filePrefix);
+        return res;
     }
 
     @Override
@@ -53,21 +63,28 @@ public class EvalNlpModule extends NlpModule {
     public Mono<RestStatus> performEval(String refFile, String sysFile, String runId) {
         HashMap<String, String> params = new HashMap<>();
         params.put("sysfile", sysFile);
+        params.put("reffile", refFile);
 
-        return this.performListOperation(params, evalListEndpoint)
+        return this.performListOperation(sysFile, evalListEndpoint)
                 .doOnError(onError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, onError.getMessage())))
                 .flatMap(pendingFiles -> this.initPendingFiles(pendingFiles)
-                        .then(runService.updateOutputs(runId, "eval_outputs", pendingFiles))
-                        .flatMap(response -> {
-                            params.put("reffile", refFile);
-                            return this.performEvalOperation(params, evalEndpoint)
-                                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))
-                                .flatMap(res -> runService.updateToDoneStatus(runId, res.getOverallScore())
-                                        .flatMap(ignored -> {
-                                            EvaluationOutput evaluationOutput = new EvaluationOutput(runId, res.getEvaluation());
-                                            return evaluationService.insert(evaluationOutput)
-                                                    .flatMap(evaluation -> handleNlpOperationSuccess(res.getFiles()));
-                                        }));
-                        }));
+                        .then(runService.updateOutputs(runId, EVAL_OUTPUTS_KEY, pendingFiles))
+                        .flatMap(response -> this.performEvalOperation(params, evalEndpoint)
+                            .doOnError(onError -> {
+                                handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
+                                handleErrorDuringRun(onError, runId);
+                            })
+                            .flatMap(res -> runService.updateToDoneStatus(runId, res.getOverallScore())
+                                    .flatMap(ignored -> {
+                                        EvaluationOutput evaluationOutput = new EvaluationOutput(runId, res.getEvaluation());
+                                        return evaluationService.insert(evaluationOutput)
+                                                .flatMap(evaluation -> handleNlpOperationSuccess(res.getFiles()));
+                                    }))));
+    }
+
+    public Disposable handleErrorDuringRun(Throwable err, String runId) {
+        return runService.updateToErrorStatus(runId, err.getMessage())
+                .then(runService.refreshIndex())
+                .subscribe();
     }
 }
