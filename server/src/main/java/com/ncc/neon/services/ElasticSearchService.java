@@ -95,9 +95,6 @@ public abstract class ElasticSearchService<T> {
     }
 
     public Mono<Long> count(Map<String, Object> fields) {
-        // Pass the index to limit the search to just that index.
-//        MultiSearchRequest multiSearchRequest = new MultiSearchRequest();
-
         SearchRequest searchRequest = new SearchRequest();
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.from(0);
