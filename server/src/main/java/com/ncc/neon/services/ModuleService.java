@@ -2,6 +2,7 @@ package com.ncc.neon.services;
 
 import com.ncc.neon.better.EvalNlpModule;
 import com.ncc.neon.better.IENlpModule;
+import com.ncc.neon.better.IRNlpModule;
 import com.ncc.neon.better.NlpModule;
 import com.ncc.neon.better.PreprocessorNlpModule;
 import com.ncc.neon.models.ModuleStatus;
@@ -64,6 +65,9 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
             switch(moduleModel.getType()) {
                 case PREPROCESSOR:
                     res = new PreprocessorNlpModule(moduleModel, datasetService, fileShareService, betterFileService, moduleService, env);
+                    break;
+                case IR: 
+                    res = new IRNlpModule(moduleModel, datasetService, fileShareService, betterFileService, moduleService, env);
                     break;
                 case IE:
                     res = new IENlpModule(moduleModel, datasetService, fileShareService, betterFileService, runService, moduleService, env);

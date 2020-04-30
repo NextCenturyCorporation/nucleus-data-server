@@ -147,6 +147,13 @@ public class BetterController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping(path="irsearch")
+    ResponseEntity<Object> irsearch(@RequestParam("query") String query, @RequestParam("module") String module)  {
+        // synchronous service 
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> );
+    }
+
     @GetMapping(path="eval")
     ResponseEntity<Object> eval(@RequestParam("trainConfigFile") String trainConfigFile,
                           @RequestParam("infConfigFile") String infConfigFile, @RequestParam("module") String module,

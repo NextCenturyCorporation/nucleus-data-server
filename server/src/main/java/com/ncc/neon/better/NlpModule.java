@@ -103,6 +103,14 @@ public abstract class NlpModule {
                 .doOnError(this::handleHttpError);
     }
 
+    protected Mono<String[]> performIRNlpOperation(Map<String, String> data, HttpEndpoint endpoint) {
+        return buildRequest(data, endpoint)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(String[].class)
+                .doOnError(this::handleHttpError);
+    }
+
     protected Mono<RestStatus> handleNlpOperationSuccess(BetterFile[] readyFiles) {
         // Set status to ready.
         for (BetterFile readyFile : readyFiles) {
