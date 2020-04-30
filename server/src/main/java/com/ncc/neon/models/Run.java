@@ -1,19 +1,39 @@
 package com.ncc.neon.models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+
+import java.util.Map;
 
 @Data
 public class Run {
-    private final String train_config;
-    private final String inf_config;
-    private String[] train_outputs;
-    private String[] inf_outputs;
-    private String[] eval_outputs;
-    private String train_start_time;
-    private String train_end_time;
-    private String inf_start_time;
-    private String inf_end_time;
-    private String overall_score;
+    public static final String EXPERIMENT_ID_KEY = "experiment_id";
+    public static final String STATUS_KEY = "status";
+
+    @JsonProperty(EXPERIMENT_ID_KEY)
+    private final String experimentId;
+    @JsonProperty("train_config")
+    private final Map<String, String> trainConfig;
+    @JsonProperty("inf_config")
+    private final Map<String, String> infConfig;
+    @JsonProperty("train_outputs")
+    private String[] trainOutputs;
+    @JsonProperty("inf_outputs")
+    private String[] infOutputs;
+    @JsonProperty("eval_outputs")
+    private String[] evalOutputs;
+    @JsonProperty("train_start_time")
+    private String trainStartTime;
+    @JsonProperty("train_end_time")
+    private String trainEndTime;
+    @JsonProperty("inf_start_time")
+    private String infStartTime;
+    @JsonProperty("inf_end_time")
+    private String infEndTime;
+    @JsonProperty("overall_score")
+    private Score overallScore;
+    @JsonProperty(STATUS_KEY)
     private RunStatus status;
-    private String status_message;
+    @JsonProperty("status_message")
+    private String statusMessage;
 }

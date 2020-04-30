@@ -1,7 +1,9 @@
 package com.ncc.neon.controllers;
 
+import com.ncc.neon.better.ExperimentConfig;
+import com.ncc.neon.better.IENlpModule;
 import com.ncc.neon.exception.UpsertException;
-import com.ncc.neon.models.BetterFile;
+import com.ncc.neon.models.ExperimentForm;
 import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.*;
 import lombok.extern.slf4j.Slf4j;
@@ -16,10 +18,12 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
-import java.util.Map;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Map;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -27,25 +31,22 @@ import java.util.HashMap;
 @Slf4j
 public class BetterController {
 
-    private DatasetService datasetService;
+    public static final String SHARE_DIR = System.getenv().getOrDefault("SHARE_DIR", "share");
+    public static final Path SHARE_PATH = Paths.get(".").resolve(SHARE_DIR);
+
     private FileShareService fileShareService;
     private BetterFileService betterFileService;
     private ModuleService moduleService;
     private AsyncService asyncService;
-    private EvaluationService evaluationService;
 
-    BetterController(DatasetService datasetService,
-                     FileShareService fileShareService,
+    BetterController(FileShareService fileShareService,
                      BetterFileService betterFileService,
                      ModuleService moduleService,
-                     AsyncService asyncService,
-                     EvaluationService evaluationService) {
-        this.datasetService = datasetService;
+                     AsyncService asyncService) {
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
         this.moduleService = moduleService;
         this.asyncService = asyncService;
-        this.evaluationService = evaluationService;
     }
 
     @GetMapping(path = "status")
@@ -129,6 +130,14 @@ public class BetterController {
         return res;
     }
 
+    @GetMapping(path="irsearch")
+    ResponseEntity<Object> irsearch(@RequestParam("query") String query, @RequestParam("module") String module)  {
+        // synchronous service 
+        //return moduleService.buildNlpModuleClient(module)
+        //        .flatMap(nlpModule -> );
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping(path="preprocess")
     ResponseEntity<Object> preprocess(@RequestParam("file") String file, @RequestParam("module") String module) {
         asyncService.performPreprocess(file, module)
@@ -138,45 +147,39 @@ public class BetterController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping(path="train")
-    ResponseEntity<Object> train(@RequestParam("configFile") String configFile, @RequestParam("module") String module, @RequestParam("runId") String runId) {
-        asyncService.processTraining(configFile, module, runId)
+    @PostMapping(path="experiment")
+    ResponseEntity<Object> experiment(@RequestBody ExperimentForm experimentForm) {
+        try {
+            ExperimentConfig experimentConfig = new ExperimentConfig(experimentForm);
+
+            // Build the experiment config for the evaluation
+            asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly())
                 .subscribeOn(Schedulers.newSingle("thread"))
                 .subscribe();
+        } catch (IOException e) {
+            return ResponseEntity.badRequest().build();
+        }
 
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping(path="irsearch")
-    ResponseEntity<Object> irsearch(@RequestParam("query") String query, @RequestParam("module") String module)  {
-        // synchronous service 
+    @PostMapping(path="syncexperiment")
+    Mono<Object> syncExperiment(@RequestBody ExperimentForm experimentForm) {
+        ExperimentConfig experimentConfig;
+        try {
+            experimentConfig = new ExperimentConfig(experimentForm);
+        } catch (IOException e) {
+            return Mono.error(e);
+        }
+        return asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly());
+    }
+
+    @DeleteMapping(path="eval/cancel")
+    Mono<Object> cancelEval(@RequestParam("module") String module, @RequestParam("run_id") String runId) {
         return moduleService.buildNlpModuleClient(module)
-                .flatMap(nlpModule -> );
-    }
-
-    @GetMapping(path="eval")
-    ResponseEntity<Object> eval(@RequestParam("trainConfigFile") String trainConfigFile,
-                          @RequestParam("infConfigFile") String infConfigFile, @RequestParam("module") String module,
-                          @RequestParam("infOnly") boolean infOnly, @RequestParam("refFile") String refFile) {
-        asyncService.processEvaluation(trainConfigFile, infConfigFile, module, infOnly, refFile)
-                .subscribeOn(Schedulers.newSingle("thread"))
-                .subscribe();
-
-        return ResponseEntity.ok().build();
-    }
-
-    @GetMapping(path="synctrain")
-    Mono<?> syncTrain(@RequestParam("trainConfigFile") String trainConfigFile,
-                                   @RequestParam("infConfigFile") String infConfigFile,
-                                   @RequestParam("module") String module) {
-        return asyncService.processTraining(trainConfigFile, infConfigFile, module);
-    }
-
-    @GetMapping(path="syncinf")
-    Mono<?> syncInf(@RequestParam("trainConfigFile") String trainConfigFile,
-                    @RequestParam("infConfigFile") String infConfigFile,
-                    @RequestParam("module") String module,
-                    @RequestParam(required = false, name = "runId") String runId) {
-        return asyncService.processInference(trainConfigFile, infConfigFile, module, runId);
+                .flatMap(nlpModule -> {
+                    IENlpModule ieNlpModule = (IENlpModule) nlpModule;
+                    return ieNlpModule.cancelEval(runId);
+                });
     }
 }
