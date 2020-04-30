@@ -192,7 +192,7 @@ public class ClusterService {
      * @param aggregationNameKey the key that corresponds with the overall counts of each bin
      * @param data the original result data
      * @param newData the newly clustered data
-     * @param extraKeySets the
+     * @param extraKeySets the extra key sets map for storing additional keys
      */
     private void aggregateNumbersInNewData(String fieldNameKey, boolean isText, String aggregationNameKey,
                                            List<Map<String, Object>> data, List<Map<String, Object>> newData,
