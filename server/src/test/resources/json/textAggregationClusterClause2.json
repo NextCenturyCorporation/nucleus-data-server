@@ -1,0 +1,7 @@
+{
+  "type": "aggregation",
+  "clusters": [["a","c"],["d","j"],["k","o"],["p","t"]],
+  "aggregationName": "aggregation",
+  "fieldType": "text",
+  "fieldNames": ["group_primary"]
+}
