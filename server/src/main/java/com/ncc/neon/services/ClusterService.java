@@ -102,7 +102,7 @@ public class ClusterService {
         List<Map<String, Object>> newData = new ArrayList<>();
         if (clusters == null) {
             BigDecimal gap = (lastGroup.subtract(firstGroup)).divide(new BigDecimal(count));
-            BigDecimal step = new BigDecimal(".01");
+            BigDecimal step = new BigDecimal(".0001");
             BigDecimal currentBin = firstGroup;
             for (int i = 0; i < count; i++) {
                 LinkedHashMap map = new LinkedHashMap<>();
