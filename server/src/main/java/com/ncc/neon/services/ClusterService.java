@@ -118,7 +118,7 @@ public class ClusterService {
             BigDecimal gap = (lastGroup.subtract(firstGroup)).divide(count);
             BigDecimal step = null;
             if (!isText) {
-                step = new BigDecimal(".01");
+                step = new BigDecimal(".0001");
             } else if (isText) {
                 gap = gap.setScale(0, RoundingMode.DOWN);
                 step = new BigDecimal("1");
