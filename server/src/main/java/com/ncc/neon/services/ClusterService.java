@@ -17,8 +17,14 @@ import java.util.*;
 @Component
 public class ClusterService {
 
+    // text constants
     public static final int DEFAULT_TEXT_COUNT = 26;
+    public static final String DEFAULT_TEXT_STEP = "1";
+
+    // number constants
     public static final int DEFAULT_NUMBER_COUNT = 50;
+    public static final String DEFAULT_NUMBER_STEP = ".0001";
+
     private ClusterClause clusterClause;
 
     /**
@@ -111,10 +117,10 @@ public class ClusterService {
             BigDecimal gap = (lastGroup.subtract(firstGroup)).divide(count);
             BigDecimal step = null;
             if (!isText) {
-                step = new BigDecimal(".0001");
+                step = new BigDecimal(DEFAULT_NUMBER_STEP);
             } else if (isText) {
                 gap = gap.setScale(0, RoundingMode.DOWN);
-                step = new BigDecimal("1");
+                step = new BigDecimal(DEFAULT_TEXT_STEP);
             }
             BigDecimal currentBin = firstGroup;
             for (int i = 0; i < count.intValue(); i++) {
