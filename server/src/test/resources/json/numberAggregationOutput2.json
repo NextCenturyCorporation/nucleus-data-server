@@ -1,0 +1,21 @@
+[{
+  "aggregation": 16,
+  "group_primary": [0, 0.2],
+  "group_secondary": ["a", "b"]
+}, {
+  "aggregation": 9,
+  "group_primary": [0.2001, 0.4],
+  "group_secondary": ["a"]
+}, {
+  "aggregation": 0,
+  "group_primary": [0.4001, 0.6],
+  "group_secondary": []
+}, {
+  "aggregation": 7,
+  "group_primary": [0.6001, 0.8],
+  "group_secondary": ["a", "b"]
+}, {
+  "aggregation": 38,
+  "group_primary": [0.8001, 1],
+  "group_secondary": ["a", "b"]
+}]
