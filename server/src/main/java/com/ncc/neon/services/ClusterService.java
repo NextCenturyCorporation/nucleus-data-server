@@ -166,9 +166,9 @@ public class ClusterService {
             // determine the boundaries and aggregated count for this bin
             BigDecimal currAgg = new BigDecimal("0");
             Map currNewBin = newDataIter.next();
-            ArrayList alo = (ArrayList) currNewBin.get(fieldNameKey);
-            BigDecimal start = (BigDecimal) alo.get(0);
-            BigDecimal end = (BigDecimal) alo.get(1);
+            ArrayList newRange = (ArrayList) currNewBin.get(fieldNameKey);
+            BigDecimal start = (BigDecimal) newRange.get(0);
+            BigDecimal end = (BigDecimal) newRange.get(1);
 
             // traverse the old data a total of one time
             while (oldDataIndex < data.size()) {
