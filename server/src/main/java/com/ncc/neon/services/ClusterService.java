@@ -11,6 +11,7 @@ import java.util.*;
 @Component
 public class ClusterService {
 
+    private static final String NUMBER_STEP = ".0001";
     private ClusterClause clusterClause;
 
     /**
@@ -58,16 +59,10 @@ public class ClusterService {
         Map<String, Object> last = data.get(data.size() - 1);
         BigDecimal firstGroup = new BigDecimal(first.get(fieldNameKey).toString()); // assume number because 'number' fieldType
         BigDecimal lastGroup = new BigDecimal(last.get(fieldNameKey).toString());
-        String order = "asc";
-        if (firstGroup.compareTo(lastGroup) == 1) {
-            order = "des";
-        }
+        String order = firstGroup.compareTo(lastGroup) == 1 ? "des" : "asc";
 
         // determine count
-        int count = 50; // default count
-        if (this.clusterClause.getCount() != 0) {
-            count = this.clusterClause.getCount();
-        }
+        int count = this.clusterClause.getCount() != 0 ? this.clusterClause.getCount() : 50;
 
         // data is small enough
         if (clusters == null && count > data.size()) {
@@ -102,7 +97,7 @@ public class ClusterService {
         List<Map<String, Object>> newData = new ArrayList<>();
         if (clusters == null) {
             BigDecimal gap = (lastGroup.subtract(firstGroup)).divide(new BigDecimal(count));
-            BigDecimal step = new BigDecimal(".0001");
+            BigDecimal step = new BigDecimal(NUMBER_STEP);
             BigDecimal currentBin = firstGroup;
             for (int i = 0; i < count; i++) {
                 LinkedHashMap map = new LinkedHashMap<>();
