@@ -17,6 +17,8 @@ import java.util.*;
 @Component
 public class ClusterService {
 
+    public static final int DEFAULT_TEXT_COUNT = 26;
+    public static final int DEFAULT_NUMBER_COUNT = 50;
     private ClusterClause clusterClause;
 
     /**
@@ -39,10 +41,7 @@ public class ClusterService {
         String fieldType = this.clusterClause.getFieldType();
 
         // to keep the check simple, specialty cases are for text
-        boolean isText = false;
-        if (fieldType.equals("text") || fieldType.equals("keyword")) {
-            isText = true;
-        }
+        boolean isText = (fieldType.equals("text") || fieldType.equals("keyword")) ? true : false;
 
         List<List<Object>> clusters = this.clusterClause.getClusters();
 
@@ -54,10 +53,7 @@ public class ClusterService {
 
         // determine count
         // default counts
-        BigDecimal count = new BigDecimal(50);;
-        if (isText) {
-            count = new BigDecimal(26);
-        }
+        BigDecimal count = isText ? new BigDecimal(DEFAULT_TEXT_COUNT) : new BigDecimal(DEFAULT_NUMBER_COUNT);
         if (this.clusterClause.getCount() != 0) {
             count = new BigDecimal(this.clusterClause.getCount());
         }
@@ -79,10 +75,7 @@ public class ClusterService {
             firstGroup = convertTextBinToNumber(first.get(fieldNameKey).toString());
             lastGroup = convertTextBinToNumber(last.get(fieldNameKey).toString());
         }
-        String order = "asc";
-        if (firstGroup.compareTo(lastGroup) == 1) {
-            order = "des";
-        }
+        String order = firstGroup.compareTo(lastGroup) == 1 ? "des" : "asc";
 
         // find new clusters
         List<Map<String, Object>> newData = getNewDataBins(fieldNameKey, isText, firstGroup, lastGroup, count, clusters);
