@@ -1,0 +1,16 @@
+[{
+  "aggregation": 6,
+  "group_primary": [1, 0.8]
+}, {
+  "aggregation": 4,
+  "group_primary": [0.7999, 0.6]
+}, {
+  "aggregation": 5,
+  "group_primary": [0.5999, 0.4]
+}, {
+  "aggregation": 7,
+  "group_primary": [0.3999, 0.2]
+}, {
+  "aggregation": 3,
+  "group_primary": [0.1999, 0]
+}]

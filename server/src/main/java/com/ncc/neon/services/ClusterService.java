@@ -59,7 +59,7 @@ public class ClusterService {
         Map<String, Object> last = data.get(data.size() - 1);
         BigDecimal firstGroup = new BigDecimal(first.get(fieldNameKey).toString()); // assume number because 'number' fieldType
         BigDecimal lastGroup = new BigDecimal(last.get(fieldNameKey).toString());
-        String order = firstGroup.compareTo(lastGroup) == 1 ? "des" : "asc";
+        int order = firstGroup.compareTo(lastGroup) == 1 ? -1 : 1;
 
         // determine count
         int count = this.clusterClause.getCount() != 0 ? this.clusterClause.getCount() : 50;
@@ -70,13 +70,13 @@ public class ClusterService {
         }
 
         // find new clusters
-        List<Map<String, Object>> newData = getNewDataBins(fieldNameKey, firstGroup, lastGroup, count, clusters);
+        List<Map<String, Object>> newData = getNewDataBins(fieldNameKey, firstGroup, lastGroup, count, clusters, order);
 
         // take care of extra keys that may be present
         Map<String, Object> extraKeySets = getExtraKeySetsMap(fieldNameKey, aggregationNameKey, data);
 
         // aggregate data into the new clusters
-        aggregateNumbersInNewData(fieldNameKey, aggregationNameKey, data, newData, extraKeySets);
+        aggregateNumbersInNewData(fieldNameKey, aggregationNameKey, data, newData, extraKeySets, order);
 
         this.clusterClause = null;
         return new TabularQueryResult(newData);
@@ -90,14 +90,16 @@ public class ClusterService {
      * @param lastGroup the last group of data in the original result data
      * @param count how many bins there should be in the new data set
      * @param clusters clusters specified by the cluster clause if available
+     * @param order 1 for ascending, -1 for descending
      * @return the new data set ready to be filled
      */
     private List<Map<String, Object>> getNewDataBins(String fieldNameKey, BigDecimal firstGroup, BigDecimal lastGroup,
-                                                     int count, List<List<Object>> clusters) {
+                                                     int count, List<List<Object>> clusters, int order) {
         List<Map<String, Object>> newData = new ArrayList<>();
         if (clusters == null) {
+            BigDecimal orderModifier = new BigDecimal(order);
             BigDecimal gap = (lastGroup.subtract(firstGroup)).divide(new BigDecimal(count));
-            BigDecimal step = new BigDecimal(NUMBER_STEP);
+            BigDecimal step = new BigDecimal(NUMBER_STEP).multiply(orderModifier);
             BigDecimal currentBin = firstGroup;
             for (int i = 0; i < count; i++) {
                 LinkedHashMap map = new LinkedHashMap<>();
@@ -146,15 +148,15 @@ public class ClusterService {
 
     /**
      * Traverses the original data and puts it in the correct bins in the new data.
-     *
-     * @param fieldNameKey the key that corresponds with the field name
+     *  @param fieldNameKey the key that corresponds with the field name
      * @param aggregationNameKey the key that corresponds with the overall counts of each bin
      * @param data the original result data
      * @param newData the newly clustered data
      * @param extraKeySets the
+     * @param order 1 for ascending, -1 for descending
      */
     private void aggregateNumbersInNewData(String fieldNameKey, String aggregationNameKey, List<Map<String,
-            Object>> data, List<Map<String, Object>> newData, Map<String, Object> extraKeySets) {
+            Object>> data, List<Map<String, Object>> newData, Map<String, Object> extraKeySets, int order) {
         Iterator<Map<String, Object>> newDataIter = newData.iterator();
         int oldDataIndex = 0;
         while (newDataIter.hasNext()) {
@@ -175,9 +177,9 @@ public class ClusterService {
                 // retrieve the old data's field name
                 BigDecimal oldBinValue = new BigDecimal(data.get(oldDataIndex).get(fieldNameKey).toString());
 
-                // if old >= new start && old <= new end
-                if (oldBinValue.compareTo(start) != -1
-                        && oldBinValue.compareTo(end) != 1) {
+                // if old >= new start && old <= new end (for ascending)
+                if (oldBinValue.compareTo(start) != (-1 * order)
+                        && oldBinValue.compareTo(end) != (1 * order)) {
 
                     // check extra keys
                     for (String key : extraKeySets.keySet()) {
@@ -190,7 +192,7 @@ public class ClusterService {
 
                     // move to the next data in the old results
                     oldDataIndex++;
-                } else if (oldBinValue.compareTo(end) == 1) { // old > new end i.e. old bin moved past this curr new bin
+                } else if (oldBinValue.compareTo(end) == (1 * order)) { // old > new end i.e. old bin moved past this curr new bin (for ascending)
                     break;
                 }
             }

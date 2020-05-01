@@ -91,4 +91,22 @@ public class ClusterServiceTest {
             fail();
         }
     }
+
+    @Test
+    public void numberAggregationTest4() {
+        try {
+            ClusterClause clusterClause = this.json.read("/json/numberAggregationClusterClause1.json").getObject();
+            clusterService.setClusterClause(clusterClause);
+            TabularQueryResult input = new TabularQueryResult(this.inputJson
+                    .read("/json/numberAggregationInput3.json").getObject());
+            TabularQueryResult output = clusterService.cluster(input);
+            String expectedOutputJson = this.inputJson.write(this.inputJson
+                    .read("/json/numberAggregationOutput4.json").getObject()).getJson();
+            String outputJson = this.inputJson.write(output.getData()).getJson();
+            JSONAssert.assertEquals(expectedOutputJson, outputJson, true);
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+            fail();
+        }
+    }
 }
