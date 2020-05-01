@@ -39,7 +39,7 @@ public class EvalNlpModule extends NlpModule {
     }
 
     @Override
-    protected Mono<EvaluationResponse> handleNlpOperationSuccess(ClientResponse nlpResponse) {
+    protected Mono<Object> handleNlpOperationSuccess(ClientResponse nlpResponse) {
         return nlpResponse.bodyToMono(EvaluationResponse.class);
     }
 

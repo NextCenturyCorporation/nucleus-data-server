@@ -8,16 +8,19 @@ import com.ncc.neon.services.ModuleService;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.env.Environment;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class IRNlpModule extends NlpModule {
 
     private HttpEndpoint queryEndpoint;
 
-    public IRNlpModule(NlpModuleModel moduleModel, DatasetService datasetService, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService, Environment env) {
-        super(moduleModel, datasetService, fileShareService, betterFileService, moduleService, env);
+    public IRNlpModule(NlpModuleModel moduleModel, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService, Environment env) {
+        // does not need runservice variable. 
+        super(moduleModel, fileShareService, betterFileService, moduleService, env);
     }
 
     @Override
@@ -31,12 +34,22 @@ public class IRNlpModule extends NlpModule {
         }
     }
 
-    public Mono<RestStatus> searchIR(String query) {
+    @Override
+    protected Mono<Object> handleNlpOperationSuccess(ClientResponse nlpResponse) {
+        // Assume doc ids were returned.
+        return nlpResponse.bodyToMono(String[].class);
+    }
+
+    public Mono<Object> searchIR(String query) {
         HashMap<String, String> params = new HashMap<>();
         params.put("query", query);
-        return this.performNlpOperation(params, queryEndpoint)
-                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)))
-                .flatMap(this::handleNlpOperationSuccess);
+        return this.performNlpOperation(params, queryEndpoint);
+    }
+
+    @Override
+    protected Map<String, String> getListEndpointParams(String filePrefix) {
+        // This Module does not have a list endpoint. 
+        return null;
     }
 
 }

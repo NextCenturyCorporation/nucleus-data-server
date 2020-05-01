@@ -41,7 +41,7 @@ public class IENlpModule extends NlpModule {
     }
 
     @Override
-    protected Mono<RestStatus> handleNlpOperationSuccess(ClientResponse nlpResponse) {
+    protected Mono<Object> handleNlpOperationSuccess(ClientResponse nlpResponse) {
         HttpStatus responseStatus = nlpResponse.statusCode();
 
         // Check if nlp operation was canceled.

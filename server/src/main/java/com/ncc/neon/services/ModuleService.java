@@ -67,7 +67,7 @@ public class ModuleService extends ElasticSearchService<NlpModuleModel> {
                     res = new PreprocessorNlpModule(moduleModel, fileShareService, betterFileService, moduleService, env);
                     break;
                 case IR: 
-                    res = new IRNlpModule(moduleModel, datasetService, fileShareService, betterFileService, moduleService, env);
+                    res = new IRNlpModule(moduleModel, fileShareService, betterFileService, moduleService, env);
                     break;
                 case IE:
                     res = new IENlpModule(moduleModel, fileShareService, betterFileService, runService, moduleService, env);

@@ -2,6 +2,7 @@ package com.ncc.neon.controllers;
 
 import com.ncc.neon.better.ExperimentConfig;
 import com.ncc.neon.better.IENlpModule;
+import com.ncc.neon.better.IRNlpModule;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.ExperimentForm;
 import com.ncc.neon.models.FileStatus;
@@ -131,11 +132,16 @@ public class BetterController {
     }
 
     @GetMapping(path="irsearch")
-    ResponseEntity<Object> irsearch(@RequestParam("query") String query, @RequestParam("module") String module)  {
+    Mono<Object> irsearch(@RequestParam("query") String query, @RequestParam("module") String module)  {
         // synchronous service 
-        //return moduleService.buildNlpModuleClient(module)
-        //        .flatMap(nlpModule -> );
-        return ResponseEntity.ok().build();
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> {
+                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+                    return irModule.searchIR(query);
+                });
+                // static cast from nlpModule -> IR 
+                // return Mono String[]
+               
     }
 
     @GetMapping(path="preprocess")

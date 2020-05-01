@@ -30,7 +30,7 @@ public class PreprocessorNlpModule extends NlpModule {
     }
 
     @Override
-    protected Mono<RestStatus> handleNlpOperationSuccess(ClientResponse nlpResponse) {
+    protected Mono<Object> handleNlpOperationSuccess(ClientResponse nlpResponse) {
         return nlpResponse.bodyToMono(BetterFile[].class).flatMap(this::updateFilesToReady);
     }
 
