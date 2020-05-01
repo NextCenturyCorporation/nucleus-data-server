@@ -31,8 +31,12 @@ public class ClusterService {
      * @return the new clustered results
      */
     public TabularQueryResult cluster(TabularQueryResult tabularQueryResult) {
-        if (this.clusterClause.getFieldType().equals("number")) {
-            return this.aggregateNumber(tabularQueryResult);
+        try {
+            if (this.clusterClause.getFieldType().equals("number")) {
+                return this.aggregateNumber(tabularQueryResult);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         this.clusterClause = null; // reset cluster clause
