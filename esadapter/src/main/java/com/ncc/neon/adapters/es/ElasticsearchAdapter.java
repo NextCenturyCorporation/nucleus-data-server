@@ -95,7 +95,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
 
         try {
             response = this.client.search(request, RequestOptions.DEFAULT);
-            if (query.getLimitClause().getLimit() > ES_BATCH_LIMIT) {
+            if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT) {
                 scrolledResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
             }
         } catch (IOException e) {
