@@ -46,6 +46,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class ElasticsearchAdapter extends QueryAdapter {
     static final int DEFAULT_PORT = 9200;
 
@@ -68,6 +71,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
         String password = passwordFromConfig != null ? passwordFromConfig : (userAndPassData.length > 1 ?
             userAndPassData[1] : null);
 
+	log.debug("Elasticsearch RestClientBuilder host=" + hostOnly + " port=" + port + " protocol=" + protocolFromConfig);
         RestClientBuilder builder = RestClient.builder(new HttpHost(hostOnly, port, protocolFromConfig));
         if (username != null && password != null) {
             final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
