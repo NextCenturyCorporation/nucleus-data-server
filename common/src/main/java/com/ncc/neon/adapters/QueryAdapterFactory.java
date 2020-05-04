@@ -32,7 +32,7 @@ public abstract class QueryAdapterFactory {
      *
      * @param cInfo {@link ConnectionInfo}
      */
-    public abstract QueryAdapter buildAdapter(String host, String username, String password);
+    public abstract QueryAdapter buildAdapter(String host, String username, String password, String protocol);
 
     /**
      * Gets the config name(s) for the datastore type.
@@ -47,15 +47,20 @@ public abstract class QueryAdapterFactory {
     public QueryAdapter initialize(ConnectionInfo cInfo) {
         String host = cInfo.getHost();
         String auth = this.authCollection.containsKey(host) ? this.authCollection.get(host) : null;
+        String protocol = null;
         String username = null;
         String password = null;
         if (auth != null) {
             String[] authData = auth.split(":");
             if (authData.length > 1) {
-                username = authData[0];
-                password = authData[1];
+                protocol = authData.length > 2 ? authData[0] : null;
+                username = authData.length > 2 ? authData[1] : authData[0];
+                password = authData.length > 2 ? authData[2] : authData[1];
+            }
+            else if (authData.length > 0) {
+                protocol = authData[0];
             }
         }
-        return buildAdapter(host, username, password);
+        return buildAdapter(host, username, password, protocol);
     }
 }

@@ -53,7 +53,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
 
     private RestHighLevelClient client;
 
-    public ElasticsearchAdapter(String host, String usernameFromConfig, String passwordFromConfig) {
+    public ElasticsearchAdapter(String host, String usernameFromConfig, String passwordFromConfig, String protocolFromConfig) {
         super("Elasticsearch", host, usernameFromConfig, passwordFromConfig);
 
         // Expect host to be "host", "username@host", or "username:password@host" (ending with optional ":port")
@@ -68,7 +68,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
         String password = passwordFromConfig != null ? passwordFromConfig : (userAndPassData.length > 1 ?
             userAndPassData[1] : null);
 
-        RestClientBuilder builder = RestClient.builder(new HttpHost(hostOnly, port));
+        RestClientBuilder builder = RestClient.builder(new HttpHost(hostOnly, port, protocolFromConfig));
         if (username != null && password != null) {
             final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
             credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));

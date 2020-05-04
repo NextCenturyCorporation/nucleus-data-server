@@ -13,7 +13,7 @@ public class DummyQueryAdapterFactory extends QueryAdapterFactory {
     }
 
     @Override
-    public QueryAdapter buildAdapter(String host, String username, String password) {
+    public QueryAdapter buildAdapter(String host, String username, String password, String protocol) {
         return new DummyQueryAdapter();
     }
 

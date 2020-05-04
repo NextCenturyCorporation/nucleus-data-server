@@ -14,8 +14,8 @@ public abstract class SqlAdapterFactory extends QueryAdapterFactory {
     }
 
     @Override
-    public QueryAdapter buildAdapter(String host, String username, String password) {
-        return new SqlAdapter(this.type, host, username, password);
+    public QueryAdapter buildAdapter(String host, String username, String password, String protocol) {
+        return new SqlAdapter(this.type, host, username, password, protocol);
     }
 
     @Override

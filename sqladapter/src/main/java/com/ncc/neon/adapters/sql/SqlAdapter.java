@@ -54,7 +54,7 @@ public class SqlAdapter extends QueryAdapter {
         }
     }
 
-    public SqlAdapter(SqlType type, String host, String usernameFromConfig, String passwordFromConfig) {
+    public SqlAdapter(SqlType type, String host, String usernameFromConfig, String passwordFromConfig, String protocolFromConfig) {
         super(type.prettyName, host, usernameFromConfig, passwordFromConfig);
         this.type = type;
 
@@ -69,6 +69,7 @@ public class SqlAdapter extends QueryAdapter {
         String hostAndPort = hostAndAuthData[hostAndAuthData.length > 1 ? 1 : 0];
         String auth = ((username != null) ? (username + (password != null ? (":" + password) : "") + "@") : "");
 
+        // TODO Use protocol
         ConnectionFactory connectionFactory = ConnectionFactories.get(this.type.driverName + "://" + auth +
             hostAndPort);
         ConnectionPoolConfiguration config = ConnectionPoolConfiguration.builder(connectionFactory)

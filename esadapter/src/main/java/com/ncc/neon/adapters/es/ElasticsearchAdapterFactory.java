@@ -4,7 +4,6 @@ import java.util.Map;
 
 import com.ncc.neon.adapters.QueryAdapter;
 import com.ncc.neon.adapters.QueryAdapterFactory;
-import com.ncc.neon.models.ConnectionInfo;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
@@ -19,8 +18,8 @@ public class ElasticsearchAdapterFactory extends QueryAdapterFactory {
     }
 
     @Override
-    public QueryAdapter buildAdapter(String host, String username, String password) {
-        return new ElasticsearchAdapter(host, username, password);
+    public QueryAdapter buildAdapter(String host, String username, String password, String protocol) {
+        return new ElasticsearchAdapter(host, username, password, protocol);
     }
 
     @Override
