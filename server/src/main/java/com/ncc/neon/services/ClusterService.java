@@ -25,6 +25,10 @@ public class ClusterService {
     public static final int DEFAULT_NUMBER_COUNT = 50;
     public static final String DEFAULT_NUMBER_STEP = ".0001";
 
+    // alphabet constants
+    private static final int ALPHABET_LENGTH = 26;
+    private static final String ALPHABET = "abcdefghijklmnopqrstuvwxyz";
+
     private ClusterClause clusterClause;
 
     /**
@@ -267,8 +271,6 @@ public class ClusterService {
      * @return a BigDecimal corresponding to the index of the bin
      */
     private BigDecimal convertTextBinToNumber(String text) {
-        final String ALPHABET = "abcdefghijklmnopqrstuvwxyz";
-        final int ALPHABET_LENGTH = 26;
         int total = 0;
         for (int i = text.length() - 1; i > -1; i--) {
             char c = text.charAt(i);
@@ -285,9 +287,6 @@ public class ClusterService {
      * @return returns the text bin as a String
      */
     private String convertNumberToTextBin(BigDecimal number) {
-        final String ALPHABET = "abcdefghijklmnopqrstuvwxyz";
-        final int ALPHABET_LENGTH = 26;
-
         int intValue = number.intValue();
 
         int highestPower = 0;
