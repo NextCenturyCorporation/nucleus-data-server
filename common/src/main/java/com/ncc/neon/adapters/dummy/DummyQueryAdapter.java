@@ -1,7 +1,6 @@
 package com.ncc.neon.adapters.dummy;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 import com.ncc.neon.adapters.QueryAdapter;
@@ -20,7 +19,7 @@ import reactor.core.publisher.Mono;
 public class DummyQueryAdapter extends QueryAdapter {
 
     DummyQueryAdapter() {
-        super("dummy", null, null, null);
+        super("dummy", null, null, null, null);
     }
 
     @Override

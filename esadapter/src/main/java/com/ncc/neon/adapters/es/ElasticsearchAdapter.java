@@ -54,7 +54,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
     private RestHighLevelClient client;
 
     public ElasticsearchAdapter(String host, String usernameFromConfig, String passwordFromConfig, String protocolFromConfig) {
-        super("Elasticsearch", host, usernameFromConfig, passwordFromConfig);
+        super("Elasticsearch", host, usernameFromConfig, passwordFromConfig, protocolFromConfig);
 
         // Expect host to be "host", "username@host", or "username:password@host" (ending with optional ":port")
         String[] hostAndAuthData = host.split("@");
@@ -215,7 +215,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
                 fieldTypePairs.add(new FieldTypePair(fieldName, retrieveFieldType(type)));
             } else if (value.get("properties") != null) {
                 Map<String, Map> nestedFields = (Map<String, Map>) value.get("properties");
-                fieldTypePairs.addAll(getFieldsFromMapping(nestedFields, fieldName));
+                fieldTypePairs.addAll(getFieldsFromMapping(nestedFields, (parentFieldName != null ? (parentFieldName + ".") : "") + fieldName));
             }
         });
         fieldTypePairs.add(new FieldTypePair("_id", FieldType.ID));

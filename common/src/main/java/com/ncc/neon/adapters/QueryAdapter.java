@@ -25,11 +25,11 @@ public abstract class QueryAdapter {
     protected String prettyName;
     protected String host;
 
-    public QueryAdapter(final String prettyName, final String host, final String username, final String password) {
+    public QueryAdapter(final String prettyName, final String host, final String username, final String password, String protocol) {
         this.prettyName = prettyName;
         this.host = host;
-        log.debug("Initialize " + prettyName + " Adapter " + host +
-            ((username != null && password != null) ? " with auth from config" : ""));
+        log.debug("Initialize " + prettyName + " Adapter " + host + " with " + (protocol != null ? protocol : "http") +
+            ((username != null && password != null) ? " and auth from config" : ""));
     }
 
     protected void logError(String origin, Exception e) {

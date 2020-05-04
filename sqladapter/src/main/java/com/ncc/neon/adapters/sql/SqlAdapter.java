@@ -55,7 +55,7 @@ public class SqlAdapter extends QueryAdapter {
     }
 
     public SqlAdapter(SqlType type, String host, String usernameFromConfig, String passwordFromConfig, String protocolFromConfig) {
-        super(type.prettyName, host, usernameFromConfig, passwordFromConfig);
+        super(type.prettyName, host, usernameFromConfig, passwordFromConfig, protocolFromConfig);
         this.type = type;
 
         // Expect host to be "host", "username@host", or "username:password@host" (ending with optional ":port")
