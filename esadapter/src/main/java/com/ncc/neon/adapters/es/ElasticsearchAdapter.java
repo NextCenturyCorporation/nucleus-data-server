@@ -97,8 +97,8 @@ public class ElasticsearchAdapter extends QueryAdapter {
         List<Map<String, Object>> collectedResults = null;
 
         try {
-            if (query.getLimitClause().getLimit() > ES_BATCH_LIMIT && query.getAggregateClauses() != null
-                    && !query.getAggregateClauses().isEmpty()) {
+            if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT
+                    && query.getAggregateClauses() != null && !query.getAggregateClauses().isEmpty()) {
                 int numPartitions = 10;
 
                 TermsAggregationBuilder termsAB = null;
