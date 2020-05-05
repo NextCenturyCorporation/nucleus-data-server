@@ -99,11 +99,11 @@ public class ElasticsearchAdapter extends QueryAdapter {
         try {
             if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT
                     && query.getAggregateClauses() != null && !query.getAggregateClauses().isEmpty()) {
-                int numPartitions = 10;
+                int numPartitions = query.getLimitClause().getLimit() / ES_BATCH_LIMIT;
 
                 TermsAggregationBuilder termsAB = null;
-                        Collection<AggregationBuilder> aggregationBuilders = request.source().aggregations()
-                                .getAggregatorFactories();
+                Collection<AggregationBuilder> aggregationBuilders = request.source().aggregations()
+                        .getAggregatorFactories();
                 for (AggregationBuilder aggregation : aggregationBuilders) {
                     if (aggregation instanceof TermsAggregationBuilder) {
                         termsAB = (TermsAggregationBuilder) aggregation;
@@ -118,13 +118,12 @@ public class ElasticsearchAdapter extends QueryAdapter {
                     }
                     collectedResults = ElasticsearchResultsConverter.sortBuckets(query.getOrderByClauses(), collectedResults);
                 }
+            } else if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT) {
+                collectedResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
             } else {
                 response = this.client.search(request, RequestOptions.DEFAULT);
             }
 
-            if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT) {
-                collectedResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
-            }
         } catch (IOException e) {
             e.printStackTrace();
         }
