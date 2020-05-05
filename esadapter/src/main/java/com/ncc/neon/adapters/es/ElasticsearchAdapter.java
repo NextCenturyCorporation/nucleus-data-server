@@ -71,7 +71,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
         String password = passwordFromConfig != null ? passwordFromConfig : (userAndPassData.length > 1 ?
             userAndPassData[1] : null);
 
-	log.debug("Elasticsearch RestClientBuilder host=" + hostOnly + " port=" + port + " protocol=" + protocolFromConfig);
+        log.debug("Elasticsearch RestClientBuilder host=" + hostOnly + " port=" + port + " protocol=" + protocolFromConfig);
         RestClientBuilder builder = RestClient.builder(new HttpHost(hostOnly, port, protocolFromConfig));
         if (username != null && password != null) {
             final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
@@ -91,10 +91,11 @@ public class ElasticsearchAdapter extends QueryAdapter {
         verifyQueryTablesExist(query);
 
         SearchRequest request = ElasticsearchQueryConverter.convertQuery(query);
+        logQuery(query, request);
         final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
         request.scroll(scroll);
         SearchResponse response = null;
-        TabularQueryResult results = null;
+        TabularQueryResult results = new TabularQueryResult();
         List<Map<String, Object>> scrolledResults = null;
 
         try {
@@ -110,6 +111,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
             results = new TabularQueryResult(scrolledResults);
         } else if (response != null) {
             results = ElasticsearchResultsConverter.convertResults(query, response);
+            // logResults(response, results.getData());
         }
 
         return Mono.just(results);
