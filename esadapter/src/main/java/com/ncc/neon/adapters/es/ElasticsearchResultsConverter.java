@@ -19,7 +19,6 @@ import com.ncc.neon.models.queries.GroupByOperationClause;
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.queries.OrderByClause;
 import com.ncc.neon.models.queries.OrderByFieldClause;
-import com.ncc.neon.models.results.TabularQueryResult;
 
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -71,18 +70,18 @@ public class ElasticsearchResultsConverter {
         log.debug(name + ":  " + object.toString());
     }
 
-    public static TabularQueryResult convertResults(Query query, SearchResponse response) {
+    public static List<Map<String, Object>> convertResults(Query query, SearchResponse response) {
         List<AggregateClause> aggregateClauses = query.getAggregateClauses();
         List<GroupByClause> groupByClauses = query.getGroupByClauses();
 
         Aggregations aggregationResults = response.getAggregations();
 
-        TabularQueryResult results;
+        List<Map<String, Object>> results;
 
         if (aggregateClauses.size() > 0 && groupByClauses.size() == 0) {
             Map<String, Object> metrics = extractMetrics(aggregateClauses, aggregationResults != null ? aggregationResults.asMap() : null,
                 response.getHits().getTotalHits());
-            results = new TabularQueryResult(Arrays.<Map<String, Object>>asList(metrics));
+            results = Arrays.asList(metrics);
         } else if (aggregateClauses.size() > 0 && groupByClauses.size() > 0) {
             List<TransformedAggregationBucket> buckets = extractBuckets(groupByClauses,
                 (MultiBucketsAggregation) aggregationResults.asList().get(0));
@@ -90,11 +89,11 @@ public class ElasticsearchResultsConverter {
             List<Map<String, Object>> extractedMetrics = extractMetricsFromBuckets(aggregateClauses, buckets, response.getHits().getTotalHits());
             extractedMetrics = sortBuckets(query.getOrderByClauses(), extractedMetrics);
             extractedMetrics = limitBuckets(extractedMetrics, query);
-            results = new TabularQueryResult(extractedMetrics);
+            results = extractedMetrics;
         } else if (query.isDistinct()) {
-            results = new TabularQueryResult(extractDistinct(query, (MultiBucketsAggregation) aggregationResults.asList().get(0)));
+            results = extractDistinct(query, (MultiBucketsAggregation) aggregationResults.asList().get(0));
         } else {
-            results = new TabularQueryResult(extractHitsFromResults(response));
+            results = extractHitsFromResults(response);
         }
 
         return results;
@@ -372,7 +371,7 @@ public class ElasticsearchResultsConverter {
         }).collect(Collectors.toList());
     }
 
-    private static List<Map<String, Object>> sortBuckets(List<OrderByClause> orderClauses,
+    public static List<Map<String, Object>> sortBuckets(List<OrderByClause> orderClauses,
             List<Map<String, Object>> buckets) {
         if (orderClauses != null && orderClauses.size() > 0) {
             buckets.sort((a, b) -> {

@@ -42,6 +42,9 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 
 import org.elasticsearch.search.Scroll;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.IncludeExclude;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -91,21 +94,45 @@ public class ElasticsearchAdapter extends QueryAdapter {
         request.scroll(scroll);
         SearchResponse response = null;
         TabularQueryResult results = null;
-        List<Map<String, Object>> scrolledResults = null;
+        List<Map<String, Object>> collectedResults = null;
 
         try {
-            response = this.client.search(request, RequestOptions.DEFAULT);
+            if (query.getLimitClause().getLimit() > ES_BATCH_LIMIT && query.getAggregateClauses() != null
+                    && !query.getAggregateClauses().isEmpty()) {
+                int numPartitions = 10;
+
+                TermsAggregationBuilder termsAB = null;
+                        Collection<AggregationBuilder> aggregationBuilders = request.source().aggregations()
+                                .getAggregatorFactories();
+                for (AggregationBuilder aggregation : aggregationBuilders) {
+                    if (aggregation instanceof TermsAggregationBuilder) {
+                        termsAB = (TermsAggregationBuilder) aggregation;
+                    }
+                }
+                if (termsAB != null) {
+                    collectedResults = new ArrayList<>();
+                    for (int i = 0; i < numPartitions; i++) {
+                        termsAB.includeExclude(new IncludeExclude(i, numPartitions));
+                        SearchResponse partitionResponse = this.client.search(request, RequestOptions.DEFAULT);
+                        collectedResults.addAll(ElasticsearchResultsConverter.convertResults(query, partitionResponse));
+                    }
+                    collectedResults = ElasticsearchResultsConverter.sortBuckets(query.getOrderByClauses(), collectedResults);
+                }
+            } else {
+                response = this.client.search(request, RequestOptions.DEFAULT);
+            }
+
             if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT) {
-                scrolledResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
+                collectedResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        if (scrolledResults != null) {
-            results = new TabularQueryResult(scrolledResults);
+        if (collectedResults != null) {
+            results = new TabularQueryResult(collectedResults);
         } else if (response != null) {
-            results = ElasticsearchResultsConverter.convertResults(query, response);
+            results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         }
 
         return Mono.just(results);
