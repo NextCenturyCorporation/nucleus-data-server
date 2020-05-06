@@ -19,6 +19,7 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.elasticsearch.action.ActionListener;
@@ -75,7 +76,14 @@ public class ElasticsearchAdapter extends QueryAdapter {
             userAndPassData[1] : null);
 
         log.debug("Elasticsearch RestClientBuilder host=" + hostOnly + " port=" + port + " protocol=" + protocolFromConfig);
-        RestClientBuilder builder = RestClient.builder(new HttpHost(hostOnly, port, protocolFromConfig));
+        RestClientBuilder builder = RestClient.builder(new HttpHost(hostOnly, port, protocolFromConfig))
+            .setRequestConfigCallback(new RestClientBuilder.RequestConfigCallback(){
+                @Override
+                public Builder customizeRequestConfig(Builder requestConfigBuilder) {
+                    return requestConfigBuilder.setConnectTimeout(5000).setSocketTimeout(60000);
+                }
+            });
+
         if (username != null && password != null) {
             final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
             credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
