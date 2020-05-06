@@ -331,17 +331,17 @@ public class ElasticsearchQueryConverter {
     private static SearchSourceBuilder createSearchSourceBuilder(Query query) {
         int offset = getOffset(query);
         int size = getLimit(query);
-        int terminateAfter = size;
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().explain(false).from(offset).size(size);
-        if (query != null && query.getLimitClause() != null) {
-            boolean totalCount = query.getAggregateClauses() == null ? false : query.getAggregateClauses().stream()
-                .anyMatch(aggClause -> aggClause instanceof AggregateByTotalCountClause);
-            // Don't add terminateAfter to "total count" queries, or else the query won't return the real total count!
-            if (!totalCount) {
-                return searchSourceBuilder.terminateAfter(query.getLimitClause().getLimit());
-            }
+
+        boolean totalCount = query.getAggregateClauses() == null ? false : query.getAggregateClauses().stream()
+            .anyMatch(aggClause -> aggClause instanceof AggregateByTotalCountClause);
+        // Don't add terminateAfter to "total count" queries, or else the query won't return the real total count!
+        if (totalCount) {
+            return searchSourceBuilder;
         }
-        return searchSourceBuilder;
+
+        return searchSourceBuilder.terminateAfter((query != null && query.getLimitClause() != null) ?
+            query.getLimitClause().getLimit() : size);
     }
 
     public static int getOffset(Query query) {

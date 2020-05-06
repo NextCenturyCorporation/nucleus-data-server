@@ -46,7 +46,10 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
     }
 
     private SearchSourceBuilder createSourceBuilder(int from, int size, int terminateAfter) {
-        return new SearchSourceBuilder().explain(false).from(from).size(size).terminateAfter(terminateAfter);
+        if (terminateAfter > 0) {
+            return new SearchSourceBuilder().explain(false).from(from).size(size).terminateAfter(terminateAfter);
+        }
+        return new SearchSourceBuilder().explain(false).from(from).size(size);
     }
 
     private SearchRequest createRequest(String database, String table, SearchSourceBuilder source) {
@@ -378,7 +381,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         Query query = buildQueryAggregateCountAll();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        SearchSourceBuilder source = createSourceBuilder();
+        SearchSourceBuilder source = createSourceBuilder(0, 10000, -1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -784,7 +787,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         Query query = buildQueryLimit();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        SearchSourceBuilder source = createSourceBuilder(0, 12, query.getLimitClause().getLimit());
+        SearchSourceBuilder source = createSourceBuilder(0, 12);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -804,7 +807,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         Query query = buildQueryLimitAndOffset();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        SearchSourceBuilder source = createSourceBuilder(34, 12, query.getLimitClause().getLimit());
+        SearchSourceBuilder source = createSourceBuilder(34, 12);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -818,7 +821,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
         TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testGroupField").field("testGroupField").size(12)
             .order(Arrays.asList(BucketOrder.count(false), BucketOrder.key(true))).subAggregation(aggBuilder2);
-        SearchSourceBuilder source = createSourceBuilder(34, 12, query.getLimitClause().getLimit()).fetchSource(new String[]{ "testField1", "testField2" }, null)
+        SearchSourceBuilder source = createSourceBuilder(34, 12, 12).fetchSource(new String[]{ "testField1", "testField2" }, null)
             .query(queryBuilder).aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
@@ -931,7 +934,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
 
         // Elasticsearch-specific test:  do not set the query limit to zero!
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        SearchSourceBuilder source = createSourceBuilder(0, 10000, query.getLimitClause().getLimit());
+        SearchSourceBuilder source = createSourceBuilder(0, 10000, 0);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -944,7 +947,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
 
         // Elasticsearch-specific test:  do not set the query limit to more than 10,000!
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        SearchSourceBuilder source = createSourceBuilder(0, 10000, query.getLimitClause().getLimit());
+        SearchSourceBuilder source = createSourceBuilder(0, 10000, 1000000);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         expected = expected.scroll(TimeValue.timeValueMinutes(1));
         assertThat(actual).isEqualTo(expected);
