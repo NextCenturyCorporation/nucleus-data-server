@@ -27,12 +27,12 @@ public class DummyQueryAdapter extends QueryAdapter {
     public Mono<TabularQueryResult> execute(Query query) {
         return Mono.just(new TabularQueryResult(Arrays.asList(
             Map.ofEntries(
-                Map.entry("fieldA", "value1"),
-                Map.entry("fieldB", 1)
+                Map.entry("testGroupField", "value1"),
+                Map.entry("testAggregateLabel", 1)
             ),
             Map.ofEntries(
-                Map.entry("fieldA", "value2"),
-                Map.entry("fieldB", 2)
+                Map.entry("testGroupField", "value2"),
+                Map.entry("testAggregateLabel", 2)
             )
         )));
     }

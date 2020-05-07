@@ -1,5 +1,6 @@
 package com.ncc.neon.adapters.es;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -18,10 +19,14 @@ import com.ncc.neon.models.queries.GroupByOperationClause;
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.queries.OrderByClause;
 import com.ncc.neon.models.queries.OrderByFieldClause;
-import com.ncc.neon.models.results.TabularQueryResult;
 
+import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.DocValueFormat;
+import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
@@ -65,18 +70,18 @@ public class ElasticsearchResultsConverter {
         log.debug(name + ":  " + object.toString());
     }
 
-    public static TabularQueryResult convertResults(Query query, SearchResponse response) {
+    public static List<Map<String, Object>> convertResults(Query query, SearchResponse response) {
         List<AggregateClause> aggregateClauses = query.getAggregateClauses();
         List<GroupByClause> groupByClauses = query.getGroupByClauses();
 
         Aggregations aggregationResults = response.getAggregations();
 
-        TabularQueryResult results;
+        List<Map<String, Object>> results;
 
         if (aggregateClauses.size() > 0 && groupByClauses.size() == 0) {
             Map<String, Object> metrics = extractMetrics(aggregateClauses, aggregationResults != null ? aggregationResults.asMap() : null,
                 response.getHits().getTotalHits());
-            results = new TabularQueryResult(Arrays.<Map<String, Object>>asList(metrics));
+            results = Arrays.asList(metrics);
         } else if (aggregateClauses.size() > 0 && groupByClauses.size() > 0) {
             List<TransformedAggregationBucket> buckets = extractBuckets(groupByClauses,
                 (MultiBucketsAggregation) aggregationResults.asList().get(0));
@@ -84,17 +89,40 @@ public class ElasticsearchResultsConverter {
             List<Map<String, Object>> extractedMetrics = extractMetricsFromBuckets(aggregateClauses, buckets, response.getHits().getTotalHits());
             extractedMetrics = sortBuckets(query.getOrderByClauses(), extractedMetrics);
             extractedMetrics = limitBuckets(extractedMetrics, query);
-            results = new TabularQueryResult(extractedMetrics);
+            results = extractedMetrics;
         } else if (query.isDistinct()) {
-            results = new TabularQueryResult(extractDistinct(query, (MultiBucketsAggregation) aggregationResults.asList().get(0)));
+            results = extractDistinct(query, (MultiBucketsAggregation) aggregationResults.asList().get(0));
         } else {
-            results = new TabularQueryResult(extractHitsFromResults(response));
+            results = extractHitsFromResults(response);
         }
 
         return results;
     }
 
-    private static List<Map<String, Object>> extractHitsFromResults(SearchResponse response) {
+    public static List<Map<String, Object>> getScrolledResults(Scroll scroll, SearchResponse response,
+                                                               RestHighLevelClient client) throws IOException {
+        List<Map<String, Object>> allHits = new ArrayList<>();
+        if (response == null) {
+            return allHits;
+        }
+        String scrollId = response.getScrollId();
+        allHits.addAll(ElasticsearchResultsConverter.extractHitsFromResults(response));
+
+        while (response.getHits().getHits() != null && response.getHits().getHits().length > 0) {
+            SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+            scrollRequest.scroll(scroll);
+            response = client.scroll(scrollRequest, RequestOptions.DEFAULT);
+            allHits.addAll(ElasticsearchResultsConverter.extractHitsFromResults(response));
+            scrollId = response.getScrollId();
+        }
+
+        ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+        clearScrollRequest.addScrollId(scrollId);
+        client.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+        return allHits;
+    }
+
+    public static List<Map<String, Object>> extractHitsFromResults(SearchResponse response) {
         return Arrays.stream(response.getHits().getHits()).map(searchHit -> {
             // Copy the map since it may be immutable.
             // Do not use Collectors.toMap because it does not work with null values.
@@ -346,7 +374,7 @@ public class ElasticsearchResultsConverter {
         }).collect(Collectors.toList());
     }
 
-    private static List<Map<String, Object>> sortBuckets(List<OrderByClause> orderClauses,
+    public static List<Map<String, Object>> sortBuckets(List<OrderByClause> orderClauses,
             List<Map<String, Object>> buckets) {
         if (orderClauses != null && orderClauses.size() > 0) {
             buckets.sort((a, b) -> {

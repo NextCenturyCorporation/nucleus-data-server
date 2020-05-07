@@ -63,7 +63,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(null);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testFieldA", "testValue1"),
@@ -103,7 +103,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(null);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testFieldA", "testValue1"),
@@ -134,7 +134,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testCount", (long) 90)
@@ -160,7 +160,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testCount", (long) 90)
@@ -190,7 +190,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testAvg", 12.0)
@@ -220,7 +220,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testMax", 12.0)
@@ -250,7 +250,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testMin", 12.0)
@@ -280,7 +280,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testSum", 12.0)
@@ -317,7 +317,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testAggLabel1", (long) 90),
@@ -356,7 +356,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "testGroup1"),
@@ -394,7 +394,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "testGroup1"),
@@ -438,7 +438,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "testGroup2"),
@@ -486,7 +486,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", true),
@@ -534,7 +534,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", 0),
@@ -595,7 +595,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "b"),
@@ -657,7 +657,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "a"),
@@ -719,7 +719,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "c"),
@@ -781,7 +781,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "a"),
@@ -844,7 +844,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "d"),
@@ -907,7 +907,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "b"),
@@ -968,7 +968,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "a"),
@@ -1034,7 +1034,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "d"),
@@ -1100,7 +1100,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "b"),
@@ -1165,7 +1165,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "c"),
@@ -1234,7 +1234,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "a"),
@@ -1288,7 +1288,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "testGroup1"),
@@ -1340,7 +1340,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "testGroup2"),
@@ -1419,7 +1419,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "d"),
@@ -1498,7 +1498,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "b"),
@@ -1579,7 +1579,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testOuterGroupField", "testOuterGroup2"),
@@ -1675,7 +1675,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testOuterGroupField", "testOuterGroup2"),
@@ -1788,7 +1788,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testOuterGroupField", "testOuterGroup2"),
@@ -1913,7 +1913,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testOuterGroupField", "testOuterGroup2"),
@@ -1989,7 +1989,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testYear", (float) 2019),
@@ -2047,7 +2047,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testYear", (float) 2019),
@@ -2126,7 +2126,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testMonth", (float) 2),
@@ -2219,7 +2219,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "testGroup2"),
@@ -2310,7 +2310,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testGroupField", "testGroup2"),
@@ -2362,7 +2362,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testFieldA", "testValue1")
@@ -2405,7 +2405,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testFieldA", "testValue1")
@@ -2448,7 +2448,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testFieldA", "testValue2")
@@ -2494,7 +2494,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testFieldA", "testValue4")
@@ -2545,7 +2545,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testFieldA", "testValue3")
@@ -2592,7 +2592,7 @@ public class ElasticsearchResultsConverterTest {
         when(response.getAggregations()).thenReturn(aggregations);
         when(response.getHits()).thenReturn(hits);
 
-        TabularQueryResult results = ElasticsearchResultsConverter.convertResults(query, response);
+        TabularQueryResult results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         assertThat(results.getData()).isEqualTo(Arrays.asList(
             Map.ofEntries(
                 Map.entry("testFieldA", 20)

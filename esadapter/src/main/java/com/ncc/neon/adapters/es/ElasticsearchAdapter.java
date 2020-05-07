@@ -1,10 +1,7 @@
 package com.ncc.neon.adapters.es;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -33,8 +30,7 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.*;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -45,12 +41,18 @@ import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 
+import org.elasticsearch.search.Scroll;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.IncludeExclude;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
 public class ElasticsearchAdapter extends QueryAdapter {
     static final int DEFAULT_PORT = 9200;
+
+    static final int ES_BATCH_LIMIT = 10000;
 
     private RestHighLevelClient client;
 
@@ -88,17 +90,48 @@ public class ElasticsearchAdapter extends QueryAdapter {
         verifyQueryTablesExist(query);
 
         SearchRequest request = ElasticsearchQueryConverter.convertQuery(query);
+        final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
+        request.scroll(scroll);
         SearchResponse response = null;
         TabularQueryResult results = null;
+        List<Map<String, Object>> collectedResults = null;
 
         try {
-            response = this.client.search(request, RequestOptions.DEFAULT);
+            if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT
+                    && query.getAggregateClauses() != null && !query.getAggregateClauses().isEmpty()) {
+                int numPartitions = query.getLimitClause().getLimit() / ES_BATCH_LIMIT;
+
+                TermsAggregationBuilder termsAB = null;
+                Collection<AggregationBuilder> aggregationBuilders = request.source().aggregations()
+                        .getAggregatorFactories();
+                for (AggregationBuilder aggregation : aggregationBuilders) {
+                    if (aggregation instanceof TermsAggregationBuilder) {
+                        termsAB = (TermsAggregationBuilder) aggregation;
+                    }
+                }
+                if (termsAB != null) {
+                    collectedResults = new ArrayList<>();
+                    for (int i = 0; i < numPartitions; i++) {
+                        termsAB.includeExclude(new IncludeExclude(i, numPartitions));
+                        SearchResponse partitionResponse = this.client.search(request, RequestOptions.DEFAULT);
+                        collectedResults.addAll(ElasticsearchResultsConverter.convertResults(query, partitionResponse));
+                    }
+                    collectedResults = ElasticsearchResultsConverter.sortBuckets(query.getOrderByClauses(), collectedResults);
+                }
+            } else if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT) {
+                collectedResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
+            } else {
+                response = this.client.search(request, RequestOptions.DEFAULT);
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        if (response != null) {
-            results = ElasticsearchResultsConverter.convertResults(query, response);
+        if (collectedResults != null) {
+            results = new TabularQueryResult(collectedResults);
+        } else if (response != null) {
+            results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         }
 
         return Mono.just(results);
