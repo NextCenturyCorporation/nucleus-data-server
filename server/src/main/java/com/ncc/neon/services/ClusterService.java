@@ -17,6 +17,18 @@ import java.util.*;
 @Component
 public class ClusterService {
 
+    // text constants
+    public static final int DEFAULT_TEXT_COUNT = 26;
+    public static final String DEFAULT_TEXT_STEP = "1";
+
+    // number constants
+    public static final int DEFAULT_NUMBER_COUNT = 50;
+    public static final String DEFAULT_NUMBER_STEP = ".0001";
+
+    // alphabet constants
+    private static final int ALPHABET_LENGTH = 26;
+    private static final String ALPHABET = "abcdefghijklmnopqrstuvwxyz";
+
     private ClusterClause clusterClause;
 
     /**
@@ -39,10 +51,7 @@ public class ClusterService {
         String fieldType = this.clusterClause.getFieldType();
 
         // to keep the check simple, specialty cases are for text
-        boolean isText = false;
-        if (fieldType.equals("text") || fieldType.equals("keyword")) {
-            isText = true;
-        }
+        boolean isText = (fieldType.equals("text") || fieldType.equals("keyword")) ? true : false;
 
         List<List<Object>> clusters = this.clusterClause.getClusters();
 
@@ -54,10 +63,7 @@ public class ClusterService {
 
         // determine count
         // default counts
-        BigDecimal count = new BigDecimal(50);;
-        if (isText) {
-            count = new BigDecimal(26);
-        }
+        BigDecimal count = isText ? new BigDecimal(DEFAULT_TEXT_COUNT) : new BigDecimal(DEFAULT_NUMBER_COUNT);
         if (this.clusterClause.getCount() != 0) {
             count = new BigDecimal(this.clusterClause.getCount());
         }
@@ -79,19 +85,16 @@ public class ClusterService {
             firstGroup = convertTextBinToNumber(first.get(fieldNameKey).toString());
             lastGroup = convertTextBinToNumber(last.get(fieldNameKey).toString());
         }
-        String order = "asc";
-        if (firstGroup.compareTo(lastGroup) == 1) {
-            order = "des";
-        }
+        int order = firstGroup.compareTo(lastGroup) == 1 ? -1 : 1;
 
         // find new clusters
-        List<Map<String, Object>> newData = getNewDataBins(fieldNameKey, isText, firstGroup, lastGroup, count, clusters);
+        List<Map<String, Object>> newData = getNewDataBins(fieldNameKey, isText, firstGroup, lastGroup, count, clusters, order);
 
         // take care of extra keys that may be present
         Map<String, Object> extraKeySets = getExtraKeySetsMap(fieldNameKey, aggregationNameKey, data);
 
         // aggregate data into the new clusters
-        aggregateNumbersInNewData(fieldNameKey, isText, aggregationNameKey, data, newData, extraKeySets);
+        aggregateNumbersInNewData(fieldNameKey, isText, aggregationNameKey, data, newData, extraKeySets, order);
 
         // reset clusterclause
         this.clusterClause = null;
@@ -109,19 +112,21 @@ public class ClusterService {
      * @param lastGroup the last group of data in the original result data
      * @param count how many bins there should be in the new data set
      * @param clusters clusters specified by the cluster clause if available
+     * @param order 1 for ascending, -1 for descending
      * @return the new data set ready to be filled
      */
     private List<Map<String, Object>> getNewDataBins(String fieldNameKey, boolean isText, BigDecimal firstGroup, BigDecimal lastGroup,
-                                                     BigDecimal count, List<List<Object>> clusters) {
+                                                     BigDecimal count, List<List<Object>> clusters, int order) {
         List<Map<String, Object>> newData = new ArrayList<>();
         if (clusters == null) {
+            BigDecimal orderModifier = new BigDecimal(order);
             BigDecimal gap = (lastGroup.subtract(firstGroup)).divide(count);
             BigDecimal step = null;
             if (!isText) {
-                step = new BigDecimal(".0001");
+                step = new BigDecimal(DEFAULT_NUMBER_STEP).multiply(orderModifier);
             } else if (isText) {
                 gap = gap.setScale(0, RoundingMode.DOWN);
-                step = new BigDecimal("1");
+                step = new BigDecimal(DEFAULT_TEXT_STEP).multiply(orderModifier);
             }
             BigDecimal currentBin = firstGroup;
             for (int i = 0; i < count.intValue(); i++) {
@@ -186,17 +191,17 @@ public class ClusterService {
 
     /**
      * Traverses the original data and puts it in the correct bins in the new data.
-     *
      * @param fieldNameKey the key that corresponds with the field name
      * @param isText whether the type of aggregation is text
      * @param aggregationNameKey the key that corresponds with the overall counts of each bin
      * @param data the original result data
      * @param newData the newly clustered data
      * @param extraKeySets the extra key sets map for storing additional keys
+     * @param order 1 for ascending, -1 for descending
      */
     private void aggregateNumbersInNewData(String fieldNameKey, boolean isText, String aggregationNameKey,
                                            List<Map<String, Object>> data, List<Map<String, Object>> newData,
-                                           Map<String, Object> extraKeySets) {
+                                           Map<String, Object> extraKeySets, int order) {
         Iterator<Map<String, Object>> newDataIter = newData.iterator();
         int oldDataIndex = 0;
         while (newDataIter.hasNext()) {
@@ -208,15 +213,15 @@ public class ClusterService {
             // determine the boundaries and aggregated count for this bin
             BigDecimal currAgg = new BigDecimal("0");
             Map currNewBin = newDataIter.next();
-            ArrayList alo = (ArrayList) currNewBin.get(fieldNameKey);
+            ArrayList newRange = (ArrayList) currNewBin.get(fieldNameKey);
             BigDecimal start = null;
             BigDecimal end = null;
             if (!isText) {
-                start = (BigDecimal) alo.get(0);
-                end = (BigDecimal) alo.get(1);
+                start = (BigDecimal) newRange.get(0);
+                end = (BigDecimal) newRange.get(1);
             } else if (isText) {
-                start = convertTextBinToNumber(alo.get(0).toString());
-                end = convertTextBinToNumber(alo.get(1).toString());
+                start = convertTextBinToNumber(newRange.get(0).toString());
+                end = convertTextBinToNumber(newRange.get(1).toString());
             }
 
             // traverse the old data a total of one time
@@ -229,9 +234,9 @@ public class ClusterService {
                     oldBinValue = convertTextBinToNumber(data.get(oldDataIndex).get(fieldNameKey).toString());
                 }
 
-                // if old >= new start && old <= new end
-                if (oldBinValue.compareTo(start) != -1
-                        && oldBinValue.compareTo(end) != 1) {
+                // if old >= new start && old <= new end (for ascending)
+                if (oldBinValue.compareTo(start) != (-1 * order)
+                        && oldBinValue.compareTo(end) != (1 * order)) {
 
                     // check extra keys
                     for (String key : extraKeySets.keySet()) {
@@ -244,7 +249,7 @@ public class ClusterService {
 
                     // move to the next data in the old results
                     oldDataIndex++;
-                } else if (oldBinValue.compareTo(end) == 1) { // old > new end i.e. old bin moved past this curr new bin
+                } else if (oldBinValue.compareTo(end) == (1 * order)) { // old > new end i.e. old bin moved past this curr new bin (for ascending)
                     break;
                 }
             }
@@ -266,8 +271,6 @@ public class ClusterService {
      * @return a BigDecimal corresponding to the index of the bin
      */
     private BigDecimal convertTextBinToNumber(String text) {
-        final String ALPHABET = "abcdefghijklmnopqrstuvwxyz";
-        final int ALPHABET_LENGTH = 26;
         int total = 0;
         for (int i = text.length() - 1; i > -1; i--) {
             char c = text.charAt(i);
@@ -284,9 +287,6 @@ public class ClusterService {
      * @return returns the text bin as a String
      */
     private String convertNumberToTextBin(BigDecimal number) {
-        final String ALPHABET = "abcdefghijklmnopqrstuvwxyz";
-        final int ALPHABET_LENGTH = 26;
-
         int intValue = number.intValue();
 
         int highestPower = 0;

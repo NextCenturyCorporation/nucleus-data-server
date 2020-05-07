@@ -1,10 +1,7 @@
 package com.ncc.neon.adapters.es;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -33,8 +30,7 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.*;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -45,12 +41,15 @@ import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 
+import org.elasticsearch.search.Scroll;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
 public class ElasticsearchAdapter extends QueryAdapter {
     static final int DEFAULT_PORT = 9200;
+
+    static final int ES_BATCH_LIMIT = 10000;
 
     private RestHighLevelClient client;
 
@@ -88,16 +87,24 @@ public class ElasticsearchAdapter extends QueryAdapter {
         verifyQueryTablesExist(query);
 
         SearchRequest request = ElasticsearchQueryConverter.convertQuery(query);
+        final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
+        request.scroll(scroll);
         SearchResponse response = null;
         TabularQueryResult results = null;
+        List<Map<String, Object>> scrolledResults = null;
 
         try {
             response = this.client.search(request, RequestOptions.DEFAULT);
+            if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT) {
+                scrolledResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        if (response != null) {
+        if (scrolledResults != null) {
+            results = new TabularQueryResult(scrolledResults);
+        } else if (response != null) {
             results = ElasticsearchResultsConverter.convertResults(query, response);
         }
 
