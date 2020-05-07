@@ -66,4 +66,10 @@ public class DateUtilTest {
         ZonedDateTime date = DateUtil.transformStringToDate("2019-01-01T00:00:30.500Z");
         assertThat(date.toString()).isEqualTo("2019-01-01T00:00:30.500Z");
     }
+
+    @Test
+    public void transformMillisecondsToDateTest() {
+        ZonedDateTime date = DateUtil.transformMillisecondsToDate(1546300830500L);
+        assertThat(date.toString()).isEqualTo("2019-01-01T00:00:30.500Z[UTC]");
+    }
 }
