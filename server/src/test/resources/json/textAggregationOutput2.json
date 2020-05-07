@@ -1,0 +1,21 @@
+[{
+  "aggregation": 43,
+  "group_primary": ["a", "d"],
+  "group_secondary": ["X", "Y"]
+}, {
+  "aggregation": 59,
+  "group_primary": ["e", "h"],
+  "group_secondary": ["X", "Y"]
+}, {
+  "aggregation": 2,
+  "group_primary": ["i", "l"],
+  "group_secondary": ["X"]
+}, {
+  "aggregation": 0,
+  "group_primary": ["m", "p"],
+  "group_secondary": []
+}, {
+  "aggregation": 1,
+  "group_primary": ["q", "t"],
+  "group_secondary": ["X"]
+}]
