@@ -94,9 +94,6 @@ public class QueryControllerTests {
         SelectClause selectClause = new SelectClause("testDatabase", "testTable");
         WhereClause whereClause = SingularWhereClause.fromNull(
             new FieldClause("testDatabase", "testTable", "testWhereField"), "!=");
-        ClusterClause clusterClause = new ClusterClause(0, "testType",
-                List.of(List.of(Integer.valueOf(0), Integer.valueOf(25)), List.of(Integer.valueOf(26), Integer.valueOf(50))),
-                "testAggregationName", "testFieldType", List.of("testFieldName1", "testFieldName2"));
         List<AggregateClause> aggregateClauses = List.of(new AggregateByFieldClause(
             new FieldClause("testDatabase", "testTable", "testAggregateField"), "testAggregateLabel", "count"));
         List<GroupByClause> groupByClauses = List.of(new GroupByFieldClause(
@@ -107,7 +104,7 @@ public class QueryControllerTests {
         OffsetClause offsetClause = new OffsetClause(34);
         boolean isDistinct = false;
 
-        Query query = new Query(selectClause, whereClause, clusterClause, aggregateClauses, groupByClauses, orderByClauses,
+        Query query = new Query(selectClause, whereClause, null, aggregateClauses, groupByClauses, orderByClauses,
             limitClause, offsetClause, List.of(), isDistinct);
 
         this.webClient.post()
@@ -124,12 +121,12 @@ public class QueryControllerTests {
                 .consumeWith(result -> {
                     Assertions.assertThat(result.getResponseBody().getData()).isEqualTo(Arrays.asList(
                         Map.ofEntries(
-                            Map.entry("fieldA", "value1"),
-                            Map.entry("fieldB", 1)
+                            Map.entry("testGroupField", "value1"),
+                            Map.entry("testAggregateLabel", 1)
                         ),
                         Map.ofEntries(
-                            Map.entry("fieldA", "value2"),
-                            Map.entry("fieldB", 2)
+                            Map.entry("testGroupField", "value2"),
+                            Map.entry("testAggregateLabel", 2)
                         )
                     ));
                 });
