@@ -1,12 +1,16 @@
 package com.ncc.neon.services;
 
 import com.ncc.neon.models.queries.ClusterClause;
+import com.ncc.neon.models.results.FieldType;
 import com.ncc.neon.models.results.TabularQueryResult;
+import com.ncc.neon.util.DateUtil;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -24,6 +28,11 @@ public class ClusterService {
     // number constants
     public static final int DEFAULT_NUMBER_COUNT = 50;
     public static final String DEFAULT_NUMBER_STEP = ".0001";
+
+    // datetime constants
+    public static final int DEFAULT_DATETIME_COUNT = 50;
+    public static final String DEFAULT_DATETIME_STEP = "1000";
+    public static final String PRETTY_DATETIME_KEY = "pretty";
 
     // alphabet constants
     private static final int ALPHABET_LENGTH = 26;
@@ -48,10 +57,7 @@ public class ClusterService {
      * @return the new clustered results
      */
     public TabularQueryResult cluster(TabularQueryResult tabularQueryResult) {
-        String fieldType = this.clusterClause.getFieldType();
-
-        // to keep the check simple, specialty cases are for text
-        boolean isText = (fieldType.equals("text") || fieldType.equals("keyword")) ? true : false;
+        FieldType fieldType = retrieveFieldType(this.clusterClause.getFieldType());
 
         List<List<Object>> clusters = this.clusterClause.getClusters();
 
@@ -63,9 +69,21 @@ public class ClusterService {
 
         // determine count
         // default counts
-        BigDecimal count = isText ? new BigDecimal(DEFAULT_TEXT_COUNT) : new BigDecimal(DEFAULT_NUMBER_COUNT);
-        if (this.clusterClause.getCount() != 0) {
-            count = new BigDecimal(this.clusterClause.getCount());
+        BigDecimal count = new BigDecimal(this.clusterClause.getCount());
+        if (count.compareTo(new BigDecimal(0)) == 0) {
+            switch (fieldType) {
+                case KEYWORD:
+                case TEXT:
+                    count = new BigDecimal(DEFAULT_TEXT_COUNT);
+                    break;
+                case DATETIME:
+                    count = new BigDecimal(DEFAULT_DATETIME_COUNT);
+                    break;
+                case DECIMAL:
+                default:
+                    count = new BigDecimal(DEFAULT_NUMBER_COUNT);
+                    break;
+            }
         }
 
         // data is small enough
@@ -78,23 +96,23 @@ public class ClusterService {
         Map<String, Object> last = data.get(data.size() - 1);
         BigDecimal firstGroup = null;
         BigDecimal lastGroup = null;
-        if (!isText) {
+        if (!fieldType.equals(FieldType.KEYWORD) && !(fieldType.equals(FieldType.TEXT))) {
             firstGroup = new BigDecimal(first.get(fieldNameKey).toString());
             lastGroup = new BigDecimal(last.get(fieldNameKey).toString());
-        } else if (isText) {
+        } else {
             firstGroup = convertTextBinToNumber(first.get(fieldNameKey).toString());
             lastGroup = convertTextBinToNumber(last.get(fieldNameKey).toString());
         }
         int order = firstGroup.compareTo(lastGroup) == 1 ? -1 : 1;
 
         // find new clusters
-        List<Map<String, Object>> newData = getNewDataBins(fieldNameKey, isText, firstGroup, lastGroup, count, clusters, order);
+        List<Map<String, Object>> newData = getNewDataBins(fieldNameKey, fieldType, firstGroup, lastGroup, count, clusters, order);
 
         // take care of extra keys that may be present
         Map<String, Object> extraKeySets = getExtraKeySetsMap(fieldNameKey, aggregationNameKey, data);
 
         // aggregate data into the new clusters
-        aggregateNumbersInNewData(fieldNameKey, isText, aggregationNameKey, data, newData, extraKeySets, order);
+        aggregateNumbersInNewData(fieldNameKey, fieldType, aggregationNameKey, data, newData, extraKeySets, order);
 
         // reset clusterclause
         this.clusterClause = null;
@@ -107,7 +125,7 @@ public class ClusterService {
      * Calculates the spacing between the different bins in the new data set results.
      *
      * @param fieldNameKey the key that corresponds with the field name
-     * @param isText whether the type of aggregation is text
+     * @param fieldType the fieldtype of the aggregation
      * @param firstGroup the first group of data in the original result data
      * @param lastGroup the last group of data in the original result data
      * @param count how many bins there should be in the new data set
@@ -115,37 +133,65 @@ public class ClusterService {
      * @param order 1 for ascending, -1 for descending
      * @return the new data set ready to be filled
      */
-    private List<Map<String, Object>> getNewDataBins(String fieldNameKey, boolean isText, BigDecimal firstGroup, BigDecimal lastGroup,
+    private List<Map<String, Object>> getNewDataBins(String fieldNameKey, FieldType fieldType, BigDecimal firstGroup, BigDecimal lastGroup,
                                                      BigDecimal count, List<List<Object>> clusters, int order) {
         List<Map<String, Object>> newData = new ArrayList<>();
         if (clusters == null) {
             BigDecimal orderModifier = new BigDecimal(order);
             BigDecimal gap = (lastGroup.subtract(firstGroup)).divide(count);
             BigDecimal step = null;
-            if (!isText) {
-                step = new BigDecimal(DEFAULT_NUMBER_STEP).multiply(orderModifier);
-            } else if (isText) {
-                gap = gap.setScale(0, RoundingMode.DOWN);
-                step = new BigDecimal(DEFAULT_TEXT_STEP).multiply(orderModifier);
+            switch (fieldType) {
+                case KEYWORD:
+                case TEXT:
+                    gap = gap.setScale(0, RoundingMode.DOWN);
+                    step = new BigDecimal(DEFAULT_TEXT_STEP).multiply(orderModifier);
+                    break;
+                case DATETIME:
+                    gap = gap.setScale(0, RoundingMode.DOWN);
+                    step = new BigDecimal(DEFAULT_DATETIME_STEP).multiply(orderModifier);
+                    break;
+                case DECIMAL:
+                default:
+                    step = new BigDecimal(DEFAULT_NUMBER_STEP).multiply(orderModifier);
+                    break;
             }
             BigDecimal currentBin = firstGroup;
             for (int i = 0; i < count.intValue(); i++) {
                 LinkedHashMap map = new LinkedHashMap<>();
                 ArrayList range = new ArrayList<>();
-                if (!isText) {
-                    if (i != 0) {
-                        range.add(currentBin.add(step));
-                    } else {
-                        range.add(currentBin);
-                    }
-                    range.add(currentBin.add(gap));
-                } else if (isText) {
-                    if (i != 0) {
-                        range.add(convertNumberToTextBin(currentBin = currentBin.add(step)));
-                    } else {
-                        range.add(convertNumberToTextBin(currentBin));
-                    }
-                    range.add(convertNumberToTextBin(currentBin.add(gap)));
+                if (!fieldType.equals(FieldType.KEYWORD) && !(fieldType.equals(FieldType.TEXT))) { // not text
+
+                } else if (fieldType.equals(FieldType.KEYWORD) || (fieldType.equals(FieldType.TEXT))) { // is text
+
+                }
+                switch (fieldType) {
+                    case KEYWORD:
+                    case TEXT:
+                        if (i != 0) {
+                            range.add(convertNumberToTextBin(currentBin = currentBin.add(step)));
+                        } else {
+                            range.add(convertNumberToTextBin(currentBin));
+                        }
+                        range.add(convertNumberToTextBin(currentBin.add(gap)));
+                        break;
+                    case DATETIME:
+                        if (i != 0) {
+                            range.add(currentBin.add(step));
+                        } else {
+                            range.add(currentBin);
+                        }
+                        range.add(currentBin.add(gap));
+                        storePrettyDate(map, range);
+                        break;
+                    case DECIMAL:
+                    default:
+                        if (i != 0) {
+                            range.add(currentBin.add(step));
+                        } else {
+                            range.add(currentBin);
+                        }
+                        range.add(currentBin.add(gap));
+                        break;
                 }
                 currentBin = currentBin.add(gap);
                 map.put(fieldNameKey, range);
@@ -155,10 +201,10 @@ public class ClusterService {
             for (int i = 0; i < clusters.size(); i++) {
                 LinkedHashMap map = new LinkedHashMap<>();
                 ArrayList range = new ArrayList();
-                if (!isText) {
+                if (!fieldType.equals(FieldType.KEYWORD) && !(fieldType.equals(FieldType.TEXT))) { // not text
                     range.add(new BigDecimal(clusters.get(i).get(0).toString()));
                     range.add(new BigDecimal(clusters.get(i).get(1).toString()));
-                } else if (isText) {
+                } else if (fieldType.equals(FieldType.KEYWORD) || (fieldType.equals(FieldType.TEXT))) { // is text
                     range.add(clusters.get(i).get(0).toString());
                     range.add(clusters.get(i).get(1).toString());
                 }
@@ -182,7 +228,7 @@ public class ClusterService {
         Map<String, Object> datum = data.get(0);
         Map<String, Object> extraKeySets = new HashMap<>();
         for (String key : datum.keySet()) {
-            if (!key.equals(aggregationNameKey) && !key.equals(fieldNameKey)) {
+            if (!key.equals(aggregationNameKey) && !key.equals(fieldNameKey) && !key.equals(PRETTY_DATETIME_KEY)) {
                 extraKeySets.put(key, new HashSet<>());
             }
         }
@@ -192,14 +238,14 @@ public class ClusterService {
     /**
      * Traverses the original data and puts it in the correct bins in the new data.
      * @param fieldNameKey the key that corresponds with the field name
-     * @param isText whether the type of aggregation is text
+     * @param fieldType the fieldtype of the aggregation
      * @param aggregationNameKey the key that corresponds with the overall counts of each bin
      * @param data the original result data
      * @param newData the newly clustered data
      * @param extraKeySets the extra key sets map for storing additional keys
      * @param order 1 for ascending, -1 for descending
      */
-    private void aggregateNumbersInNewData(String fieldNameKey, boolean isText, String aggregationNameKey,
+    private void aggregateNumbersInNewData(String fieldNameKey, FieldType fieldType, String aggregationNameKey,
                                            List<Map<String, Object>> data, List<Map<String, Object>> newData,
                                            Map<String, Object> extraKeySets, int order) {
         Iterator<Map<String, Object>> newDataIter = newData.iterator();
@@ -216,21 +262,27 @@ public class ClusterService {
             ArrayList newRange = (ArrayList) currNewBin.get(fieldNameKey);
             BigDecimal start = null;
             BigDecimal end = null;
-            if (!isText) {
-                start = (BigDecimal) newRange.get(0);
-                end = (BigDecimal) newRange.get(1);
-            } else if (isText) {
-                start = convertTextBinToNumber(newRange.get(0).toString());
-                end = convertTextBinToNumber(newRange.get(1).toString());
+            switch (fieldType) {
+                case KEYWORD:
+                case TEXT:
+                    start = convertTextBinToNumber(newRange.get(0).toString());
+                    end = convertTextBinToNumber(newRange.get(1).toString());
+                    break;
+                case DATETIME:
+                case DECIMAL:
+                default:
+                    start = (BigDecimal) newRange.get(0);
+                    end = (BigDecimal) newRange.get(1);
+                    break;
             }
 
             // traverse the old data a total of one time
             while (oldDataIndex < data.size()) {
                 // retrieve the old data's field name
                 BigDecimal oldBinValue = null;
-                if (!isText) {
+                if (!fieldType.equals(FieldType.KEYWORD) && !(fieldType.equals(FieldType.TEXT))) { // not text
                     oldBinValue = new BigDecimal(data.get(oldDataIndex).get(fieldNameKey).toString());
-                } else if (isText) {
+                } else if (fieldType.equals(FieldType.KEYWORD) || (fieldType.equals(FieldType.TEXT))) { // is text
                     oldBinValue = convertTextBinToNumber(data.get(oldDataIndex).get(fieldNameKey).toString());
                 }
 
@@ -327,5 +379,55 @@ public class ClusterService {
      */
     public void setClusterClause(ClusterClause clusterClause) {
         this.clusterClause = clusterClause;
+    }
+
+    private FieldType retrieveFieldType(String type) {
+        switch (type) {
+            case "boolean":
+                return FieldType.BOOLEAN;
+            case "byte":
+            case "integer":
+            case "long":
+            case "short":
+                return FieldType.INTEGER;
+            case "date":
+                return FieldType.DATETIME;
+            case "number":
+            case "double":
+            case "float":
+            case "half_float":
+            case "scaled_float":
+                return FieldType.DECIMAL;
+            case "geo-point":
+            case "geo-shape":
+                return FieldType.GEO;
+            case "keyword":
+                return FieldType.KEYWORD;
+            case "nested":
+            case "object":
+                return FieldType.OBJECT;
+            case "text":
+            default:
+                return FieldType.TEXT;
+        }
+    }
+
+    /**
+     * Takes a bin for clustering and a range of dates and updates the bin with pretty ranges for those dates.
+     *
+     * @param bin the bin to be updated with pretty date ranges
+     * @param range the range of dates as BigDecimals
+     */
+    private void storePrettyDate(Map bin, ArrayList<BigDecimal> range) {
+        System.out.println();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss");
+        ArrayList prettyDateRange = new ArrayList();
+        for (int i = 0; i < 2; i++) {
+            BigDecimal date = range.get(i);
+            ZonedDateTime zonedDateTime = DateUtil.transformMillisecondsToDate(Long.parseLong(date.toString()));
+            String prettyDate = formatter.format(zonedDateTime);
+            prettyDateRange.add(prettyDate);
+        }
+        bin.put(PRETTY_DATETIME_KEY, prettyDateRange);
     }
 }
