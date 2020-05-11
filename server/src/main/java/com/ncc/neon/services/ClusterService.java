@@ -159,11 +159,6 @@ public class ClusterService {
             for (int i = 0; i < count.intValue(); i++) {
                 LinkedHashMap map = new LinkedHashMap<>();
                 ArrayList range = new ArrayList<>();
-                if (!fieldType.equals(FieldType.KEYWORD) && !(fieldType.equals(FieldType.TEXT))) { // not text
-
-                } else if (fieldType.equals(FieldType.KEYWORD) || (fieldType.equals(FieldType.TEXT))) { // is text
-
-                }
                 switch (fieldType) {
                     case KEYWORD:
                     case TEXT:
@@ -419,7 +414,6 @@ public class ClusterService {
      * @param range the range of dates as BigDecimals
      */
     private void storePrettyDate(Map bin, ArrayList<BigDecimal> range) {
-        System.out.println();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss");
         ArrayList prettyDateRange = new ArrayList();
         for (int i = 0; i < 2; i++) {
