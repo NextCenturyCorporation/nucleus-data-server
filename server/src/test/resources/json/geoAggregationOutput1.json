@@ -1,0 +1,33 @@
+[{
+  "latitude": [-90, -0.0001],
+  "longitude": [-180, -90.0001],
+  "_count": 3
+}, {
+  "latitude": [-90, -0.0001],
+  "longitude": [-90, -0.0001],
+  "_count": 6
+}, {
+  "latitude": [-90, -0.0001],
+  "longitude": [0, 90],
+  "_count": 0
+}, {
+  "latitude": [-90, -0.0001],
+  "longitude": [90.0001, 180],
+  "_count": 0
+}, {
+  "latitude": [0, 90],
+  "longitude": [-180, -90.0001],
+  "_count": 3
+}, {
+  "latitude": [0, 90],
+  "longitude": [-90, -0.0001],
+  "_count": 7
+}, {
+  "latitude": [0, 90],
+  "longitude": [0, 90],
+  "_count": 8
+}, {
+  "latitude": [0, 90],
+  "longitude": [90.0001, 180],
+  "_count": 6
+}]

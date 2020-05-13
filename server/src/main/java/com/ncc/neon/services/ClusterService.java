@@ -34,6 +34,10 @@ public class ClusterService {
     public static final String DEFAULT_DATETIME_STEP = "1000";
     public static final String PRETTY_DATETIME_KEY = "pretty";
 
+    // geo constants
+    public static final int DEFAULT_GEO_COUNT = 12;
+    public static final String DEFAULT_GEO_STEP = "0.000000000000001";
+
     // alphabet constants
     private static final int ALPHABET_LENGTH = 26;
     private static final String ALPHABET = "abcdefghijklmnopqrstuvwxyz";
@@ -72,6 +76,9 @@ public class ClusterService {
         BigDecimal count = new BigDecimal(this.clusterClause.getCount());
         if (count.compareTo(new BigDecimal(0)) == 0) {
             switch (fieldType) {
+                case GEO:
+                    count = new BigDecimal(DEFAULT_GEO_COUNT);
+                    break;
                 case KEYWORD:
                 case TEXT:
                     count = new BigDecimal(DEFAULT_TEXT_COUNT);

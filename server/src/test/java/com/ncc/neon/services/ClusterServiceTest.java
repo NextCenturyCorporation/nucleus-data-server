@@ -199,4 +199,40 @@ public class ClusterServiceTest {
             fail();
         }
     }
+
+    @Test
+    public void geoAggregationTest1() {
+        try {
+            ClusterClause clusterClause = this.json.read("/json/geoAggregationClusterClause.json").getObject();
+            clusterService.setClusterClause(clusterClause);
+            TabularQueryResult input = new TabularQueryResult(this.inputJson
+                    .read("/json/geoAggregationInput1.json").getObject());
+            TabularQueryResult output = clusterService.cluster(input);
+            String expectedOutputJson = this.inputJson.write(this.inputJson
+                    .read("/json/geoAggregationOutput1.json").getObject()).getJson();
+            String outputJson = this.inputJson.write(output.getData()).getJson();
+            JSONAssert.assertEquals(expectedOutputJson, outputJson, true);
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+            fail();
+        }
+    }
+
+    @Test
+    public void geoAggregationTest2() {
+        try {
+            ClusterClause clusterClause = this.json.read("/json/geoAggregationClusterClause.json").getObject();
+            clusterService.setClusterClause(clusterClause);
+            TabularQueryResult input = new TabularQueryResult(this.inputJson
+                    .read("/json/geoAggregationInput2.json").getObject());
+            TabularQueryResult output = clusterService.cluster(input);
+            String expectedOutputJson = this.inputJson.write(this.inputJson
+                    .read("/json/geoAggregationOutput2.json").getObject()).getJson();
+            String outputJson = this.inputJson.write(output.getData()).getJson();
+            JSONAssert.assertEquals(expectedOutputJson, outputJson, true);
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+            fail();
+        }
+    }
 }

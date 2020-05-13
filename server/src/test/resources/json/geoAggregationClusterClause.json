@@ -1,0 +1,6 @@
+{
+  "type": "geopoints",
+  "count": 4,
+  "aggregationName": "_count",
+  "fieldNames": ["latitude", "longitude"]
+}
