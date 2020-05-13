@@ -118,12 +118,17 @@ public class ElasticsearchAdapter extends QueryAdapter {
                     }
                     collectedResults = ElasticsearchResultsConverter.sortBuckets(query.getOrderByClauses(), collectedResults);
                 }
-            } else if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT) {
-                collectedResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
             } else {
+                // over limit regular query requires terminateAfter
+                if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT) {
+                    request.source().terminateAfter(query.getLimitClause().getLimit());
+                }
                 response = this.client.search(request, RequestOptions.DEFAULT);
             }
 
+            if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT && response != null) {
+                collectedResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -330,12 +330,8 @@ public class ElasticsearchQueryConverter {
     private static SearchSourceBuilder createSearchSourceBuilder(Query query) {
         int offset = getOffset(query);
         int size = getLimit(query);
-        int terminateAfter = size;
-        if (query != null && query.getLimitClause() != null) {
-            terminateAfter = query.getLimitClause().getLimit();
-        }
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-                .explain(false).from(offset).size(size).terminateAfter(terminateAfter);
+                .explain(false).from(offset).size(size);
         return searchSourceBuilder;
     }
 
