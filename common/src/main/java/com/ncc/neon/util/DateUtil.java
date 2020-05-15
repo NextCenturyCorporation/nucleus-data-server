@@ -1,6 +1,8 @@
 package com.ncc.neon.util;
 
 import java.time.DateTimeException;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -21,6 +23,15 @@ public class DateUtil {
             return DateTimeFormatter.ISO_DATE_TIME.format(date);
         }
         catch(DateTimeException e1) {
+            return null;
+        }
+    }
+
+    public static ZonedDateTime transformMillisecondsToDate(Long dateLong) {
+        try {
+            return ZonedDateTime.ofInstant(Instant.ofEpochMilli(dateLong), ZoneId.of("UTC"));
+        }
+        catch (DateTimeException e) {
             return null;
         }
     }

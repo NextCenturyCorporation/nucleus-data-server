@@ -1,0 +1,13 @@
+[{
+  "aggregation": 6,
+  "group_primary": ["a", "c"]
+}, {
+  "aggregation": 23,
+  "group_primary": ["d", "j"]
+}, {
+  "aggregation": 0,
+  "group_primary": ["k", "o"]
+}, {
+  "aggregation": 1,
+  "group_primary": ["p", "t"]
+}]

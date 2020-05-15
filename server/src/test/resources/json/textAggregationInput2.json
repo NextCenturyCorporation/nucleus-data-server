@@ -1,0 +1,65 @@
+[{
+  "aggregation": 1,
+  "group_primary": "a",
+  "group_secondary": "X"
+}, {
+  "aggregation": 2,
+  "group_primary": "b",
+  "group_secondary": "X"
+}, {
+  "aggregation": 10,
+  "group_primary": "b",
+  "group_secondary": "Y"
+}, {
+  "aggregation": 3,
+  "group_primary": "c",
+  "group_secondary": "X"
+}, {
+  "aggregation": 11,
+  "group_primary": "c",
+  "group_secondary": "Y"
+}, {
+  "aggregation": 4,
+  "group_primary": "d",
+  "group_secondary": "X"
+}, {
+  "aggregation": 12,
+  "group_primary": "d",
+  "group_secondary": "Y"
+}, {
+  "aggregation": 5,
+  "group_primary": "e",
+  "group_secondary": "X"
+}, {
+  "aggregation": 13,
+  "group_primary": "e",
+  "group_secondary": "Y"
+}, {
+  "aggregation": 5,
+  "group_primary": "f",
+  "group_secondary": "X"
+}, {
+  "aggregation": 14,
+  "group_primary": "f",
+  "group_secondary": "Y"
+}, {
+  "aggregation": 4,
+  "group_primary": "g",
+  "group_secondary": "X"
+}, {
+  "aggregation": 15,
+  "group_primary": "g",
+  "group_secondary": "Y"
+}, {
+  "aggregation": 3,
+  "group_primary": "h",
+  "group_secondary": "X"
+}, {
+  "aggregation": 2,
+  "group_primary": "i",
+  "group_secondary": "X"
+}, {
+  "aggregation": 1,
+  "group_primary": "t",
+  "group_secondary": "X"
+}]

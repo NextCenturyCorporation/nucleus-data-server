@@ -1,0 +1,31 @@
+[{
+  "aggregation": 1,
+  "group_primary": "a"
+}, {
+  "aggregation": 2,
+  "group_primary": "b"
+}, {
+  "aggregation": 3,
+  "group_primary": "c"
+}, {
+  "aggregation": 4,
+  "group_primary": "d"
+}, {
+  "aggregation": 5,
+  "group_primary": "e"
+}, {
+  "aggregation": 5,
+  "group_primary": "f"
+}, {
+  "aggregation": 4,
+  "group_primary": "g"
+}, {
+  "aggregation": 3,
+  "group_primary": "h"
+}, {
+  "aggregation": 2,
+  "group_primary": "i"
+}, {
+  "aggregation": 1,
+  "group_primary": "t"
+}]

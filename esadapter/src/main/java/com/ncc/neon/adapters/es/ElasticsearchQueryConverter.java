@@ -8,7 +8,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import com.ncc.neon.models.queries.AggregateByFieldClause;
-import com.ncc.neon.models.queries.AggregateByTotalCountClause;
 import com.ncc.neon.models.queries.AndWhereClause;
 import com.ncc.neon.models.queries.CompoundWhereClause;
 import com.ncc.neon.models.queries.GroupByClause;
@@ -331,17 +330,9 @@ public class ElasticsearchQueryConverter {
     private static SearchSourceBuilder createSearchSourceBuilder(Query query) {
         int offset = getOffset(query);
         int size = getLimit(query);
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().explain(false).from(offset).size(size);
-
-        boolean totalCount = query.getAggregateClauses() == null ? false : query.getAggregateClauses().stream()
-            .anyMatch(aggClause -> aggClause instanceof AggregateByTotalCountClause);
-        // Don't add terminateAfter to "total count" queries, or else the query won't return the real total count!
-        if (totalCount) {
-            return searchSourceBuilder;
-        }
-
-        return searchSourceBuilder.terminateAfter((query != null && query.getLimitClause() != null) ?
-            query.getLimitClause().getLimit() : size);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+                .explain(false).from(offset).size(size);
+        return searchSourceBuilder;
     }
 
     public static int getOffset(Query query) {
