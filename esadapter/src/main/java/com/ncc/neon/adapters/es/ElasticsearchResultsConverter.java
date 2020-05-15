@@ -146,8 +146,8 @@ public class ElasticsearchResultsConverter {
 
         List<Map<String, Object>> distinctValues = sortDistinct(query, unsortedDistinctValues);
 
-        int offset = ElasticsearchQueryConverter.getOffset(query);
-        int limit = ElasticsearchQueryConverter.getLimit(query, true);
+        int offset = query.getOffsetClause() != null ? query.getOffsetClause().getOffset() : 0;
+        int limit = query.getLimitClause() != null ? query.getLimitClause().getLimit() : 0;
 
         if (limit == 0) {
             limit = distinctValues.size();
@@ -413,8 +413,8 @@ public class ElasticsearchResultsConverter {
     }
 
     private static List<Map<String, Object>> limitBuckets(List<Map<String, Object>> buckets, Query query) {
-        int offset = ElasticsearchQueryConverter.getOffset(query);
-        int limit = ElasticsearchQueryConverter.getLimit(query, true);
+        int offset = query.getOffsetClause() != null ? query.getOffsetClause().getOffset() : 0;
+        int limit = query.getLimitClause() != null ? query.getLimitClause().getLimit() : 0;
 
         if (limit == 0) {
             limit = buckets.size();

@@ -364,7 +364,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         StatsAggregationBuilder aggBuilder = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
-        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).aggregation(aggBuilder);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -374,7 +374,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         Query query = buildQueryAggregateCountAll();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        SearchSourceBuilder source = createSourceBuilder();
+        SearchSourceBuilder source = createSourceBuilder(0, 1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -385,7 +385,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.existsQuery("testAggField"));
-        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).query(queryBuilder);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -396,7 +396,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         StatsAggregationBuilder aggBuilder = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
-        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).aggregation(aggBuilder);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -407,7 +407,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         StatsAggregationBuilder aggBuilder = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
-        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).aggregation(aggBuilder);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -418,7 +418,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         StatsAggregationBuilder aggBuilder = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
-        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).aggregation(aggBuilder);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -430,7 +430,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         StatsAggregationBuilder aggBuilder1 = AggregationBuilders.stats("_statsFor_testAggField1").field("testAggField1");
         StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testAggField2").field("testAggField2");
-        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1).aggregation(aggBuilder2);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).aggregation(aggBuilder1).aggregation(aggBuilder2);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -581,7 +581,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
         TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testGroupField").field("testGroupField").size(10000)
             .subAggregation(aggBuilder2);
-        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -593,7 +593,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         DateHistogramAggregationBuilder aggBuilder = AggregationBuilders.dateHistogram("testGroupLabel").field("testGroupField")
             .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy");
-        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).aggregation(aggBuilder);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -614,7 +614,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
             .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy").subAggregation(aggBuilder3);
         TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testGroupField1").field("testGroupField1").size(10000)
             .subAggregation(aggBuilder2);
-        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         // This test fails without the toString (I don't know why)
         assertThat(actual.toString()).isEqualTo(expected.toString());
@@ -630,7 +630,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
             .dateHistogramInterval(DateHistogramInterval.MONTH).format("M").subAggregation(aggBuilder3);
         DateHistogramAggregationBuilder aggBuilder1 = AggregationBuilders.dateHistogram("testGroupLabel1").field("testGroupField1")
             .dateHistogramInterval(DateHistogramInterval.YEAR).format("yyyy").subAggregation(aggBuilder2);
-        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -664,7 +664,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testField").field("testField");
         TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testField").field("testField").size(10000)
             .subAggregation(aggBuilder2);
-        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -677,7 +677,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testField").field("testField");
         TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testField").field("testField").size(10000)
             .subAggregation(aggBuilder2);
-        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -728,7 +728,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
             .order(BucketOrder.key(false)).subAggregation(aggBuilder3).subAggregation(aggBuilder4);
         TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testField1").field("testField1").size(10000)
             .order(BucketOrder.key(true)).subAggregation(aggBuilder2);
-        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -740,7 +740,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         StatsAggregationBuilder aggBuilder1 = AggregationBuilders.stats("_statsFor_testField1").field("testField1");
         StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testField2").field("testField2");
-        SearchSourceBuilder source = createSourceBuilder().aggregation(aggBuilder1).aggregation(aggBuilder2)
+        SearchSourceBuilder source = createSourceBuilder(0, 1).aggregation(aggBuilder1).aggregation(aggBuilder2)
             .sort(SortBuilders.fieldSort("testField1").order(SortOrder.ASC))
             .sort(SortBuilders.fieldSort("testField3").order(SortOrder.DESC));
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
@@ -790,7 +790,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         Query query = buildQueryOffset();
 
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        SearchSourceBuilder source = createSourceBuilder(34, 9966);
+        SearchSourceBuilder source = createSourceBuilder(34, 10000);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -814,7 +814,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
         TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testGroupField").field("testGroupField").size(12)
             .order(Arrays.asList(BucketOrder.count(false), BucketOrder.key(true))).subAggregation(aggBuilder2);
-        SearchSourceBuilder source = createSourceBuilder(34, 12).fetchSource(new String[]{ "testField1", "testField2" }, null)
+        SearchSourceBuilder source = createSourceBuilder(34, 1).fetchSource(new String[]{ "testField1", "testField2" }, null)
             .query(queryBuilder).aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
@@ -828,7 +828,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         StatsAggregationBuilder aggBuilder2 = AggregationBuilders.stats("_statsFor_testField1").field("testField1");
         TermsAggregationBuilder aggBuilder1 = AggregationBuilders.terms("testField2").field("testField2").size(10000)
             .order(Arrays.asList(BucketOrder.count(false), BucketOrder.key(true))).subAggregation(aggBuilder2);
-        SearchSourceBuilder source = createSourceBuilder().fetchSource(new String[]{ "testField1", "testField2", "testField3" }, null)
+        SearchSourceBuilder source = createSourceBuilder(0, 1).fetchSource(new String[]{ "testField1", "testField2", "testField3" }, null)
             .aggregation(aggBuilder1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
@@ -902,7 +902,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.termQuery("testFilterField", "testFilterValue"))
             .must(QueryBuilders.existsQuery("testAggField"));
-        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).query(queryBuilder);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -914,7 +914,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.existsQuery("testAggField"));
         StatsAggregationBuilder aggBuilder = AggregationBuilders.stats("_statsFor_testAggField").field("testAggField");
-        SearchSourceBuilder source = createSourceBuilder().query(queryBuilder).aggregation(aggBuilder);
+        SearchSourceBuilder source = createSourceBuilder(0, 1).query(queryBuilder).aggregation(aggBuilder);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
@@ -927,7 +927,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
 
         // Elasticsearch-specific test:  do not set the query limit to zero!
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
-        SearchSourceBuilder source = createSourceBuilder();
+        SearchSourceBuilder source = createSourceBuilder(0, 1);
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
         assertThat(actual).isEqualTo(expected);
     }
