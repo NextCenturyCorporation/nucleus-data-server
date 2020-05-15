@@ -95,10 +95,10 @@ public class ElasticsearchAdapter extends QueryAdapter {
         SearchResponse response = null;
         TabularQueryResult results = null;
         List<Map<String, Object>> collectedResults = null;
+        boolean bigLimit = (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT);
 
         try {
-            if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT
-                    && query.getAggregateClauses() != null && !query.getAggregateClauses().isEmpty()) {
+            if (bigLimit && query.getAggregateClauses() != null && !query.getAggregateClauses().isEmpty()) {
                 int numPartitions = query.getLimitClause().getLimit() / ES_BATCH_LIMIT;
 
                 TermsAggregationBuilder termsAB = null;
@@ -120,13 +120,13 @@ public class ElasticsearchAdapter extends QueryAdapter {
                 }
             } else {
                 // over limit regular query requires terminateAfter
-                if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT) {
+                if (bigLimit) {
                     request.source().terminateAfter(query.getLimitClause().getLimit());
                 }
                 response = this.client.search(request, RequestOptions.DEFAULT);
             }
 
-            if (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT && response != null) {
+            if (bigLimit && response != null) {
                 collectedResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
             }
         } catch (IOException e) {
