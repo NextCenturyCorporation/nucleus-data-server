@@ -56,8 +56,6 @@ import lombok.extern.slf4j.Slf4j;
 public class ElasticsearchAdapter extends QueryAdapter {
     static final int DEFAULT_PORT = 9200;
 
-    static final int ES_BATCH_LIMIT = 10000;
-
     private RestHighLevelClient client;
 
     public ElasticsearchAdapter(String host, String usernameFromConfig, String passwordFromConfig, String protocolFromConfig) {
@@ -100,6 +98,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
     @Override
     public Mono<TabularQueryResult> execute(Query query) {
         verifyQueryTablesExist(query);
+        log.debug("Neon query: " + query.toString());
 
         SearchRequest request = ElasticsearchQueryConverter.convertQuery(query);
         logQuery(query, request);
@@ -108,11 +107,11 @@ public class ElasticsearchAdapter extends QueryAdapter {
         SearchResponse response = null;
         TabularQueryResult results = new TabularQueryResult();
         List<Map<String, Object>> collectedResults = null;
-        boolean bigLimit = (query.getLimitClause() != null && query.getLimitClause().getLimit() > ES_BATCH_LIMIT);
+        boolean bigLimit = (query.getLimitClause() != null && query.getLimitClause().getLimit() > ElasticsearchQueryConverter.MAX_QUERY_LIMIT);
 
         try {
             if (bigLimit && query.getAggregateClauses() != null && !query.getAggregateClauses().isEmpty()) {
-                int numPartitions = query.getLimitClause().getLimit() / ES_BATCH_LIMIT;
+                int numPartitions = query.getLimitClause().getLimit() / ElasticsearchQueryConverter.PARTITIONED_AGGREGATION_LIMIT;
 
                 TermsAggregationBuilder termsAB = null;
                 Collection<AggregationBuilder> aggregationBuilders = request.source().aggregations()
@@ -126,6 +125,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
                     collectedResults = new ArrayList<>();
                     for (int i = 0; i < numPartitions; i++) {
                         termsAB.includeExclude(new IncludeExclude(i, numPartitions));
+                        log.debug("ES Scroll Request: " + request.toString());
                         SearchResponse partitionResponse = this.client.search(request, RequestOptions.DEFAULT);
                         collectedResults.addAll(ElasticsearchResultsConverter.convertResults(query, partitionResponse));
                     }
@@ -136,6 +136,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
                 if (bigLimit) {
                     request.source().terminateAfter(query.getLimitClause().getLimit());
                 }
+                log.debug("ES Search Request: " + request.toString());
                 response = this.client.search(request, RequestOptions.DEFAULT);
             }
 
@@ -152,6 +153,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
             results = new TabularQueryResult(ElasticsearchResultsConverter.convertResults(query, response));
         }
 
+        log.debug("Returning " + results.getData().size() + " results!");
         return Mono.just(results);
     }
 

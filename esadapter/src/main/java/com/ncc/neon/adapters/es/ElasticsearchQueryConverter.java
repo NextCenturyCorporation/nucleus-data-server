@@ -53,7 +53,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ElasticsearchQueryConverter {
     static final String[] DATE_OPERATIONS = { "year", "month", "dayOfMonth", "dayOfWeek", "hour", "minute", "second" };
-    static final int RESULT_LIMIT = 10000;
+    static final int MAX_QUERY_LIMIT = 10000;
+    static final int MIN_QUERY_LIMIT = 1;
+    static final int PARTITIONED_AGGREGATION_LIMIT = 1000;
     static final String STATS_AGG_PREFIX = "_statsFor_";
     static final String TERM_PREFIX = "_term";
 
@@ -266,7 +268,7 @@ public class ElasticsearchQueryConverter {
             }
 
             TermsAggregationBuilder termsAggregations = AggregationBuilders.terms("distinct")
-                .field(fields.get(0)).size(getLimit(query));
+                .field(fields.get(0)).size(getAggregationLimit(query));
             source.aggregation(termsAggregations);
         } else {
             convertMetricAggregations(query, source);
@@ -328,23 +330,10 @@ public class ElasticsearchQueryConverter {
     }
  
     private static SearchSourceBuilder createSearchSourceBuilder(Query query) {
-        int offset = getOffset(query);
-        int size = getLimit(query);
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-                .explain(false).from(offset).size(size);
+        int offset = query.getOffsetClause() != null ? query.getOffsetClause().getOffset() : 0;
+        int size = getQueryLimit(query);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().explain(false).from(offset).size(size);
         return searchSourceBuilder;
-    }
-
-    public static int getOffset(Query query) {
-        if (query != null && query.getOffsetClause() != null) {
-            return query.getOffsetClause().getOffset();
-        } else {
-            return 0;
-        }
-    }
-
-    private static int getLimit(Query query) {
-        return getLimit(query, false);
     }
 
     private static SearchRequest createSearchRequest(SearchSourceBuilder source, Query params) {
@@ -366,33 +355,26 @@ public class ElasticsearchQueryConverter {
                 .types(indexType);
 
         if (req.searchType() == SearchType.DFS_QUERY_THEN_FETCH
-            && params.getLimitClause() != null && params.getLimitClause().getLimit() > RESULT_LIMIT) {
+            && params.getLimitClause() != null && params.getLimitClause().getLimit() > MAX_QUERY_LIMIT) {
             req = req.scroll(TimeValue.timeValueMinutes(1));
         }
         return req;
     }
 
-    public static int getLimit(Query query, boolean supportsUnlimited) {
-        if (query != null && query.getLimitClause() != null) {
-            int limit = query.getLimitClause().getLimit();
-            if (supportsUnlimited) {
-                return limit;
-            }
-            if (limit < RESULT_LIMIT && limit > 0) {
-                return limit;
-            }
-            return RESULT_LIMIT;
+    private static int getAggregationLimit(Query query) {
+        if (query.getLimitClause() != null) {
+            return query.getLimitClause().getLimit() > MAX_QUERY_LIMIT ? PARTITIONED_AGGREGATION_LIMIT :
+                query.getLimitClause().getLimit();
         }
+        return MAX_QUERY_LIMIT;
+    }
 
-        if (supportsUnlimited) {
-            return 0;
+    private static int getQueryLimit(Query query) {
+        if (query.getAggregateClauses() != null && !query.getAggregateClauses().isEmpty()) {
+            return MIN_QUERY_LIMIT;
         }
-
-        // Set the limit to the max (10,000) minus the offset. This is so the 'window'
-        // of returned results
-        // is less than the max. See:
-        // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-from-size.html
-        return Math.max(RESULT_LIMIT - getOffset(query), 0);
+        return query.getLimitClause() == null ? MAX_QUERY_LIMIT : Math.min(Math.max(query.getLimitClause().getLimit(),
+            MIN_QUERY_LIMIT), MAX_QUERY_LIMIT);
     }
 
     private static DateHistogramAggregationBuilder createDateHistAggBuilder(Query query,
@@ -425,7 +407,7 @@ public class ElasticsearchQueryConverter {
 
             TermsAggregationBuilder termsAggBuilder = AggregationBuilders
                 .terms(groupByFieldClause.getField())
-                .field(groupByFieldClause.getField()).size(getLimit(query));
+                .field(groupByFieldClause.getField()).size(getAggregationLimit(query));
 
             OrderByFieldClause orderByFieldClause = query.getOrderByClauses().stream().filter(
                 orderByClause -> orderByClause instanceof OrderByFieldClause &&
