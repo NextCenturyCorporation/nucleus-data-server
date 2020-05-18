@@ -203,13 +203,13 @@ public class ClusterServiceTest {
     @Test
     public void geoAggregationTest1() {
         try {
-            ClusterClause clusterClause = this.json.read("/json/geoAggregationClusterClause.json").getObject();
+            ClusterClause clusterClause = this.json.read("/json/latlonAggregationClusterClause.json").getObject();
             clusterService.setClusterClause(clusterClause);
             TabularQueryResult input = new TabularQueryResult(this.inputJson
-                    .read("/json/geoAggregationInput1.json").getObject());
+                    .read("/json/latlonAggregationInput1.json").getObject());
             TabularQueryResult output = clusterService.cluster(input);
             String expectedOutputJson = this.inputJson.write(this.inputJson
-                    .read("/json/geoAggregationOutput1.json").getObject()).getJson();
+                    .read("/json/latlonAggregationOutput1.json").getObject()).getJson();
             String outputJson = this.inputJson.write(output.getData()).getJson();
             JSONAssert.assertEquals(expectedOutputJson, outputJson, true);
         } catch (IOException | JSONException e) {
@@ -221,7 +221,7 @@ public class ClusterServiceTest {
     @Test
     public void geoAggregationTest2() {
         try {
-            ClusterClause clusterClause = this.json.read("/json/geoAggregationClusterClause.json").getObject();
+            ClusterClause clusterClause = this.json.read("/json/latlonAggregationClusterClause.json").getObject();
             clusterService.setClusterClause(clusterClause);
             TabularQueryResult input = new TabularQueryResult(this.inputJson
                     .read("/json/geoAggregationInput2.json").getObject());
