@@ -39,7 +39,7 @@ public class ExperimentConfig {
 
         if (rawConfig.size() == 0) {
             // Add a single config with only required parameters.
-            evalConfigs.add(EvalConfig.buildConfig(module, trainFile, devFile, name, new ArrayList<>()));
+            evalConfigs.add(EvalConfig.buildConfig(module, trainFile, devFile, testFile, name, new ArrayList<>()));
         }
         else {
             parseConfig(experimentForm.getTrainFile(), experimentForm.getDevFile());
@@ -78,7 +78,7 @@ public class ExperimentConfig {
 
         for (int i = 0; i < configs.size(); i++) {
             String outputFilePrefix = name + i;
-            EvalConfig currConfig = EvalConfig.buildConfig(module, trainFile, devFile, outputFilePrefix, configs.get(i));
+            EvalConfig currConfig = EvalConfig.buildConfig(module, trainFile, devFile, testFile, outputFilePrefix, configs.get(i));
             evalConfigs.add(currConfig);
         }
     }
