@@ -22,7 +22,7 @@ public abstract class EvalConfig {
             case "mbert":
                 return new MbertEvalConfig(trainFile, devFile, testFile, outputFilePrefix, configParams);
             default:
-                return new DummyEvalConfig(trainFile, devFile);
+                return new DummyEvalConfig(trainFile, devFile, testFile);
         }
     }
 
@@ -33,7 +33,7 @@ public abstract class EvalConfig {
         trainConfigParams.put(DEV_FILE_PARAM_KEY, devFile);
         trainConfigParams.put(OUTPUT_FILE_PREFIX_PARAM_KEY, this.outputFilePrefix);
         infConfigParams.put(TEST_FILE_PARAM_KEY, testFile);
-        
+
         initConfigParams(configParams);
     }
 
