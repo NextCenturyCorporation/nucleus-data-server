@@ -34,9 +34,9 @@ public class ClusterService {
     public static final String DEFAULT_DATETIME_STEP = "1000";
     public static final String PRETTY_DATETIME_KEY = "pretty";
 
-    // geo constants
-    public static final int DEFAULT_GEO_COUNT = 12;
-    public static final String DEFAULT_GEO_STEP = "0.000000000000001";
+    // latlon constants
+    public static final int DEFAULT_LATLON_COUNT = 12;
+    public static final String DEFAULT_LATLON_STEP = "0.000000000000001";
 
     // alphabet constants
     private static final int ALPHABET_LENGTH = 26;
@@ -77,7 +77,7 @@ public class ClusterService {
         if (count.compareTo(new BigDecimal(0)) == 0) {
             switch (clusterType) {
                 case LAT_LON:
-                    count = new BigDecimal(DEFAULT_GEO_COUNT);
+                    count = new BigDecimal(DEFAULT_LATLON_COUNT);
                     break;
                 case STRING:
                     count = new BigDecimal(DEFAULT_TEXT_COUNT);
@@ -113,13 +113,22 @@ public class ClusterService {
         int order = firstGroup.compareTo(lastGroup) == 1 ? -1 : 1;
 
         // find new clusters
-        List<Map<String, Object>> newData = getNewDataBins(fieldNameKey, clusterType, firstGroup, lastGroup, count, clusters, order);
+        List<Map<String, Object>> newData = null;
+        if (!clusterType.equals(ClusterType.LAT_LON)) {
+            newData = getNewDataBins(fieldNameKey, clusterType, firstGroup, lastGroup, count, clusters, order);
 
-        // take care of extra keys that may be present
-        Map<String, Object> extraKeySets = getExtraKeySetsMap(fieldNameKey, aggregationNameKey, data);
+            // take care of extra keys that may be present
+            Map<String, Object> extraKeySets = getExtraKeySetsMap(fieldNameKey, aggregationNameKey, data);
 
-        // aggregate data into the new clusters
-        aggregateNumbersInNewData(fieldNameKey, clusterType, aggregationNameKey, data, newData, extraKeySets, order);
+            // aggregate data into the new clusters
+            aggregateNumbersInNewData(fieldNameKey, clusterType, aggregationNameKey, data, newData, extraKeySets, order);
+        } else {
+            newData = getNewLatLonDataBins(this.clusterClause.getFieldNames(), count, clusters);
+
+            Map<String, Object> extraKeySets = getExtraLatLonKeySetsMap(this.clusterClause.getFieldNames(), aggregationNameKey, data);
+
+            aggregateLatLonNumbersInNewData(this.clusterClause.getFieldNames(), aggregationNameKey, data, newData, extraKeySets);
+        }
 
         // reset clusterclause
         this.clusterClause = null;
@@ -216,6 +225,62 @@ public class ClusterService {
     }
 
     /**
+     * Calculates the spacing between the different bins in the new data set results for the LatLon ClusterType.
+     *
+     * @param fieldNames the keys that correspond with the field names
+     * @param longCount how many longitude bins there should be in the new data set
+     * @param clusters clusters specified by the cluster clause if available
+     * @return the new data set ready to be filled
+     */
+    private List<Map<String, Object>> getNewLatLonDataBins(List<String> fieldNames, BigDecimal longCount, List<List<Object>> clusters) {
+        List<Map<String, Object>> newData = new ArrayList<>();
+
+        String latKey = fieldNames.get(0);
+        String longKey = fieldNames.get(1);
+
+        BigDecimal latCount = longCount.divide(new BigDecimal(2));
+        //TODO: round this?
+        BigDecimal totalCount = longCount.multiply(latCount);
+
+        BigDecimal step = new BigDecimal(DEFAULT_LATLON_STEP);
+
+        BigDecimal longGap = new BigDecimal(360).divide(longCount);
+        BigDecimal latGap = new BigDecimal(180).divide(latCount);
+
+        if (clusters == null) {
+            // lat first
+            System.out.println();
+            BigDecimal currentLatBin = new BigDecimal(-90); // latitude range starts at -90
+            for (int i = 0; i < latCount.intValue(); i++) {
+                ArrayList latRange = new ArrayList();
+                if (i != 0) {
+                    latRange.add(currentLatBin.add(step));
+                } else {
+                    latRange.add(currentLatBin);
+                }
+                latRange.add(currentLatBin = currentLatBin.add(latGap));
+
+                // long second
+                BigDecimal currentLongBin = new BigDecimal(-180); // longitude range starts at -180
+                for (int j = 0; j < longCount.intValue(); j++) {
+                    LinkedHashMap map = new LinkedHashMap();
+                    ArrayList longRange = new ArrayList();
+                    if (j != 0) {
+                        longRange.add(currentLongBin.add(step));
+                    } else {
+                        longRange.add(currentLongBin);
+                    }
+                    longRange.add(currentLongBin = currentLongBin.add(longGap));
+                    map.put(longKey, longRange);
+                    map.put(latKey, latRange);
+                    newData.add(map);
+                }
+            }
+        }
+        return newData;
+    }
+
+    /**
      * Setup any extra keys
      *
      * @param fieldNameKey fieldname key given by the cluster clause
@@ -236,7 +301,28 @@ public class ClusterService {
     }
 
     /**
+     * Setup any extra keys for the latlon clustertype
+     *
+     * @param fieldNameKeys fieldname keys given by the cluster clause
+     * @param aggregationNameKey aggregation name key given by the cluster clause
+     * @param data original result data
+     * @return the extra key sets map for storing additional keys
+     */
+    private Map<String, Object> getExtraLatLonKeySetsMap(List<String> fieldNameKeys, String aggregationNameKey,
+                                                         List<Map<String, Object>> data) {
+        Map<String, Object> datum = data.get(0);
+        Map<String, Object> extraKeySets = new HashMap<>();
+        for (String key : datum.keySet()) {
+            if (!key.equals(aggregationNameKey) && !key.equals(fieldNameKeys.get(0)) && !key.equals(fieldNameKeys.get(1))) {
+                extraKeySets.put(key, new HashSet<>());
+            }
+        }
+        return extraKeySets;
+    }
+
+    /**
      * Traverses the original data and puts it in the correct bins in the new data.
+     *
      * @param fieldNameKey the key that corresponds with the field name
      * @param clusterType the clustertype of the aggregation
      * @param aggregationNameKey the key that corresponds with the overall counts of each bin
@@ -312,6 +398,77 @@ public class ClusterService {
             for (String key : extraKeySets.keySet()) {
                 currNewBin.put(key, extraKeySets.get(key));
             }
+        }
+    }
+
+    /**
+     * Traverses the original data and puts it in the correct bins in the new data for the latlon clusterType.
+     * @param fieldNameKeys the keys that correspond with the field names
+     * @param aggregationNameKey aggregation name key given by the cluster clause
+     * @param data the original result data
+     * @param newData the newly clustered data
+     * @param extraKeySets the extra key sets map for storing additional keys
+     */
+    private void aggregateLatLonNumbersInNewData(List<String> fieldNameKeys, String aggregationNameKey, List<Map<String, Object>> data,
+                                                 List<Map<String, Object>> newData, Map<String, Object> extraKeySets) {
+        Iterator<Map<String, Object>> newDataIter = newData.iterator();
+        while (newDataIter.hasNext()) {
+
+            // reset the extra keys for each new bin
+            for (String key : extraKeySets.keySet()) {
+                extraKeySets.put(key, new HashSet<>());
+            }
+
+            // determine the boundaries and aggregated count for this bin
+            Map currNewBin = newDataIter.next();
+            BigDecimal currAgg = new BigDecimal("0");
+
+            // get new lat range
+            String latFieldKey = fieldNameKeys.get(0);
+            ArrayList newLatRange = (ArrayList) currNewBin.get(latFieldKey);
+            BigDecimal startLat = (BigDecimal) newLatRange.get(0);
+            BigDecimal endLat = (BigDecimal) newLatRange.get(1);
+
+            // get new long range
+            String longFieldKey = fieldNameKeys.get(1);
+            ArrayList newLongRange = (ArrayList) currNewBin.get(longFieldKey);
+            BigDecimal startLong = (BigDecimal) newLongRange.get(0);
+            BigDecimal endLong = (BigDecimal) newLongRange.get(1);
+
+            Iterator<Map<String, Object>> dataIter = data.iterator();
+            while (dataIter.hasNext()) {
+
+                Map<String, Object> currData = dataIter.next();
+                BigDecimal oldLatValue = new BigDecimal(currData.get(latFieldKey).toString());
+                BigDecimal oldLongValue = new BigDecimal(currData.get(longFieldKey).toString());
+
+                // if old >= new start && old <= new end (for lat and long)
+                if (oldLatValue.compareTo(startLat) != -1
+                        && oldLatValue.compareTo(endLat) != 1
+                        && oldLongValue.compareTo(startLong) != -1
+                        && oldLongValue.compareTo(endLong) != 1) {
+
+                    // check extra keys
+                    for (String key : extraKeySets.keySet()) {
+                        // check extra keys
+                        if (currData.get(key) != null) {
+                            ((Set) extraKeySets.get(key)).add(currData.get(key));
+                        }
+                    }
+
+                    // accumulate aggregate numbers
+                    currAgg = currAgg.add(new BigDecimal(1));
+                    dataIter.remove();
+                }
+            }
+
+            // update the extra key sets
+            for (String key : extraKeySets.keySet()) {
+                currNewBin.put(key, extraKeySets.get(key));
+            }
+
+            // update the aggregated count
+            currNewBin.put(aggregationNameKey, currAgg);
         }
     }
 
