@@ -4,8 +4,8 @@ import java.util.ArrayList;
 
 public class MbertEvalConfig extends EvalConfig {
     private final String[] trainConfigParamNames = new String[] {"seed", "batch_size", "bert_model", "learning_rate", "max_epoch", "gpuid", "max_seq_len", "warmup_proportion", "gradient_accumulation_steps"};
-    public MbertEvalConfig(String trainFile, String devFile, String outputFilePrefix, ArrayList<String> mbertConfigParams) {
-        super(trainFile, devFile, outputFilePrefix, mbertConfigParams);
+    public MbertEvalConfig(String trainFile, String devFile, String testFile, String outputFilePrefix, ArrayList<String> mbertConfigParams) {
+        super(trainFile, devFile, testFile, outputFilePrefix, mbertConfigParams);
     }
 
     @Override
