@@ -2,12 +2,11 @@ package com.ncc.neon.better;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.models.ExperimentForm;
+import com.ncc.neon.util.DateUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static com.ncc.neon.controllers.BetterController.SHARE_PATH;
@@ -65,10 +64,7 @@ public class ExperimentConfig {
     public String getName() { return name; }
 
     private void initName() {
-        TimeZone tz = TimeZone.getTimeZone("UTC");
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
-        df.setTimeZone(tz);
-        name = module + "_experiment_" + df.format(new Date());
+        name = module + "_experiment_" + DateUtil.getCurrentDateTime();
     }
 
     private void parseConfig(String trainFile, String devFile) {
