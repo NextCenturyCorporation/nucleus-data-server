@@ -414,4 +414,9 @@ public class ElasticsearchAdapter extends QueryAdapter {
             });
         });
     }
+
+    @Override
+    public Mono<ActionResult> insertData(MutateQuery mutate) {
+        return null;
+    }
 }

@@ -120,4 +120,6 @@ public abstract class QueryAdapter {
     public abstract Mono<ActionResult> importData(ImportQuery importQuery);
 
     public abstract Mono<ActionResult> mutateData(MutateQuery mutate);
+
+    public abstract Mono<ActionResult> insertData(MutateQuery mutate);
 }
