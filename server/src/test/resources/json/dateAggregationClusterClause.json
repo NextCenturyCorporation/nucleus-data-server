@@ -1,0 +1,7 @@
+{
+  "type": "aggregation",
+  "count": 5,
+  "aggregationName": "_aggregation",
+  "fieldType": "date",
+  "fieldNames": ["_date"]
+}
