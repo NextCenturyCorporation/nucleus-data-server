@@ -170,7 +170,7 @@ public class BetterController {
     }
 
     @PostMapping(path="syncexperiment")
-    Mono<Object> syncExperiment(@RequestBody ExperimentForm experimentForm) {
+    Mono<Object> syncExperiment(@ModelAttribute ExperimentForm experimentForm) {
         ExperimentConfig experimentConfig;
         try {
             experimentConfig = new ExperimentConfig(experimentForm);
