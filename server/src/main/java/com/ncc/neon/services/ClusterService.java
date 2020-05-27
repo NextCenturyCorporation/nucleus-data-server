@@ -239,7 +239,6 @@ public class ClusterService {
         String longKey = fieldNames.get(1);
 
         BigDecimal latCount = longCount.divide(new BigDecimal(2));
-        //TODO: round this?
         BigDecimal totalCount = longCount.multiply(latCount);
 
         BigDecimal step = new BigDecimal(DEFAULT_LATLON_STEP);
@@ -249,7 +248,6 @@ public class ClusterService {
 
         if (clusters == null) {
             // lat first
-            System.out.println();
             BigDecimal currentLatBin = new BigDecimal(-90); // latitude range starts at -90
             for (int i = 0; i < latCount.intValue(); i++) {
                 ArrayList latRange = new ArrayList();
