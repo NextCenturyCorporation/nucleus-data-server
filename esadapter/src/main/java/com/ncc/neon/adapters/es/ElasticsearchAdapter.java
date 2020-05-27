@@ -30,6 +30,7 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.*;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
@@ -417,6 +418,45 @@ public class ElasticsearchAdapter extends QueryAdapter {
 
     @Override
     public Mono<ActionResult> insertData(MutateQuery mutate) {
-        return null;
+        IndexRequest indexRequest = ElasticsearchQueryConverter.convertMutationInsertQuery(mutate);
+        return Mono.create(sink -> {
+            client.indexAsync(indexRequest, RequestOptions.DEFAULT, new ActionListener<IndexResponse>() {
+
+                @Override
+                public void onResponse(IndexResponse indexResponse) {
+                    String indexText = "";
+                    boolean indexFailed = false;
+                    switch (indexResponse.getResult()) {
+                        case CREATED:
+                            indexText = "created successfully";
+                            break;
+                        case UPDATED:
+                            indexText = "updated successfully";
+                            break;
+                        case DELETED:
+                            indexText = "deleted successfully";
+                            break;
+                        case NOOP:
+                            indexText = "no operation needed";
+                            break;
+                        case NOT_FOUND:
+                            indexText = "not found";
+                            indexFailed = true;
+                            break;
+                    }
+                    String responseText = "Index " + indexResponse.getIndex() + " ID " + indexResponse.getId() +
+                            " " + indexText + ".";
+                    List<String> documentErrors = indexFailed ? new ArrayList<String>() {{
+                        add(responseText);
+                    }} : new ArrayList<String>();
+                    sink.success(new ActionResult(responseText, documentErrors));
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    sink.error(e);
+                }
+            });
+        });
     }
 }

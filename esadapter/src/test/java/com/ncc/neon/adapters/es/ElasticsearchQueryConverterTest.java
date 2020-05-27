@@ -13,6 +13,7 @@ import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.queries.SelectClause;
 import com.ncc.neon.models.queries.SingularWhereClause;
 
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -1056,6 +1057,26 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         UpdateRequest actual = ElasticsearchQueryConverter.convertMutationByIdQuery(mutateQuery);
         UpdateRequest expected = new UpdateRequest("testDatabase", "testTable", "testId")
             .doc(mutateQuery.getFieldsWithValues());
+        // This test fails without the toString (I don't know why)
+        assertThat(actual.toString()).isEqualTo(expected.toString());
+    }
+
+    @Test
+    public void convertMutationByIdQueryIndexRequestTest() {
+        MutateQuery mutateQuery = buildMutationByIdQuery();
+        IndexRequest actual = ElasticsearchQueryConverter.convertMutationInsertQuery(mutateQuery);
+        IndexRequest expected = new IndexRequest("testDatabase", "testTable", "testId")
+                .source(mutateQuery.getFieldsWithValues());
+        // This test fails without the toString (I don't know why)
+        assertThat(actual.toString()).isEqualTo(expected.toString());
+    }
+
+    @Test
+    public void convertArrayAndObjectMutationByIdQueryIndexRequestTest() {
+        MutateQuery mutateQuery = buildArrayAndObjectMutationByIdQuery();
+        IndexRequest actual = ElasticsearchQueryConverter.convertMutationInsertQuery(mutateQuery);
+        IndexRequest expected = new IndexRequest("testDatabase", "testTable", "testId")
+                .source(mutateQuery.getFieldsWithValues());
         // This test fails without the toString (I don't know why)
         assertThat(actual.toString()).isEqualTo(expected.toString());
     }

@@ -84,6 +84,6 @@ public class DummyQueryAdapter extends QueryAdapter {
 
     @Override
     public Mono<ActionResult> insertData(MutateQuery mutate) {
-        return null;
+        return Mono.just(new ActionResult());
     }
 }

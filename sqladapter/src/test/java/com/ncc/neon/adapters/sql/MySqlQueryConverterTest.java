@@ -732,4 +732,25 @@ public class MySqlQueryConverterTest extends QueryBuilder {
             "\"testObjectArray\":[\"e\",5]}' WHERE testIdField = 'testId'";
         assertThat(actual).isEqualTo(expected);
     }
+
+    @Test
+    public void convertMutationQueryInsertTest() {
+        MutateQuery mutateQuery = buildMutationByIdQuery();
+        String actual = SqlQueryConverter.convertMutationIntoInsertQuery(mutateQuery);
+        String expected = "INSERT INTO testDatabase.testTable (testString, testZero, testInteger, testDecimal, " +
+                "testNegativeInteger, testNegativeDecimal, testTrue, testFalse) VALUES ('a', 0, 1, 0.5, -1, -0.5, " +
+                "true, false)";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertArrayAndObjectMutationQueryInsertTest() {
+        MutateQuery mutateQuery = buildArrayAndObjectMutationByIdQuery();
+        String actual = SqlQueryConverter.convertMutationIntoInsertQuery(mutateQuery);
+        String expected = "INSERT INTO testDatabase.testTable (testEmptyArray, testEmptyObject, testArray, " +
+                "testObject) VALUES ('[]', '{}', '[\"b\",2,true,{\"testArrayObjectString\":\"c\"," +
+                "\"testArrayObjectInteger\":3}]', '{\"testObjectString\":\"d\",\"testObjectInteger\":4," +
+                "\"testObjectBoolean\":true,\"testObjectArray\":[\"e\",5]}')";
+        assertThat(actual).isEqualTo(expected);
+    }
 }
