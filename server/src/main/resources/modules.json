@@ -42,6 +42,32 @@
     ]
   },
   {
+    "name": "bibert",
+    "type": "IE",
+    "endpoints": [
+      {
+        "type": "TRAIN",
+        "pathSegment": "train",
+        "method": "POST"
+      },
+      {
+        "type": "TRAIN_LIST",
+        "pathSegment": "train/list",
+        "method": "POST"
+      },
+      {
+        "type": "INF",
+        "pathSegment": "inf",
+        "method": "POST"
+      },
+      {
+        "type": "INF_LIST",
+        "pathSegment": "inf/list",
+        "method": "POST"
+      }
+    ]
+  },
+  {
     "name": "nmt",
     "type": "IE",
     "endpoints": [

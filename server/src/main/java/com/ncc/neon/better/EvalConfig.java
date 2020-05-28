@@ -21,6 +21,8 @@ public abstract class EvalConfig {
         switch (module) {
             case "mbert":
                 return new MbertEvalConfig(trainFile, devFile, testFile, outputFilePrefix, configParams);
+            case "bibert":
+                return new BibertEvalConfig(trainFile, devFile, testFile, outputFilePrefix, configParams);
             default:
                 return new DummyEvalConfig(trainFile, devFile, testFile);
         }
