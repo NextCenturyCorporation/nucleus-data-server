@@ -30,6 +30,10 @@ public class SqlQueryConverter {
     }
 
     public static String convertQuery(Query query, SqlType type) {
+        if (query.getRawQuery() != null && !query.getRawQuery().trim().isEmpty()) {
+            return query.getRawQuery();
+        }
+
         try {
             return appendLimitAndOffset(
                 appendOrderBy(

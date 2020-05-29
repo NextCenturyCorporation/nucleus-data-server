@@ -33,18 +33,17 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.*;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.*;
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.IncludeExclude;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -88,53 +87,82 @@ public class ElasticsearchAdapter extends QueryAdapter {
 
     @Override
     public Mono<TabularQueryResult> execute(Query query) {
-        verifyQueryTablesExist(query);
-        log.debug("Neon query: " + query.toString());
 
-        SearchRequest request = ElasticsearchQueryConverter.convertQuery(query);
-        final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
-        request.scroll(scroll);
+        SearchRequest request = null;
+        List<Map<String, Object>> collectedResults = null;
         SearchResponse response = null;
         TabularQueryResult results = null;
-        List<Map<String, Object>> collectedResults = null;
-        boolean bigLimit = (query.getLimitClause() != null && query.getLimitClause().getLimit() > ElasticsearchQueryConverter.MAX_QUERY_LIMIT);
 
-        try {
-            if (bigLimit && query.getAggregateClauses() != null && !query.getAggregateClauses().isEmpty()) {
-                int numPartitions = query.getLimitClause().getLimit() / ElasticsearchQueryConverter.PARTITIONED_AGGREGATION_LIMIT;
+        if (query.getRawQuery() == null || (query.getRawQuery() != null && query.getRawQuery().trim().isEmpty())) {
+            verifyQueryTablesExist(query);
+            log.debug("Neon query: " + query.toString());
 
-                TermsAggregationBuilder termsAB = null;
-                Collection<AggregationBuilder> aggregationBuilders = request.source().aggregations()
-                        .getAggregatorFactories();
-                for (AggregationBuilder aggregation : aggregationBuilders) {
-                    if (aggregation instanceof TermsAggregationBuilder) {
-                        termsAB = (TermsAggregationBuilder) aggregation;
+            request = ElasticsearchQueryConverter.convertQuery(query);
+            final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
+            request.scroll(scroll);
+            boolean bigLimit = (query.getLimitClause() != null && query.getLimitClause().getLimit() > ElasticsearchQueryConverter.MAX_QUERY_LIMIT);
+
+            try {
+                if (bigLimit && query.getAggregateClauses() != null && !query.getAggregateClauses().isEmpty()) {
+                    int numPartitions = query.getLimitClause().getLimit() / ElasticsearchQueryConverter.PARTITIONED_AGGREGATION_LIMIT;
+
+                    TermsAggregationBuilder termsAB = null;
+                    Collection<AggregationBuilder> aggregationBuilders = request.source().aggregations()
+                            .getAggregatorFactories();
+                    for (AggregationBuilder aggregation : aggregationBuilders) {
+                        if (aggregation instanceof TermsAggregationBuilder) {
+                            termsAB = (TermsAggregationBuilder) aggregation;
+                        }
                     }
-                }
-                if (termsAB != null) {
-                    collectedResults = new ArrayList<>();
-                    for (int i = 0; i < numPartitions; i++) {
-                        termsAB.includeExclude(new IncludeExclude(i, numPartitions));
-                        log.debug("ES Scroll Request: " + request.toString());
-                        SearchResponse partitionResponse = this.client.search(request, RequestOptions.DEFAULT);
-                        collectedResults.addAll(ElasticsearchResultsConverter.convertResults(query, partitionResponse));
+                    if (termsAB != null) {
+                        collectedResults = new ArrayList<>();
+                        for (int i = 0; i < numPartitions; i++) {
+                            termsAB.includeExclude(new IncludeExclude(i, numPartitions));
+                            log.debug("ES Scroll Request: " + request.toString());
+                            SearchResponse partitionResponse = this.client.search(request, RequestOptions.DEFAULT);
+                            collectedResults.addAll(ElasticsearchResultsConverter.convertResults(query, partitionResponse));
+                        }
+                        collectedResults = ElasticsearchResultsConverter.sortBuckets(query.getOrderByClauses(), collectedResults);
                     }
-                    collectedResults = ElasticsearchResultsConverter.sortBuckets(query.getOrderByClauses(), collectedResults);
+                } else {
+                    // over limit regular query requires terminateAfter
+                    if (bigLimit) {
+                        request.source().terminateAfter(query.getLimitClause().getLimit());
+                    }
+                    log.debug("ES Search Request: " + request.toString());
+                    response = this.client.search(request, RequestOptions.DEFAULT);
                 }
-            } else {
-                // over limit regular query requires terminateAfter
-                if (bigLimit) {
-                    request.source().terminateAfter(query.getLimitClause().getLimit());
+
+                if (bigLimit && response != null) {
+                    collectedResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
                 }
-                log.debug("ES Search Request: " + request.toString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else { // use the raw query provided
+            SearchSourceBuilder search = new SearchSourceBuilder();
+            search.query(QueryBuilders.wrapperQuery(query.getRawQuery()));
+            search.explain(false);
+            request = new SearchRequest();
+            request.searchType(SearchType.DFS_QUERY_THEN_FETCH);
+            request.source(search);
+            final Scroll scroll = new Scroll(TimeValue.timeValueSeconds(30));
+            boolean scrolled = false;
+            if (query.getRawQueryMetadata() != null && query.getRawQueryMetadata().get("scroll").equals("true")) {
+                request.scroll(scroll);
+                scrolled = true;
+            }
+            try {
                 response = this.client.search(request, RequestOptions.DEFAULT);
+                if (scrolled) {
+                    collectedResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
+                } else {
+                    // TODO: Account for aggregate/groupby clauses needed in the query to get the hits collated correctly
+                    collectedResults = ElasticsearchResultsConverter.extractHitsFromResults(response);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-
-            if (bigLimit && response != null) {
-                collectedResults = ElasticsearchResultsConverter.getScrolledResults(scroll, response, this.client);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
         if (collectedResults != null) {

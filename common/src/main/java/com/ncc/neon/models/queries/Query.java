@@ -2,6 +2,7 @@ package com.ncc.neon.models.queries;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ncc.neon.models.queries.AggregateClause;
@@ -28,6 +29,8 @@ public class Query {
     LimitClause limitClause;
     OffsetClause offsetClause;
     List<JoinClause> joinClauses = new ArrayList<>();
+    String rawQuery;
+    Map<String, Object> rawQueryMetadata;
 
     @JsonProperty(value = "isDistinct")
     boolean isDistinct = false;
