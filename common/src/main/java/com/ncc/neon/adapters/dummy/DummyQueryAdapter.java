@@ -1,21 +1,15 @@
 package com.ncc.neon.adapters.dummy;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
 import com.ncc.neon.adapters.QueryAdapter;
 import com.ncc.neon.models.queries.ImportQuery;
 import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.Query;
-import com.ncc.neon.models.results.ActionResult;
-import com.ncc.neon.models.results.FieldType;
-import com.ncc.neon.models.results.FieldTypePair;
-import com.ncc.neon.models.results.TableWithFields;
-import com.ncc.neon.models.results.TabularQueryResult;
-
+import com.ncc.neon.models.results.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Arrays;
+import java.util.Map;
 
 public class DummyQueryAdapter extends QueryAdapter {
 
@@ -79,6 +73,11 @@ public class DummyQueryAdapter extends QueryAdapter {
 
     @Override
     public Mono<ActionResult> mutateData(MutateQuery mutate) {
+        return Mono.just(new ActionResult());
+    }
+
+    @Override
+    public Mono<ActionResult> deleteData(MutateQuery mutate) {
         return Mono.just(new ActionResult());
     }
 }

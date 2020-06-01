@@ -1,28 +1,14 @@
 package com.ncc.neon.adapters.sql;
 
+import com.ncc.neon.models.queries.*;
+import com.ncc.neon.util.DateUtil;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.ncc.neon.models.queries.AggregateByFieldClause;
-import com.ncc.neon.models.queries.AggregateByTotalCountClause;
-import com.ncc.neon.models.queries.AndWhereClause;
-import com.ncc.neon.models.queries.CompoundWhereClause;
-import com.ncc.neon.models.queries.FieldsWhereClause;
-import com.ncc.neon.models.queries.GroupByFieldClause;
-import com.ncc.neon.models.queries.GroupByOperationClause;
-import com.ncc.neon.models.queries.JoinClause;
-import com.ncc.neon.models.queries.MutateQuery;
-import com.ncc.neon.models.queries.OrWhereClause;
-import com.ncc.neon.models.queries.Query;
-import com.ncc.neon.models.queries.SingularWhereClause;
-import com.ncc.neon.models.queries.Order;
-import com.ncc.neon.models.queries.WhereClause;
-import com.ncc.neon.util.DateUtil;
-
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class SqlQueryConverter {
@@ -267,6 +253,13 @@ public class SqlQueryConverter {
         String sqlQueryString = "UPDATE " + mutateQuery.getDatabaseName() + "." + mutateQuery.getTableName() +
             " SET " + String.join(", ", fieldAndValueStrings) + " WHERE " + mutateQuery.getIdFieldName() + " = '" +
             mutateQuery.getDataId() + "'";
+
+        return sqlQueryString;
+    }
+
+    public static String convertMutationQueryIntoDeleteQuery(MutateQuery mutateQuery) {
+        String sqlQueryString = "DELETE FROM WHERE " + mutateQuery.getDatabaseName() + "." +
+                mutateQuery.getTableName() + "." + mutateQuery.getIdFieldName() + " = " + mutateQuery.getDataId();
 
         return sqlQueryString;
     }

@@ -171,6 +171,15 @@ public class SqlAdapter extends QueryAdapter {
                 mutateQuery.getDataId(), new ArrayList<String>()));
     }
 
+    @Override
+    public Mono<ActionResult> deleteData(MutateQuery mutateQuery) {
+        DatabaseClient database = DatabaseClient.create(this.pool);
+        return database.execute(SqlQueryConverter.convertMutationQuery(mutateQuery)).fetch().rowsUpdated()
+                .map(rowCount -> new ActionResult(rowCount + " rows deleted in " + mutateQuery.getDatabaseName() + "." +
+                        mutateQuery.getTableName() + " with " + mutateQuery.getIdFieldName() + " = " +
+                        mutateQuery.getDataId(), new ArrayList<String>()));
+    }
+
     private FieldType retrieveFieldType(String type) {
         String dataType = type.toLowerCase();
         if (dataType.contains(" ")) {

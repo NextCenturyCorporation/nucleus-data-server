@@ -1,18 +1,13 @@
 package com.ncc.neon.adapters.sql;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.ncc.neon.adapters.QueryBuilder;
-import com.ncc.neon.models.queries.FieldClause;
-import com.ncc.neon.models.queries.MutateQuery;
-import com.ncc.neon.models.queries.Query;
-import com.ncc.neon.models.queries.SelectClause;
-import com.ncc.neon.models.queries.SingularWhereClause;
-
+import com.ncc.neon.models.queries.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes=SqlQueryConverter.class)
@@ -731,6 +726,14 @@ public class PostgreSqlQueryConverterTest extends QueryBuilder {
             "testArray = '[\"b\",2,true,{\"testArrayObjectString\":\"c\",\"testArrayObjectInteger\":3}]', " +
             "testObject = '{\"testObjectString\":\"d\",\"testObjectInteger\":4,\"testObjectBoolean\":true," +
             "\"testObjectArray\":[\"e\",5]}' WHERE testIdField = 'testId'";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertMutationQueryDeleteTest() {
+        MutateQuery mutateQuery = buildMutationByIdQuery();
+        String actual = SqlQueryConverter.convertMutationQueryIntoDeleteQuery(mutateQuery);
+        String expected = "DELETE FROM WHERE testDatabase.testTable.testIdField = testId";
         assertThat(actual).isEqualTo(expected);
     }
 }

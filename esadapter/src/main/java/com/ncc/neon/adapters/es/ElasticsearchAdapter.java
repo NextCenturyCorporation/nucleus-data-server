@@ -1,20 +1,11 @@
 package com.ncc.neon.adapters.es;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-
 import com.ncc.neon.adapters.QueryAdapter;
 import com.ncc.neon.models.queries.ImportQuery;
 import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.Query;
-import com.ncc.neon.models.results.ActionResult;
-import com.ncc.neon.models.results.FieldType;
-import com.ncc.neon.models.results.FieldTypePair;
-import com.ncc.neon.models.results.TableWithFields;
-import com.ncc.neon.models.results.TabularQueryResult;
-
+import com.ncc.neon.models.results.*;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -29,18 +20,20 @@ import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.search.*;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
-
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.IncludeExclude;
@@ -49,7 +42,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ElasticsearchAdapter extends QueryAdapter {
@@ -402,6 +398,49 @@ public class ElasticsearchAdapter extends QueryAdapter {
                     String responseText = "Index " + updateResponse.getIndex() + " ID " + updateResponse.getId() +
                         " " + updateText + ".";
                     List<String> documentErrors = updateFailed ? new ArrayList<String>() {{
+                        add(responseText);
+                    }} : new ArrayList<String>();
+                    sink.success(new ActionResult(responseText, documentErrors));
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    sink.error(e);
+                }
+            });
+        });
+    }
+
+    @Override
+    public Mono<ActionResult> deleteData(MutateQuery mutateQuery) {
+        DeleteRequest deleteRequest = ElasticsearchQueryConverter.convertMutationDeleteQuery(mutateQuery);
+        return Mono.create(sink -> {
+            client.deleteAsync(deleteRequest, RequestOptions.DEFAULT, new ActionListener<DeleteResponse>() {
+                @Override
+                public void onResponse(DeleteResponse deleteResponse) {
+                    String deleteText = "";
+                    boolean deleteFailed = false;
+                    switch (deleteResponse.getResult()) {
+                        case CREATED:
+                            deleteText = "created successfully";
+                            break;
+                        case UPDATED:
+                            deleteText = "updated successfully";
+                            break;
+                        case DELETED:
+                            deleteText = "deleted successfully";
+                            break;
+                        case NOOP:
+                            deleteText = "no operation needed";
+                            break;
+                        case NOT_FOUND:
+                            deleteText = "not found";
+                            deleteFailed = true;
+                            break;
+                    }
+                    String responseText = "Index " + deleteResponse.getIndex() + " ID " + deleteResponse.getId() +
+                            " " + deleteText + ".";
+                    List<String> documentErrors = deleteFailed ? new ArrayList<String>() {{
                         add(responseText);
                     }} : new ArrayList<String>();
                     sink.success(new ActionResult(responseText, documentErrors));
