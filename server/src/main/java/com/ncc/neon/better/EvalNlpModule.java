@@ -64,8 +64,12 @@ public class EvalNlpModule extends NlpModule {
         params.put("reffile", refFile);
 
         return runService.isCanceled(runId).flatMap(isCanceled -> {
-            if (isCanceled || !runEval) {
+            if (isCanceled) {
                 return Mono.empty();
+            }
+
+            if(!runEval) {
+                return Mono.just(RestStatus.OK);
             }
 
             return runService.updateToScoringStatus(runId).flatMap(updatedRun ->
