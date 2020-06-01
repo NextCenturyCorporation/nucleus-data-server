@@ -58,13 +58,13 @@ public class EvalNlpModule extends NlpModule {
         }
     }
 
-    public Mono<RestStatus> performEval(String refFile, String sysFile, String runId) {
+    public Mono<RestStatus> performEval(String refFile, String sysFile, String runId, boolean runEval) {
         HashMap<String, String> params = new HashMap<>();
         params.put("sysfile", sysFile);
         params.put("reffile", refFile);
 
         return runService.isCanceled(runId).flatMap(isCanceled -> {
-            if (isCanceled) {
+            if (isCanceled || runEval) {
                 return Mono.empty();
             }
 

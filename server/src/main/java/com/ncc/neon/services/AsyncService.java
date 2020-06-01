@@ -87,15 +87,12 @@ public class AsyncService {
                         .flatMap(evalModule -> {
                             EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
 
-                            if (!runEval) {
-                                return runService.getInferenceOutput(runId)
-                                        .flatMap(sysFile -> evalNlpModule.performEval(testFile, sysFile, runId)
-                                                .doOnError(evalError -> {
-                                                    evalNlpModule.handleErrorDuringRun(evalError, runId);
-                                                    Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage()));
-                                                }));
-                            }
-                            return Mono.empty();
+                            return runService.getInferenceOutput(runId)
+                                    .flatMap(sysFile -> evalNlpModule.performEval(testFile, sysFile, runId, runEval)
+                                            .doOnError(evalError -> {
+                                                evalNlpModule.handleErrorDuringRun(evalError, runId);
+                                                Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage()));
+                                            }));
                         });
 
         return trainMono
