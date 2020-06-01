@@ -10,4 +10,5 @@ public class ExperimentForm {
     private final String configFile;
     private final String module;
     private final boolean infOnly;
+    private final boolean runEval;
 }

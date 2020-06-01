@@ -30,12 +30,12 @@ public class AsyncService {
         this.runService = runService;
     }
 
-    public Mono<Object> processExperiment(ExperimentConfig experimentConfig, boolean infOnly) {
+    public Mono<Object> processExperiment(ExperimentConfig experimentConfig, boolean infOnly, boolean runEval) {
         return moduleService.buildNlpModuleClient(experimentConfig.module)
                 .flatMap(nlpModule -> experimentService.insertNew(experimentConfig)
                         .flatMap(insertRes -> Flux.fromArray(experimentConfig.getEvalConfigs())
                                 .flatMapSequential(config -> experimentService.incrementCurrRun(insertRes)
-                                                .flatMap(ignored -> processEvaluation(insertRes, config, (IENlpModule) nlpModule, infOnly, experimentConfig.getTestFile())
+                                                .flatMap(ignored -> processEvaluation(insertRes, config, (IENlpModule) nlpModule, infOnly, runEval, experimentConfig.getTestFile())
                                                         .flatMap(completedRunId -> experimentService.updateOnRunComplete(completedRunId, insertRes)
                                                                 .then(experimentService.checkForComplete(insertRes)))
                                                         .onErrorResume(err -> experimentService.countErrorEvals(insertRes)
@@ -53,7 +53,7 @@ public class AsyncService {
         });
     }
 
-    private Mono<String> processEvaluation(String experimentId, EvalConfig config, IENlpModule ieNlpModule1, boolean infOnly, String testFile) {
+    private Mono<String> processEvaluation(String experimentId, EvalConfig config, IENlpModule ieNlpModule1, boolean infOnly, boolean runEval, String testFile) {
         // Get the run id for the entire evaluation.
         String runId;
         try {
@@ -86,12 +86,16 @@ public class AsyncService {
         Mono<RestStatus> evalMono = moduleService.buildNlpModuleClient(ModuleService.EVAL_SERVICE_NAME)
                         .flatMap(evalModule -> {
                             EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
-                            return runService.getInferenceOutput(runId)
-                                    .flatMap(sysFile -> evalNlpModule.performEval(testFile, sysFile, runId)
-                                            .doOnError(evalError -> {
-                                                evalNlpModule.handleErrorDuringRun(evalError, runId);
-                                                Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage()));
-                                            }));
+
+                            if (!runEval) {
+                                return runService.getInferenceOutput(runId)
+                                        .flatMap(sysFile -> evalNlpModule.performEval(testFile, sysFile, runId)
+                                                .doOnError(evalError -> {
+                                                    evalNlpModule.handleErrorDuringRun(evalError, runId);
+                                                    Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage()));
+                                                }));
+                            }
+                            return Mono.empty();
                         });
 
         return trainMono

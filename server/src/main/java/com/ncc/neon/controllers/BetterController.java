@@ -159,7 +159,7 @@ public class BetterController {
             ExperimentConfig experimentConfig = new ExperimentConfig(experimentForm);
 
             // Build the experiment config for the evaluation
-            asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly())
+            asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly(), experimentForm.isRunEval())
                 .subscribeOn(Schedulers.newSingle("thread"))
                 .subscribe();
         } catch (IOException e) {
@@ -177,7 +177,7 @@ public class BetterController {
         } catch (IOException e) {
             return Mono.error(e);
         }
-        return asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly());
+        return asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly(), experimentForm.isRunEval());
     }
 
     @DeleteMapping(path="eval/cancel")
