@@ -13,6 +13,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsRequest;
@@ -41,6 +42,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoSink;
 
 import java.io.IOException;
 import java.util.*;
@@ -375,32 +377,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
             client.updateAsync(updateRequest, RequestOptions.DEFAULT, new ActionListener<UpdateResponse>() {
                 @Override
                 public void onResponse(UpdateResponse updateResponse) {
-                    String updateText = "";
-                    boolean updateFailed = false;
-                    switch (updateResponse.getResult()) {
-                        case CREATED:
-                            updateText = "created successfully";
-                            break;
-                        case UPDATED:
-                            updateText = "updated successfully";
-                            break;
-                        case DELETED:
-                            updateText = "deleted successfully";
-                            break;
-                        case NOOP:
-                            updateText = "no operation needed";
-                            break;
-                        case NOT_FOUND:
-                            updateText = "not found";
-                            updateFailed = true;
-                            break;
-                    }
-                    String responseText = "Index " + updateResponse.getIndex() + " ID " + updateResponse.getId() +
-                        " " + updateText + ".";
-                    List<String> documentErrors = updateFailed ? new ArrayList<String>() {{
-                        add(responseText);
-                    }} : new ArrayList<String>();
-                    sink.success(new ActionResult(responseText, documentErrors));
+                    processResponse(sink, updateResponse);
                 }
 
                 @Override
@@ -418,32 +395,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
             client.deleteAsync(deleteRequest, RequestOptions.DEFAULT, new ActionListener<DeleteResponse>() {
                 @Override
                 public void onResponse(DeleteResponse deleteResponse) {
-                    String deleteText = "";
-                    boolean deleteFailed = false;
-                    switch (deleteResponse.getResult()) {
-                        case CREATED:
-                            deleteText = "created successfully";
-                            break;
-                        case UPDATED:
-                            deleteText = "updated successfully";
-                            break;
-                        case DELETED:
-                            deleteText = "deleted successfully";
-                            break;
-                        case NOOP:
-                            deleteText = "no operation needed";
-                            break;
-                        case NOT_FOUND:
-                            deleteText = "not found";
-                            deleteFailed = true;
-                            break;
-                    }
-                    String responseText = "Index " + deleteResponse.getIndex() + " ID " + deleteResponse.getId() +
-                            " " + deleteText + ".";
-                    List<String> documentErrors = deleteFailed ? new ArrayList<String>() {{
-                        add(responseText);
-                    }} : new ArrayList<String>();
-                    sink.success(new ActionResult(responseText, documentErrors));
+                    processResponse(sink, deleteResponse);
                 }
 
                 @Override
@@ -452,5 +404,34 @@ public class ElasticsearchAdapter extends QueryAdapter {
                 }
             });
         });
+    }
+
+    private void processResponse(MonoSink<ActionResult> sink, DocWriteResponse response) {
+        String statusText = "";
+        boolean responseFailed = false;
+        switch (response.getResult()) {
+            case CREATED:
+                statusText = "created successfully";
+                break;
+            case UPDATED:
+                statusText = "updated successfully";
+                break;
+            case DELETED:
+                statusText = "deleted successfully";
+                break;
+            case NOOP:
+                statusText = "no operation needed";
+                break;
+            case NOT_FOUND:
+                statusText = "not found";
+                responseFailed = true;
+                break;
+        }
+        String responseText = "Index " + response.getIndex() + " ID " + response.getId() +
+                " " + statusText + ".";
+        List<String> documentErrors = responseFailed ? new ArrayList<String>() {{
+            add(responseText);
+        }} : new ArrayList<String>();
+        sink.success(new ActionResult(responseText, documentErrors));
     }
 }
