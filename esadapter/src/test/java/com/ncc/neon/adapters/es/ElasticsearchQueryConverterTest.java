@@ -1062,7 +1062,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
     }
 
     @Test
-    public void convertMutationByIdQueryIndexRequestTest() {
+    public void convertInsertQueryTest() {
         MutateQuery mutateQuery = buildMutationByIdQuery();
         IndexRequest actual = ElasticsearchQueryConverter.convertMutationInsertQuery(mutateQuery);
         IndexRequest expected = new IndexRequest("testDatabase", "testTable", "testId")
@@ -1072,7 +1072,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
     }
 
     @Test
-    public void convertArrayAndObjectMutationByIdQueryIndexRequestTest() {
+    public void convertArrayAndObjectInsertQueryTest() {
         MutateQuery mutateQuery = buildArrayAndObjectMutationByIdQuery();
         IndexRequest actual = ElasticsearchQueryConverter.convertMutationInsertQuery(mutateQuery);
         IndexRequest expected = new IndexRequest("testDatabase", "testTable", "testId")
