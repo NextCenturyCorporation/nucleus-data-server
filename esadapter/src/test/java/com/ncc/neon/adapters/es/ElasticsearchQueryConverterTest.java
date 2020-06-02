@@ -3,6 +3,7 @@ package com.ncc.neon.adapters.es;
 import com.ncc.neon.adapters.QueryBuilder;
 import com.ncc.neon.models.queries.*;
 import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -1055,7 +1056,27 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
     }
 
     @Test
-    public void convertMutationByIdQueryDeleteRequestTest() {
+    public void convertInsertQueryTest() {
+        MutateQuery mutateQuery = buildMutationByIdQuery();
+        IndexRequest actual = ElasticsearchQueryConverter.convertMutationInsertQuery(mutateQuery);
+        IndexRequest expected = new IndexRequest("testDatabase", "testTable", "testId")
+                .source(mutateQuery.getFieldsWithValues());
+        // This test fails without the toString (I don't know why)
+        assertThat(actual.toString()).isEqualTo(expected.toString());
+    }
+
+    @Test
+    public void convertArrayAndObjectInsertQueryTest() {
+        MutateQuery mutateQuery = buildArrayAndObjectMutationByIdQuery();
+        IndexRequest actual = ElasticsearchQueryConverter.convertMutationInsertQuery(mutateQuery);
+        IndexRequest expected = new IndexRequest("testDatabase", "testTable", "testId")
+                .source(mutateQuery.getFieldsWithValues());
+        // This test fails without the toString (I don't know why)
+        assertThat(actual.toString()).isEqualTo(expected.toString());
+    }
+
+    @Test
+    public void convertDeleteQueryRequestTest() {
         MutateQuery mutateQuery = buildMutationByIdQuery();
         DeleteRequest actual = ElasticsearchQueryConverter.convertMutationDeleteQuery(mutateQuery);
         DeleteRequest expected = new DeleteRequest("testDatabase", "testTable", "testId");

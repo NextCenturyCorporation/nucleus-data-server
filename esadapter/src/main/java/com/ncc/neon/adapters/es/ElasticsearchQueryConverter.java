@@ -4,6 +4,7 @@ import com.ncc.neon.models.queries.*;
 import com.ncc.neon.util.DateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -422,6 +423,11 @@ public class ElasticsearchQueryConverter {
     public static UpdateRequest convertMutationByIdQuery(MutateQuery mutateQuery) {
         return new UpdateRequest(mutateQuery.getDatabaseName(), mutateQuery.getTableName(), mutateQuery.getDataId())
             .doc(mutateQuery.getFieldsWithValues());
+    }
+
+    public static IndexRequest convertMutationInsertQuery(MutateQuery mutateQuery) {
+        return new IndexRequest(mutateQuery.getDatabaseName(), mutateQuery.getTableName(), mutateQuery.getDataId())
+                .source(mutateQuery.getFieldsWithValues());
     }
 
     public static DeleteRequest convertMutationDeleteQuery(MutateQuery mutateQuery) {

@@ -730,7 +730,28 @@ public class PostgreSqlQueryConverterTest extends QueryBuilder {
     }
 
     @Test
-    public void convertMutationQueryDeleteTest() {
+    public void convertInsertQueryTest() {
+        MutateQuery mutateQuery = buildMutationByIdQuery();
+        String actual = SqlQueryConverter.convertMutationIntoInsertQuery(mutateQuery);
+        String expected = "INSERT INTO testDatabase.testTable (testString, testZero, testInteger, testDecimal, " +
+                "testNegativeInteger, testNegativeDecimal, testTrue, testFalse) VALUES ('a', 0, 1, 0.5, -1, -0.5, " +
+                "true, false)";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertArrayAndObjectInsertQueryTest() {
+        MutateQuery mutateQuery = buildArrayAndObjectMutationByIdQuery();
+        String actual = SqlQueryConverter.convertMutationIntoInsertQuery(mutateQuery);
+        String expected = "INSERT INTO testDatabase.testTable (testEmptyArray, testEmptyObject, testArray, " +
+                "testObject) VALUES ('[]', '{}', '[\"b\",2,true,{\"testArrayObjectString\":\"c\"," +
+                "\"testArrayObjectInteger\":3}]', '{\"testObjectString\":\"d\",\"testObjectInteger\":4," +
+                "\"testObjectBoolean\":true,\"testObjectArray\":[\"e\",5]}')";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertDeleteQueryTest() {
         MutateQuery mutateQuery = buildMutationByIdQuery();
         String actual = SqlQueryConverter.convertMutationQueryIntoDeleteQuery(mutateQuery);
         String expected = "DELETE FROM testDatabase.testTable WHERE testIdField = 'testId'";
