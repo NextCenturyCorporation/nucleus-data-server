@@ -271,6 +271,15 @@ public class SqlQueryConverter {
         return sqlQueryString;
     }
 
+    public static String convertMutationIntoInsertQuery(MutateQuery mutateQuery) {
+        String sqlQueryString = "INSERT INTO " + mutateQuery.getDatabaseName() + "." + mutateQuery.getTableName() +
+                " (" + String.join(", ", mutateQuery.getFieldsWithValues().keySet()) + ") VALUES (" +
+                mutateQuery.getFieldsWithValues().values().stream().map(value -> SqlQueryConverter
+                        .transformObjectToString(value, false)).collect(Collectors.joining(", ")) + ")";
+
+        return sqlQueryString;
+    }
+
     private static String transformObjectToString(Object object, boolean insideJson) {
         if (object instanceof String) {
             return (insideJson ? "\"" : "'") + object + (insideJson ? "\"" : "'");

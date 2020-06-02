@@ -171,6 +171,14 @@ public class SqlAdapter extends QueryAdapter {
                 mutateQuery.getDataId(), new ArrayList<String>()));
     }
 
+    @Override
+    public Mono<ActionResult> insertData(MutateQuery mutateQuery) {
+        DatabaseClient database = DatabaseClient.create(this.pool);
+        return database.execute(SqlQueryConverter.convertMutationIntoInsertQuery(mutateQuery)).fetch().rowsUpdated()
+                .map(rowCount -> new ActionResult(rowCount + " rows updated in " + mutateQuery.getDatabaseName() + "." +
+                        mutateQuery.getTableName(), new ArrayList<String>()));
+    }
+
     private FieldType retrieveFieldType(String type) {
         String dataType = type.toLowerCase();
         if (dataType.contains(" ")) {
