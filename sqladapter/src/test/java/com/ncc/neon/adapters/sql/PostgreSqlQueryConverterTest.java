@@ -733,7 +733,7 @@ public class PostgreSqlQueryConverterTest extends QueryBuilder {
     public void convertMutationQueryDeleteTest() {
         MutateQuery mutateQuery = buildMutationByIdQuery();
         String actual = SqlQueryConverter.convertMutationQueryIntoDeleteQuery(mutateQuery);
-        String expected = "DELETE FROM WHERE testDatabase.testTable.testIdField = testId";
+        String expected = "DELETE FROM testDatabase.testTable WHERE testIdField = 'testId'";
         assertThat(actual).isEqualTo(expected);
     }
 }

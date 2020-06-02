@@ -258,8 +258,9 @@ public class SqlQueryConverter {
     }
 
     public static String convertMutationQueryIntoDeleteQuery(MutateQuery mutateQuery) {
-        String sqlQueryString = "DELETE FROM WHERE " + mutateQuery.getDatabaseName() + "." +
-                mutateQuery.getTableName() + "." + mutateQuery.getIdFieldName() + " = " + mutateQuery.getDataId();
+        String sqlQueryString = "DELETE FROM " + mutateQuery.getDatabaseName() + "." +
+                mutateQuery.getTableName() + " WHERE " + mutateQuery.getIdFieldName() + " = '" +
+                mutateQuery.getDataId() + "'";
 
         return sqlQueryString;
     }
