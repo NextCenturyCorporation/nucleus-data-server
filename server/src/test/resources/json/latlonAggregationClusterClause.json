@@ -1,0 +1,7 @@
+{
+  "type": "aggregation",
+  "fieldType": "latlon",
+  "count": 4,
+  "aggregationName": "_count",
+  "fieldNames": ["latitude", "longitude"]
+}

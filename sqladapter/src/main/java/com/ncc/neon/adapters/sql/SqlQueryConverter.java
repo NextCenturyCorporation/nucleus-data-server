@@ -257,6 +257,15 @@ public class SqlQueryConverter {
         return sqlQueryString;
     }
 
+    public static String convertMutationIntoInsertQuery(MutateQuery mutateQuery) {
+        String sqlQueryString = "INSERT INTO " + mutateQuery.getDatabaseName() + "." + mutateQuery.getTableName() +
+                " (" + String.join(", ", mutateQuery.getFieldsWithValues().keySet()) + ") VALUES (" +
+                mutateQuery.getFieldsWithValues().values().stream().map(value -> SqlQueryConverter
+                        .transformObjectToString(value, false)).collect(Collectors.joining(", ")) + ")";
+
+        return sqlQueryString;
+    }
+
     public static String convertMutationQueryIntoDeleteQuery(MutateQuery mutateQuery) {
         String sqlQueryString = "DELETE FROM WHERE " + mutateQuery.getDatabaseName() + "." +
                 mutateQuery.getTableName() + "." + mutateQuery.getIdFieldName() + " = " + mutateQuery.getDataId();
