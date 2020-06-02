@@ -397,32 +397,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
 
                 @Override
                 public void onResponse(IndexResponse indexResponse) {
-                    String indexText = "";
-                    boolean indexFailed = false;
-                    switch (indexResponse.getResult()) {
-                        case CREATED:
-                            indexText = "created successfully";
-                            break;
-                        case UPDATED:
-                            indexText = "updated successfully";
-                            break;
-                        case DELETED:
-                            indexText = "deleted successfully";
-                            break;
-                        case NOOP:
-                            indexText = "no operation needed";
-                            break;
-                        case NOT_FOUND:
-                            indexText = "not found";
-                            indexFailed = true;
-                            break;
-                    }
-                    String responseText = "Index " + indexResponse.getIndex() + " ID " + indexResponse.getId() +
-                            " " + indexText + ".";
-                    List<String> documentErrors = indexFailed ? new ArrayList<String>() {{
-                        add(responseText);
-                    }} : new ArrayList<String>();
-                    sink.success(new ActionResult(responseText, documentErrors));
+                    processResponse(sink, indexResponse);
                 }
 
                 @Override
