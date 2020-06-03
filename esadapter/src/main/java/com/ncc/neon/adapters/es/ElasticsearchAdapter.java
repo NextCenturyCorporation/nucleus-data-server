@@ -1,20 +1,11 @@
 package com.ncc.neon.adapters.es;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-
 import com.ncc.neon.adapters.QueryAdapter;
 import com.ncc.neon.models.queries.ImportQuery;
 import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.Query;
-import com.ncc.neon.models.results.ActionResult;
-import com.ncc.neon.models.results.FieldType;
-import com.ncc.neon.models.results.FieldTypePair;
-import com.ncc.neon.models.results.TableWithFields;
-import com.ncc.neon.models.results.TabularQueryResult;
-
+import com.ncc.neon.models.results.*;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -30,14 +21,18 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.search.*;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.*;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
-
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -48,7 +43,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ElasticsearchAdapter extends QueryAdapter {
@@ -140,6 +138,9 @@ public class ElasticsearchAdapter extends QueryAdapter {
                 e.printStackTrace();
             }
         } else { // use the raw query provided
+            if (query.getRawQuery().contains("aggs") || query.getRawQuery().contains("aggregations")) {
+                throw new UnsupportedOperationException("Aggregations and groupby clauses are not yet supported.");
+            }
             SearchSourceBuilder search = new SearchSourceBuilder();
             search.query(QueryBuilders.wrapperQuery(query.getRawQuery()));
             search.explain(false);
