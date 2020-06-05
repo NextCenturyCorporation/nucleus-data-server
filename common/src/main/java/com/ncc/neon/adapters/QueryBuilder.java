@@ -1,29 +1,11 @@
 package com.ncc.neon.adapters;
 
+import com.ncc.neon.models.queries.*;
+import com.ncc.neon.util.DateUtil;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-
-import com.ncc.neon.models.queries.AggregateByFieldClause;
-import com.ncc.neon.models.queries.AggregateByGroupCountClause;
-import com.ncc.neon.models.queries.AggregateByTotalCountClause;
-import com.ncc.neon.models.queries.AndWhereClause;
-import com.ncc.neon.models.queries.FieldClause;
-import com.ncc.neon.models.queries.FieldsWhereClause;
-import com.ncc.neon.models.queries.GroupByFieldClause;
-import com.ncc.neon.models.queries.GroupByOperationClause;
-import com.ncc.neon.models.queries.JoinClause;
-import com.ncc.neon.models.queries.LimitClause;
-import com.ncc.neon.models.queries.MutateQuery;
-import com.ncc.neon.models.queries.OffsetClause;
-import com.ncc.neon.models.queries.OrWhereClause;
-import com.ncc.neon.models.queries.Query;
-import com.ncc.neon.models.queries.SelectClause;
-import com.ncc.neon.models.queries.SingularWhereClause;
-import com.ncc.neon.models.queries.OrderByFieldClause;
-import com.ncc.neon.models.queries.OrderByOperationClause;
-import com.ncc.neon.models.queries.Order;
-import com.ncc.neon.util.DateUtil;
 
 /**
  * Builds queries for the query adapters' unit tests.
@@ -779,7 +761,21 @@ public class QueryBuilder {
                 put("testNegativeDecimal", -0.5);
                 put("testTrue", true);
                 put("testFalse", false);
-            }});
+            }}, null);
+    }
+
+    protected MutateQuery buildMutationByFilterQuery() {
+        return new MutateQuery("testHost", "testType", "testDatabase", "testTable", "testIdField", "testId",
+                new LinkedHashMap<String, Object>(){{
+                    put("testString", "a");
+                    put("testZero", 0);
+                    put("testInteger", 1);
+                    put("testDecimal", 0.5);
+                    put("testNegativeInteger", -1);
+                    put("testNegativeDecimal", -0.5);
+                    put("testTrue", true);
+                    put("testFalse", false);
+                }}, SingularWhereClause.fromString(new FieldClause("testDatabase", "testTable", "testFilterField1"), "=", "testFilterValue1"));
     }
 
     protected MutateQuery buildArrayAndObjectMutationByIdQuery() {
@@ -805,6 +801,6 @@ public class QueryBuilder {
                         add(5);
                     }});
                 }});
-            }});
+            }}, SingularWhereClause.fromString(new FieldClause("testDatabase", "testTable", "testFilterField1"), "=", "testFilterValue1"));
     }
 }

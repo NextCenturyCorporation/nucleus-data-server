@@ -10,6 +10,7 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
@@ -25,6 +26,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -1076,10 +1078,26 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
     }
 
     @Test
-    public void convertDeleteQueryRequestTest() {
+    public void convertDeleteByIdQueryRequestTest() {
         MutateQuery mutateQuery = buildMutationByIdQuery();
-        DeleteRequest actual = ElasticsearchQueryConverter.convertMutationDeleteQuery(mutateQuery);
+        DeleteRequest actual = ElasticsearchQueryConverter.convertMutationDeleteByIdQuery(mutateQuery);
         DeleteRequest expected = new DeleteRequest("testDatabase", "testTable", "testId");
+        // This test fails without the toString (I don't know why)
+        assertThat(actual.toString()).isEqualTo(expected.toString());
+    }
+
+    @Test
+    public void convertDeleteByFilterQueryRequestTest() {
+        MutateQuery mutateQuery = buildMutationByFilterQuery();
+        DeleteByQueryRequest actual = ElasticsearchQueryConverter.convertMutationDeleteByFilterQuery(mutateQuery);
+        SelectClause selectClause = new SelectClause("testDatabase", "testTable");
+        org.elasticsearch.index.query.QueryBuilder queryBuilder = ElasticsearchQueryConverter
+                .convertWhereClauses(selectClause, List.of(SingularWhereClause.fromString(
+                        new FieldClause("testDatabase", "testTable", "testFilterField1"),
+                        "=", "testFilterValue1")));
+        DeleteByQueryRequest expected = new DeleteByQueryRequest();
+        expected.setQuery(queryBuilder);
+        expected.getSearchRequest().indices("_all");
         // This test fails without the toString (I don't know why)
         assertThat(actual.toString()).isEqualTo(expected.toString());
     }

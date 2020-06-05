@@ -258,18 +258,24 @@ public class SqlQueryConverter {
     }
 
     public static String convertMutationIntoInsertQuery(MutateQuery mutateQuery) {
+        String separator = mutateQuery.getFieldsWithValues().isEmpty() ? "" : ", ";
         String sqlQueryString = "INSERT INTO " + mutateQuery.getDatabaseName() + "." + mutateQuery.getTableName() +
-                " (" + String.join(", ", mutateQuery.getFieldsWithValues().keySet()) + ") VALUES (" +
-                mutateQuery.getFieldsWithValues().values().stream().map(value -> SqlQueryConverter
+                " (" + (mutateQuery.getDataId() == null ? "" : "id" + separator) + String.join(", ", mutateQuery.getFieldsWithValues().keySet()) + ") VALUES (" +
+                (mutateQuery.getDataId() == null ? "" : "'" + mutateQuery.getDataId() + "'" + separator) + mutateQuery.getFieldsWithValues().values().stream().map(value -> SqlQueryConverter
                         .transformObjectToString(value, false)).collect(Collectors.joining(", ")) + ")";
 
         return sqlQueryString;
     }
 
     public static String convertMutationQueryIntoDeleteQuery(MutateQuery mutateQuery) {
+        SqlType type = SqlType.MYSQL;
+        if (mutateQuery.getDatastoreType().equals("postgresql")) {
+            type = SqlType.POSTGRESQL;
+        }
+        String whereClause = mutateQuery.getWhereClause() != null ? transformWhere(mutateQuery.getWhereClause(), type)
+                : mutateQuery.getIdFieldName() + " = '" + mutateQuery.getDataId() + "'";
         String sqlQueryString = "DELETE FROM " + mutateQuery.getDatabaseName() + "." +
-                mutateQuery.getTableName() + " WHERE " + mutateQuery.getIdFieldName() + " = '" +
-                mutateQuery.getDataId() + "'";
+                mutateQuery.getTableName() + " WHERE " + whereClause;
 
         return sqlQueryString;
     }

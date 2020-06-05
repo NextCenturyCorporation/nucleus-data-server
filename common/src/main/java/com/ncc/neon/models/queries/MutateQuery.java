@@ -1,9 +1,9 @@
 package com.ncc.neon.models.queries;
 
-import java.util.Map;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
+
+import java.util.Map;
 
 @AllArgsConstructor
 @Data
@@ -15,4 +15,5 @@ public class MutateQuery {
     String idFieldName;
     String dataId;
     Map<String, Object> fieldsWithValues;
+    WhereClause whereClause;
 }

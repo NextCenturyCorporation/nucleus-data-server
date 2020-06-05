@@ -36,6 +36,8 @@ import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.IncludeExclude;
@@ -410,20 +412,42 @@ public class ElasticsearchAdapter extends QueryAdapter {
 
     @Override
     public Mono<ActionResult> deleteData(MutateQuery mutateQuery) {
-        DeleteRequest deleteRequest = ElasticsearchQueryConverter.convertMutationDeleteQuery(mutateQuery);
-        return Mono.create(sink -> {
-            client.deleteAsync(deleteRequest, RequestOptions.DEFAULT, new ActionListener<DeleteResponse>() {
-                @Override
-                public void onResponse(DeleteResponse deleteResponse) {
-                    processResponse(sink, deleteResponse);
-                }
+        if (mutateQuery.getWhereClause() == null) {
+            DeleteRequest deleteRequest = ElasticsearchQueryConverter.convertMutationDeleteByIdQuery(mutateQuery);
 
-                @Override
-                public void onFailure(Exception e) {
-                    sink.error(e);
-                }
+            return Mono.create(sink -> {
+                client.deleteAsync(deleteRequest, RequestOptions.DEFAULT, new ActionListener<DeleteResponse>() {
+                    @Override
+                    public void onResponse(DeleteResponse deleteResponse) {
+                        processResponse(sink, deleteResponse);
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        sink.error(e);
+                    }
+                });
             });
-        });
+        } else {
+            DeleteByQueryRequest deleteRequest = ElasticsearchQueryConverter.convertMutationDeleteByFilterQuery(mutateQuery);
+
+            return Mono.create(sink -> {
+                client.deleteByQueryAsync(deleteRequest, RequestOptions.DEFAULT, new ActionListener<BulkByScrollResponse>() {
+                    @Override
+                    public void onResponse(BulkByScrollResponse response) {
+                        String responseText = response.getDeleted() + " documents deleted.";
+                        List<String> documentErrors = response.getBulkFailures().isEmpty() ? new ArrayList<String>() : response.getBulkFailures().stream().map(failure -> failure.toString()).collect(Collectors.toList());
+                        sink.success(new ActionResult(responseText, documentErrors));
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        sink.error(e);
+                    }
+                });
+            });
+        }
+
     }
 
     private void processResponse(MonoSink<ActionResult> sink, DocWriteResponse response) {

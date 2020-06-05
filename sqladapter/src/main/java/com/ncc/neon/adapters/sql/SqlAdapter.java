@@ -177,8 +177,7 @@ public class SqlAdapter extends QueryAdapter {
         DatabaseClient database = DatabaseClient.create(this.pool);
         return database.execute(SqlQueryConverter.convertMutationQueryIntoDeleteQuery(mutateQuery)).fetch().rowsUpdated()
                 .map(rowCount -> new ActionResult(rowCount + " rows deleted in " + mutateQuery.getDatabaseName() + "." +
-                        mutateQuery.getTableName() + " with " + mutateQuery.getIdFieldName() + " = " +
-                        mutateQuery.getDataId(), new ArrayList<String>()));
+                        mutateQuery.getTableName(), new ArrayList<String>()));
     }
 
     private FieldType retrieveFieldType(String type) {

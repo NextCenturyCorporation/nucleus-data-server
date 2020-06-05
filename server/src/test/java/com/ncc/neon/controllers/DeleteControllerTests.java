@@ -2,7 +2,9 @@ package com.ncc.neon.controllers;
 
 import com.ncc.neon.NeonServerApplication;
 import com.ncc.neon.models.ConnectionInfo;
+import com.ncc.neon.models.queries.FieldClause;
 import com.ncc.neon.models.queries.MutateQuery;
+import com.ncc.neon.models.queries.SingularWhereClause;
 import com.ncc.neon.models.results.ActionResult;
 import com.ncc.neon.services.QueryService;
 import org.junit.Test;
@@ -36,7 +38,7 @@ public class DeleteControllerTests {
 
     @Test
     public void testDeleteWithInvalidInput() {
-        MutateQuery mutateQuery = new MutateQuery("", "", "", "", "", "", new LinkedHashMap<String, Object>());
+        MutateQuery mutateQuery = new MutateQuery("", "", "", "", "", "", new LinkedHashMap<String, Object>(), null);
         webTestClient.post()
                 .uri("/deleteservice/delete")
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
@@ -46,12 +48,12 @@ public class DeleteControllerTests {
     }
 
     @Test
-    public void testDeleteWithValidInput() {
+    public void testDeleteByIdWithValidInput() {
         MutateQuery mutateQuery = new MutateQuery("testHost", "testType", "testDatabase", "testTable", "testIdField",
                 "testId", new LinkedHashMap<String, Object>(){{
             put("testStringField", "testStringValue");
         }}
-        );
+        , null);
 
         ActionResult mutateResult = new ActionResult("1 row deleted in testDatabase.testTable");
 
@@ -60,7 +62,34 @@ public class DeleteControllerTests {
         when(queryService.deleteData(info, mutateQuery)).thenReturn(Mono.just(mutateResult));
 
         webTestClient.post()
-                .uri("/deleteservice/delete")
+                .uri("/deleteservice/byid")
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .body(Mono.just(mutateQuery), MutateQuery.class)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
+                .expectBody(ActionResult.class)
+                .value(result -> {
+                    assertEquals(mutateResult, result);
+                });
+    }
+
+    @Test
+    public void testDeleteByFilterWithValidInput() {
+        MutateQuery mutateQuery = new MutateQuery("testHost", "testType", "testDatabase", "testTable", "testIdField",
+                "testId", new LinkedHashMap<String, Object>(){{
+            put("testStringField", "testStringValue");
+        }}
+        , SingularWhereClause.fromString(new FieldClause("testDatabase","testTable", "testIdField"), "=", "testStringValue"));
+
+        ActionResult mutateResult = new ActionResult("1 row deleted in testDatabase.testTable");
+
+        ConnectionInfo info = new ConnectionInfo(mutateQuery.getDatastoreType(), mutateQuery.getDatastoreHost());
+
+        when(queryService.deleteData(info, mutateQuery)).thenReturn(Mono.just(mutateResult));
+
+        webTestClient.post()
+                .uri("/deleteservice/byfilter")
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
                 .body(Mono.just(mutateQuery), MutateQuery.class)
                 .exchange()

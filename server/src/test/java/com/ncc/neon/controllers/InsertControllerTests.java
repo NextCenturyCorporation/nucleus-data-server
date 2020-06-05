@@ -36,7 +36,7 @@ public class InsertControllerTests {
 
     @Test
     public void testInsertWithInvalidInput() {
-        MutateQuery mutateQuery = new MutateQuery("", "", "", "", "", "", new LinkedHashMap<String, Object>());
+        MutateQuery mutateQuery = new MutateQuery("", "", "", "", "", "", new LinkedHashMap<String, Object>(), null);
         webTestClient.post()
                 .uri("/insertservice/insert")
 				.contentType(MediaType.APPLICATION_JSON_UTF8)
@@ -51,7 +51,7 @@ public class InsertControllerTests {
             "testId", new LinkedHashMap<String, Object>(){{
                 put("testStringField", "testStringValue");
             }}
-        );
+        , null);
 
         ActionResult mutateResult = new ActionResult("1 rows updated in testDatabase.testTable");
 
