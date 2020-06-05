@@ -1,46 +1,20 @@
 package com.ncc.neon.adapters.es;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
-
-import com.ncc.neon.models.queries.AggregateByFieldClause;
-import com.ncc.neon.models.queries.AndWhereClause;
-import com.ncc.neon.models.queries.CompoundWhereClause;
-import com.ncc.neon.models.queries.GroupByClause;
-import com.ncc.neon.models.queries.GroupByFieldClause;
-import com.ncc.neon.models.queries.GroupByOperationClause;
-import com.ncc.neon.models.queries.MutateQuery;
-import com.ncc.neon.models.queries.OrWhereClause;
-import com.ncc.neon.models.queries.Query;
-import com.ncc.neon.models.queries.SelectClause;
-import com.ncc.neon.models.queries.SingularWhereClause;
-import com.ncc.neon.models.queries.OrderByClause;
-import com.ncc.neon.models.queries.OrderByFieldClause;
-import com.ncc.neon.models.queries.OrderByOperationClause;
-import com.ncc.neon.models.queries.Order;
-import com.ncc.neon.models.queries.WhereClause;
+import com.ncc.neon.models.queries.*;
 import com.ncc.neon.util.DateUtil;
-
+import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.elasticsearch.index.query.RegexpQueryBuilder;
-import org.elasticsearch.index.query.TermsQueryBuilder;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.BucketOrder;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.StatsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -49,7 +23,12 @@ import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 
-import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ElasticsearchQueryConverter {
@@ -449,5 +428,9 @@ public class ElasticsearchQueryConverter {
     public static IndexRequest convertMutationInsertQuery(MutateQuery mutateQuery) {
         return new IndexRequest(mutateQuery.getDatabaseName(), mutateQuery.getTableName(), mutateQuery.getDataId())
                 .source(mutateQuery.getFieldsWithValues());
+    }
+
+    public static DeleteRequest convertMutationDeleteQuery(MutateQuery mutateQuery) {
+        return new DeleteRequest(mutateQuery.getDatabaseName(), mutateQuery.getTableName(), mutateQuery.getDataId());
     }
 }

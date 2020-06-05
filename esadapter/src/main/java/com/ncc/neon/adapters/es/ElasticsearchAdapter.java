@@ -1,20 +1,11 @@
 package com.ncc.neon.adapters.es;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-
 import com.ncc.neon.adapters.QueryAdapter;
 import com.ncc.neon.models.queries.ImportQuery;
 import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.Query;
-import com.ncc.neon.models.results.ActionResult;
-import com.ncc.neon.models.results.FieldType;
-import com.ncc.neon.models.results.FieldTypePair;
-import com.ncc.neon.models.results.TableWithFields;
-import com.ncc.neon.models.results.TabularQueryResult;
-
+import com.ncc.neon.models.results.*;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -22,6 +13,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsRequest;
@@ -29,19 +21,21 @@ import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.search.*;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
-
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.IncludeExclude;
@@ -49,8 +43,12 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoSink;
 
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ElasticsearchAdapter extends QueryAdapter {
@@ -380,32 +378,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
             client.updateAsync(updateRequest, RequestOptions.DEFAULT, new ActionListener<UpdateResponse>() {
                 @Override
                 public void onResponse(UpdateResponse updateResponse) {
-                    String updateText = "";
-                    boolean updateFailed = false;
-                    switch (updateResponse.getResult()) {
-                        case CREATED:
-                            updateText = "created successfully";
-                            break;
-                        case UPDATED:
-                            updateText = "updated successfully";
-                            break;
-                        case DELETED:
-                            updateText = "deleted successfully";
-                            break;
-                        case NOOP:
-                            updateText = "no operation needed";
-                            break;
-                        case NOT_FOUND:
-                            updateText = "not found";
-                            updateFailed = true;
-                            break;
-                    }
-                    String responseText = "Index " + updateResponse.getIndex() + " ID " + updateResponse.getId() +
-                        " " + updateText + ".";
-                    List<String> documentErrors = updateFailed ? new ArrayList<String>() {{
-                        add(responseText);
-                    }} : new ArrayList<String>();
-                    sink.success(new ActionResult(responseText, documentErrors));
+                    processResponse(sink, updateResponse);
                 }
 
                 @Override
@@ -424,32 +397,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
 
                 @Override
                 public void onResponse(IndexResponse indexResponse) {
-                    String indexText = "";
-                    boolean indexFailed = false;
-                    switch (indexResponse.getResult()) {
-                        case CREATED:
-                            indexText = "created successfully";
-                            break;
-                        case UPDATED:
-                            indexText = "updated successfully";
-                            break;
-                        case DELETED:
-                            indexText = "deleted successfully";
-                            break;
-                        case NOOP:
-                            indexText = "no operation needed";
-                            break;
-                        case NOT_FOUND:
-                            indexText = "not found";
-                            indexFailed = true;
-                            break;
-                    }
-                    String responseText = "Index " + indexResponse.getIndex() + " ID " + indexResponse.getId() +
-                            " " + indexText + ".";
-                    List<String> documentErrors = indexFailed ? new ArrayList<String>() {{
-                        add(responseText);
-                    }} : new ArrayList<String>();
-                    sink.success(new ActionResult(responseText, documentErrors));
+                    processResponse(sink, indexResponse);
                 }
 
                 @Override
@@ -458,5 +406,52 @@ public class ElasticsearchAdapter extends QueryAdapter {
                 }
             });
         });
+    }
+
+    @Override
+    public Mono<ActionResult> deleteData(MutateQuery mutateQuery) {
+        DeleteRequest deleteRequest = ElasticsearchQueryConverter.convertMutationDeleteQuery(mutateQuery);
+        return Mono.create(sink -> {
+            client.deleteAsync(deleteRequest, RequestOptions.DEFAULT, new ActionListener<DeleteResponse>() {
+                @Override
+                public void onResponse(DeleteResponse deleteResponse) {
+                    processResponse(sink, deleteResponse);
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    sink.error(e);
+                }
+            });
+        });
+    }
+
+    private void processResponse(MonoSink<ActionResult> sink, DocWriteResponse response) {
+        String statusText = "";
+        boolean responseFailed = false;
+        switch (response.getResult()) {
+            case CREATED:
+                statusText = "created successfully";
+                break;
+            case UPDATED:
+                statusText = "updated successfully";
+                break;
+            case DELETED:
+                statusText = "deleted successfully";
+                break;
+            case NOOP:
+                statusText = "no operation needed";
+                break;
+            case NOT_FOUND:
+                statusText = "not found";
+                responseFailed = true;
+                break;
+        }
+        String responseText = "Index " + response.getIndex() + " ID " + response.getId() +
+                " " + statusText + ".";
+        List<String> documentErrors = responseFailed ? new ArrayList<String>() {{
+            add(responseText);
+        }} : new ArrayList<String>();
+        sink.success(new ActionResult(responseText, documentErrors));
     }
 }

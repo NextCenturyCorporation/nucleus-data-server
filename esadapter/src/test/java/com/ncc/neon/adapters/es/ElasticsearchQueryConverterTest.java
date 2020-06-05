@@ -1,18 +1,8 @@
 package com.ncc.neon.adapters.es;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.Arrays;
-
 import com.ncc.neon.adapters.QueryBuilder;
-import com.ncc.neon.models.queries.AndWhereClause;
-import com.ncc.neon.models.queries.FieldClause;
-import com.ncc.neon.models.queries.LimitClause;
-import com.ncc.neon.models.queries.MutateQuery;
-import com.ncc.neon.models.queries.Query;
-import com.ncc.neon.models.queries.SelectClause;
-import com.ncc.neon.models.queries.SingularWhereClause;
-
+import com.ncc.neon.models.queries.*;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchType;
@@ -33,6 +23,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+
+import java.util.Arrays;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes=ElasticsearchQueryConverter.class)
@@ -1077,6 +1071,15 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         IndexRequest actual = ElasticsearchQueryConverter.convertMutationInsertQuery(mutateQuery);
         IndexRequest expected = new IndexRequest("testDatabase", "testTable", "testId")
                 .source(mutateQuery.getFieldsWithValues());
+        // This test fails without the toString (I don't know why)
+        assertThat(actual.toString()).isEqualTo(expected.toString());
+    }
+
+    @Test
+    public void convertDeleteQueryRequestTest() {
+        MutateQuery mutateQuery = buildMutationByIdQuery();
+        DeleteRequest actual = ElasticsearchQueryConverter.convertMutationDeleteQuery(mutateQuery);
+        DeleteRequest expected = new DeleteRequest("testDatabase", "testTable", "testId");
         // This test fails without the toString (I don't know why)
         assertThat(actual.toString()).isEqualTo(expected.toString());
     }

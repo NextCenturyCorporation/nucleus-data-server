@@ -79,4 +79,9 @@ public class QueryService {
         QueryAdapter adapter = this.queryAdapterLocator.getAdapter(ci);
         return adapter.insertData(mutateQuery);
     }
+
+    public Mono<ActionResult> deleteData(ConnectionInfo ci, MutateQuery mutateQuery) {
+        QueryAdapter adapter = this.queryAdapterLocator.getAdapter(ci);
+        return adapter.deleteData(mutateQuery);
+    }
 }

@@ -1,22 +1,19 @@
 package com.ncc.neon.adapters;
 
-import java.util.List;
-import java.util.Map;
-
 import com.ncc.neon.models.queries.ImportQuery;
 import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.Query;
 import com.ncc.neon.models.results.ActionResult;
 import com.ncc.neon.models.results.FieldTypePair;
+import com.ncc.neon.models.results.TableWithFields;
 import com.ncc.neon.models.results.TabularQueryResult;
-
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-
-import com.ncc.neon.models.results.TableWithFields;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
+import java.util.Map;
 
 @Data
 @Slf4j
@@ -122,4 +119,6 @@ public abstract class QueryAdapter {
     public abstract Mono<ActionResult> mutateData(MutateQuery mutate);
 
     public abstract Mono<ActionResult> insertData(MutateQuery mutate);
+
+    public abstract Mono<ActionResult> deleteData(MutateQuery mutate);
 }

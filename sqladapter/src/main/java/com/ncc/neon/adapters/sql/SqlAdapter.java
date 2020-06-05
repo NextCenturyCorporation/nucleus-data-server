@@ -4,28 +4,21 @@ import com.ncc.neon.adapters.QueryAdapter;
 import com.ncc.neon.models.queries.ImportQuery;
 import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.queries.Query;
-import com.ncc.neon.models.results.ActionResult;
-import com.ncc.neon.models.results.FieldType;
-import com.ncc.neon.models.results.FieldTypePair;
-import com.ncc.neon.models.results.TableWithFields;
-import com.ncc.neon.models.results.TabularQueryResult;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import org.springframework.data.r2dbc.core.DatabaseClient;
-
+import com.ncc.neon.models.results.*;
 import io.r2dbc.pool.ConnectionPool;
 import io.r2dbc.pool.ConnectionPoolConfiguration;
 import io.r2dbc.spi.Clob;
 import io.r2dbc.spi.ConnectionFactories;
 import io.r2dbc.spi.ConnectionFactory;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import org.springframework.data.r2dbc.core.DatabaseClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Map;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 public class SqlAdapter extends QueryAdapter {
     ConnectionPool pool;
@@ -177,6 +170,15 @@ public class SqlAdapter extends QueryAdapter {
         return database.execute(SqlQueryConverter.convertMutationIntoInsertQuery(mutateQuery)).fetch().rowsUpdated()
                 .map(rowCount -> new ActionResult(rowCount + " rows updated in " + mutateQuery.getDatabaseName() + "." +
                         mutateQuery.getTableName(), new ArrayList<String>()));
+    }
+
+    @Override
+    public Mono<ActionResult> deleteData(MutateQuery mutateQuery) {
+        DatabaseClient database = DatabaseClient.create(this.pool);
+        return database.execute(SqlQueryConverter.convertMutationQueryIntoDeleteQuery(mutateQuery)).fetch().rowsUpdated()
+                .map(rowCount -> new ActionResult(rowCount + " rows deleted in " + mutateQuery.getDatabaseName() + "." +
+                        mutateQuery.getTableName() + " with " + mutateQuery.getIdFieldName() + " = " +
+                        mutateQuery.getDataId(), new ArrayList<String>()));
     }
 
     private FieldType retrieveFieldType(String type) {
