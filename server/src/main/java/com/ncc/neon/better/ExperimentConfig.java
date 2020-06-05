@@ -64,7 +64,7 @@ public class ExperimentConfig {
     public String getName() { return name; }
 
     private void initName() {
-        name = module + "_experiment_";
+        name = module + "_experiment_" + DateUtil.getCurrentDateTime();
     }
 
     private void parseConfig(String trainFile, String devFile) {
