@@ -76,7 +76,7 @@ public class AsyncService {
                                 .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())));
                     }
 
-                    return Mono.empty();
+                    return Mono.just("");
                 });
 
         Mono<RestStatus> infMono = ieNlpModule1.performInference(config, runId)
