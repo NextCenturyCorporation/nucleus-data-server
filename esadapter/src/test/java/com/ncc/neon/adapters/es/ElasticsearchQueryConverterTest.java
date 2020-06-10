@@ -11,6 +11,9 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
@@ -1043,6 +1046,27 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         UpdateRequest actual = ElasticsearchQueryConverter.convertMutationByIdQuery(mutateQuery);
         UpdateRequest expected = new UpdateRequest("testDatabase", "testTable", "testId")
             .doc(mutateQuery.getFieldsWithValues());
+        // This test fails without the toString (I don't know why)
+        assertThat(actual.toString()).isEqualTo(expected.toString());
+    }
+
+    @Test
+    public void convertMutationByFilterQueryTest() {
+        MutateQuery mutateQuery = buildMutationByFilterQuery();
+        UpdateByQueryRequest actual = ElasticsearchQueryConverter.convertMutationByFilterQuery(mutateQuery);
+        SelectClause selectClause = new SelectClause("testDatabase", "testTable");
+        org.elasticsearch.index.query.QueryBuilder queryBuilder = ElasticsearchQueryConverter
+                .convertWhereClauses(selectClause, List.of(SingularWhereClause.fromString(
+                new FieldClause("testDatabase", "testTable", "testFilterField1"),
+                "=", "testFilterValue1")));
+        UpdateByQueryRequest expected = new UpdateByQueryRequest();
+        expected.setQuery(queryBuilder);
+        expected.getSearchRequest().indices("_all");
+        expected.setScript(new Script(
+                ScriptType.INLINE,
+                "painless",
+                "for (entry in params.entrySet()) { ctx._source[entry.getKey()] = entry.getValue(); }",
+                mutateQuery.getFieldsWithValues()));
         // This test fails without the toString (I don't know why)
         assertThat(actual.toString()).isEqualTo(expected.toString());
     }

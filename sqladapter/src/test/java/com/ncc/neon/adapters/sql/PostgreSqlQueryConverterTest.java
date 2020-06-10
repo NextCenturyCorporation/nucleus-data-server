@@ -711,7 +711,7 @@ public class PostgreSqlQueryConverterTest extends QueryBuilder {
     @Test
     public void convertMutationQueryByIdTest() {
         MutateQuery mutateQuery = buildMutationByIdQuery();
-        String actual = SqlQueryConverter.convertMutationQuery(mutateQuery);
+        String actual = SqlQueryConverter.convertMutationIntoUpdateQuery(mutateQuery);
         String expected = "UPDATE testDatabase.testTable SET testString = 'a', testZero = 0, testInteger = 1, " +
             "testDecimal = 0.5, testNegativeInteger = -1, testNegativeDecimal = -0.5, testTrue = true, " +
             "testFalse = false WHERE testIdField = 'testId'";
@@ -719,9 +719,19 @@ public class PostgreSqlQueryConverterTest extends QueryBuilder {
     }
 
     @Test
+    public void convertMutationQueryByFilterTest() {
+        MutateQuery mutateQuery = buildMutationByFilterQuery();
+        String actual = SqlQueryConverter.convertMutationIntoUpdateQuery(mutateQuery);
+        String expected = "UPDATE testDatabase.testTable SET testString = 'a', testZero = 0, testInteger = 1, " +
+                "testDecimal = 0.5, testNegativeInteger = -1, testNegativeDecimal = -0.5, testTrue = true, " +
+                "testFalse = false WHERE testDatabase.testTable.testFilterField1 = 'testFilterValue1'";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
     public void convertArrayAndObjectMutationQueryByIdTest() {
         MutateQuery mutateQuery = buildArrayAndObjectMutationByIdQuery();
-        String actual = SqlQueryConverter.convertMutationQuery(mutateQuery);
+        String actual = SqlQueryConverter.convertMutationIntoUpdateQuery(mutateQuery);
         String expected = "UPDATE testDatabase.testTable SET testEmptyArray = '[]', testEmptyObject = '{}', " +
             "testArray = '[\"b\",2,true,{\"testArrayObjectString\":\"c\",\"testArrayObjectInteger\":3}]', " +
             "testObject = '{\"testObjectString\":\"d\",\"testObjectInteger\":4,\"testObjectBoolean\":true," +

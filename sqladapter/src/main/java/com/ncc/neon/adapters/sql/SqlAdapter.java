@@ -158,10 +158,9 @@ public class SqlAdapter extends QueryAdapter {
     @Override
     public Mono<ActionResult> mutateData(MutateQuery mutateQuery) {
         DatabaseClient database = DatabaseClient.create(this.pool);
-        return database.execute(SqlQueryConverter.convertMutationQuery(mutateQuery)).fetch().rowsUpdated()
+        return database.execute(SqlQueryConverter.convertMutationIntoUpdateQuery(mutateQuery)).fetch().rowsUpdated()
             .map(rowCount -> new ActionResult(rowCount + " rows updated in " + mutateQuery.getDatabaseName() + "." +
-                mutateQuery.getTableName() + " with " + mutateQuery.getIdFieldName() + " = " +
-                mutateQuery.getDataId(), new ArrayList<String>()));
+                mutateQuery.getTableName(), new ArrayList<String>()));
     }
 
     @Override

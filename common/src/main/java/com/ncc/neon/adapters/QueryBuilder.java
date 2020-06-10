@@ -801,6 +801,6 @@ public class QueryBuilder {
                         add(5);
                     }});
                 }});
-            }}, SingularWhereClause.fromString(new FieldClause("testDatabase", "testTable", "testFilterField1"), "=", "testFilterValue1"));
+            }}, null);
     }
 }

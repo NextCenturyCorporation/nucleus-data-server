@@ -38,6 +38,7 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.IncludeExclude;
@@ -374,21 +375,40 @@ public class ElasticsearchAdapter extends QueryAdapter {
 
     @Override
     public Mono<ActionResult> mutateData(MutateQuery mutateQuery) {
-        // TODO Use an UpdateByQueryRequest here if we need to update multiple documents simultaneously in the future.
-        UpdateRequest updateRequest = ElasticsearchQueryConverter.convertMutationByIdQuery(mutateQuery);
-        return Mono.create(sink -> {
-            client.updateAsync(updateRequest, RequestOptions.DEFAULT, new ActionListener<UpdateResponse>() {
-                @Override
-                public void onResponse(UpdateResponse updateResponse) {
-                    processResponse(sink, updateResponse);
-                }
+        if (mutateQuery.getWhereClause() == null) {
+            UpdateRequest updateRequest = ElasticsearchQueryConverter.convertMutationByIdQuery(mutateQuery);
+            return Mono.create(sink -> {
+                client.updateAsync(updateRequest, RequestOptions.DEFAULT, new ActionListener<UpdateResponse>() {
+                    @Override
+                    public void onResponse(UpdateResponse updateResponse) {
+                        processResponse(sink, updateResponse);
+                    }
 
-                @Override
-                public void onFailure(Exception e) {
-                    sink.error(e);
-                }
+                    @Override
+                    public void onFailure(Exception e) {
+                        sink.error(e);
+                    }
+                });
             });
-        });
+        } else {
+            UpdateByQueryRequest updateRequest = ElasticsearchQueryConverter.convertMutationByFilterQuery(mutateQuery);
+
+            return Mono.create(sink -> {
+                client.updateByQueryAsync(updateRequest, RequestOptions.DEFAULT, new ActionListener<BulkByScrollResponse>() {
+                    @Override
+                    public void onResponse(BulkByScrollResponse response) {
+                        String responseText = response.getUpdated() + " documents updated.";
+                        List<String> documentErrors = response.getBulkFailures().isEmpty() ? new ArrayList<String>() : response.getBulkFailures().stream().map(failure -> failure.toString()).collect(Collectors.toList());
+                        sink.success(new ActionResult(responseText, documentErrors));
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        sink.error(e);
+                    }
+                });
+            });
+        }
     }
 
     @Override

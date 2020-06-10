@@ -245,14 +245,15 @@ public class SqlQueryConverter {
         return null;
     }
 
-    public static String convertMutationQuery(MutateQuery mutateQuery) {
+    public static String convertMutationIntoUpdateQuery(MutateQuery mutateQuery) {
         List<String> fieldAndValueStrings = mutateQuery.getFieldsWithValues().entrySet().stream()
             .map(entry -> entry.getKey() + " = " + SqlQueryConverter.transformObjectToString(entry.getValue(), false))
             .collect(Collectors.toList());
 
+        String whereClause = getWhereClause(mutateQuery);
+
         String sqlQueryString = "UPDATE " + mutateQuery.getDatabaseName() + "." + mutateQuery.getTableName() +
-            " SET " + String.join(", ", fieldAndValueStrings) + " WHERE " + mutateQuery.getIdFieldName() + " = '" +
-            mutateQuery.getDataId() + "'";
+            " SET " + String.join(", ", fieldAndValueStrings) + " WHERE " + whereClause;
 
         return sqlQueryString;
     }
@@ -268,16 +269,20 @@ public class SqlQueryConverter {
     }
 
     public static String convertMutationQueryIntoDeleteQuery(MutateQuery mutateQuery) {
-        SqlType type = SqlType.MYSQL;
-        if (mutateQuery.getDatastoreType().equals("postgresql")) {
-            type = SqlType.POSTGRESQL;
-        }
-        String whereClause = mutateQuery.getWhereClause() != null ? transformWhere(mutateQuery.getWhereClause(), type)
-                : mutateQuery.getIdFieldName() + " = '" + mutateQuery.getDataId() + "'";
+        String whereClause = getWhereClause(mutateQuery);
         String sqlQueryString = "DELETE FROM " + mutateQuery.getDatabaseName() + "." +
                 mutateQuery.getTableName() + " WHERE " + whereClause;
 
         return sqlQueryString;
+    }
+
+    private static String getWhereClause(MutateQuery mutateQuery) {
+        SqlType type = SqlType.MYSQL;
+        if (mutateQuery.getDatastoreType().equals("postgresql")) {
+            type = SqlType.POSTGRESQL;
+        }
+        return mutateQuery.getWhereClause() != null ? transformWhere(mutateQuery.getWhereClause(), type)
+                : mutateQuery.getIdFieldName() + " = '" + mutateQuery.getDataId() + "'";
     }
 
     private static String transformObjectToString(Object object, boolean insideJson) {

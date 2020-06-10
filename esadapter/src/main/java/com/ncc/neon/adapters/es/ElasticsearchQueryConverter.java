@@ -11,6 +11,9 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.BucketOrder;
@@ -424,6 +427,20 @@ public class ElasticsearchQueryConverter {
     public static UpdateRequest convertMutationByIdQuery(MutateQuery mutateQuery) {
         return new UpdateRequest(mutateQuery.getDatabaseName(), mutateQuery.getTableName(), mutateQuery.getDataId())
             .doc(mutateQuery.getFieldsWithValues());
+    }
+
+    public static UpdateByQueryRequest convertMutationByFilterQuery(MutateQuery mutateQuery) {
+        SelectClause selectClause = new SelectClause(mutateQuery.getDatabaseName(), mutateQuery.getTableName());
+        QueryBuilder queryBuilder = convertWhereClauses(selectClause, List.of(mutateQuery.getWhereClause()));
+        UpdateByQueryRequest request = new UpdateByQueryRequest();
+        request.setQuery(queryBuilder);
+        request.getSearchRequest().indices("_all");
+        request.setScript(new Script(
+                ScriptType.INLINE,
+                "painless",
+                "for (entry in params.entrySet()) { ctx._source[entry.getKey()] = entry.getValue(); }",
+                mutateQuery.getFieldsWithValues()));
+        return request;
     }
 
     public static IndexRequest convertMutationInsertQuery(MutateQuery mutateQuery) {
