@@ -3,3 +3,5 @@ include ':common'
 include ':server'
 include ':sqladapter'
 include ':esadapter'
+include 'sparqladapter'
+
