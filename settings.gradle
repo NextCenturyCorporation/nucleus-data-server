@@ -4,4 +4,5 @@ include ':server'
 include ':sqladapter'
 include ':esadapter'
 include 'sparqladapter'
+include 'sparqladapter'
 

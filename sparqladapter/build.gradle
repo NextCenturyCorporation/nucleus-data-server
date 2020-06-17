@@ -1,14 +1,66 @@
-plugins {
-    id 'java'
-}
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
 
-group 'com.ncc.neon'
-version 'unspecified'
+group = 'com.ncc.neon'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
+    maven {
+        url "https://repo.spring.io/release"
+    }
+    maven {
+        url "https://repo.spring.io/milestone"
+    }
+    maven {
+        url "https://repo.spring.io/snapshot"
+    }
+}
+
+springBoot {
+    mainClassName = 'com.ncc.neon.NeonServerApplication'
+}
+
+//Build traditional jar which is what we want as the library
+jar {
+    enabled = true
+    //Excluding this as its a only use if for VScode see class for more info
+    exclude '**/SparqlNeonServerApplication*'
+}
+
+bootJar {
+    enabled = true
+    classifier = 'boot'
+}
+
+task unpack(type: Copy) {
+    dependsOn bootJar
+    from(zipTree(tasks.bootJar.outputs.files.singleFile))
+    exclude '**/SparqlNeonServerApplication*'
+    into("build/dependency")
 }
 
 dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile project(':common')
+
+    //TODO: add dependencies
+
+    compileLibraries.each {
+        compileOnly it
+    }
+    implementationLibraries.each {
+        implementation it
+    }
+    runtimeLibraries.each {
+        runtimeOnly it
+    }
+    testCompileLibraries.each {
+        testCompile it
+    }
+    testImplementationLibraries.each {
+        testImplementation it
+    }
 }
