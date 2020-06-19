@@ -47,6 +47,7 @@ dependencies {
     compile project(':common')
 
     //TODO: add dependencies
+    implementation 'org.apache.jena:apache-jena-libs:3.15.0'
 
     compileLibraries.each {
         compileOnly it
