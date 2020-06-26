@@ -46,7 +46,6 @@ task unpack(type: Copy) {
 dependencies {
     compile project(':common')
 
-    //TODO: add dependencies
     compile ('org.apache.jena:jena-jdbc-driver-remote:3.15.0') {
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     }
