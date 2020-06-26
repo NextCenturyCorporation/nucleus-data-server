@@ -25,8 +25,11 @@ public class SparqlAdapter extends QueryAdapter {
 
         try {
             RemoteEndpointDriver.register();
-            this.conn = DriverManager.getConnection("jdbc:jena:remote:query=http://" + host +
-                    ":3030/ds/sparql&update=http://" + host + ":3030/ds/update");
+            // Expect host to be "datasetname@host"
+            String[] datasetNameAndHost = host.split("@");
+            this.conn = DriverManager.getConnection("jdbc:jena:remote:query=http://" + datasetNameAndHost[1] +
+                    ":3030/" + datasetNameAndHost[0] + "/sparql&update=http://" + host + ":3030/" +
+                    datasetNameAndHost[0] + "/update");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -107,6 +110,7 @@ public class SparqlAdapter extends QueryAdapter {
      */
     @Override
     public Mono<ActionResult> insertData(MutateQuery mutate) {
+        //TODO: Determine why sparql jdbc adapter doesn't work with this query
         Statement stmt = null;
         List<Map<String, Object>> results = null;
         try {
@@ -144,6 +148,7 @@ public class SparqlAdapter extends QueryAdapter {
      */
     @Override
     public Mono<ActionResult> deleteData(MutateQuery mutate) {
+        //TODO: Determine why sparql jdbc adapter doesn't work with this query
         Statement stmt = null;
         List<Map<String, Object>> results = null;
         try {
