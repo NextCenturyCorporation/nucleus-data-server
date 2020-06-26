@@ -83,7 +83,7 @@ public class DeleteController {
         }
 
         if (invalidInput.size() > 0) {
-            return ResponseEntity.badRequest().body(Mono.just(new ActionResult("Mutation by ID Query Missing " +
+            return ResponseEntity.badRequest().body(Mono.just(new ActionResult("Deletion by filter Query Missing " +
                     String.join(", ", invalidInput))));
         }
 
