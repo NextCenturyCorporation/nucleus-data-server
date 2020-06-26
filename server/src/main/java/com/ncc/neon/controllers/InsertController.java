@@ -1,30 +1,24 @@
 package com.ncc.neon.controllers;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
 import com.ncc.neon.models.ConnectionInfo;
 import com.ncc.neon.models.DataNotification;
 import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.results.ActionResult;
 import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.QueryService;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -57,7 +51,7 @@ public class InsertController {
                 .map(triple -> (String)triple.getLeft()).collect(Collectors.toList());
 
         if (invalidInput.size() > 0) {
-            return ResponseEntity.badRequest().body(Mono.just(new ActionResult("Mutation by ID Query Missing " +
+            return ResponseEntity.badRequest().body(Mono.just(new ActionResult("Insertion by ID Query Missing " +
                     String.join(", ", invalidInput))));
         }
 
