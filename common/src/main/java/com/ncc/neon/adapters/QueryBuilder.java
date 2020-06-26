@@ -1,29 +1,11 @@
 package com.ncc.neon.adapters;
 
+import com.ncc.neon.models.queries.*;
+import com.ncc.neon.util.DateUtil;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-
-import com.ncc.neon.models.queries.AggregateByFieldClause;
-import com.ncc.neon.models.queries.AggregateByGroupCountClause;
-import com.ncc.neon.models.queries.AggregateByTotalCountClause;
-import com.ncc.neon.models.queries.AndWhereClause;
-import com.ncc.neon.models.queries.FieldClause;
-import com.ncc.neon.models.queries.FieldsWhereClause;
-import com.ncc.neon.models.queries.GroupByFieldClause;
-import com.ncc.neon.models.queries.GroupByOperationClause;
-import com.ncc.neon.models.queries.JoinClause;
-import com.ncc.neon.models.queries.LimitClause;
-import com.ncc.neon.models.queries.MutateQuery;
-import com.ncc.neon.models.queries.OffsetClause;
-import com.ncc.neon.models.queries.OrWhereClause;
-import com.ncc.neon.models.queries.Query;
-import com.ncc.neon.models.queries.SelectClause;
-import com.ncc.neon.models.queries.SingularWhereClause;
-import com.ncc.neon.models.queries.OrderByFieldClause;
-import com.ncc.neon.models.queries.OrderByOperationClause;
-import com.ncc.neon.models.queries.Order;
-import com.ncc.neon.util.DateUtil;
 
 /**
  * Builds queries for the query adapters' unit tests.
@@ -51,6 +33,37 @@ public class QueryBuilder {
         query.setDistinct(true);
         query.setSelectClause(new SelectClause("testDatabase", "testTable", Arrays.asList(
             new FieldClause("testDatabase", "testTable", "testField1"))));
+        return query;
+    }
+
+    protected Query buildQueryDistinctSparql() {
+        Query query = new Query();
+        query.setDistinct(true);
+        query.setSelectClause(new SelectClause("testDatabase", "testTable", Arrays.asList(
+                new FieldClause("testDatabase", "testTable", "s"))));
+        return query;
+    }
+
+    protected Query buildQueryFilterEqualsValueSparql() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTable", Arrays.asList(
+                new FieldClause("testDatabase", "testTable", "s"),
+                new FieldClause("testDatabase", "testTable", "p"),
+                new FieldClause("testDatabase", "testTable", "o"))));
+        query.setWhereClause(SingularWhereClause.fromString(new FieldClause("testDatabase", "testTable", "o"), "testType", "testObject"));
+        return query;
+    }
+
+    protected Query buildQueryMultipleFilterEqualsValueSparql() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTable", Arrays.asList(
+                new FieldClause("testDatabase", "testTable", "s"),
+                new FieldClause("testDatabase", "testTable", "p"),
+                new FieldClause("testDatabase", "testTable", "o"))));
+        query.setWhereClause(new AndWhereClause(Arrays.asList(
+                SingularWhereClause.fromString(new FieldClause("testDatabase", "testTable", "o"), "testObjectType", "testObject"),
+                SingularWhereClause.fromString(new FieldClause("testDatabase", "testTable", "p"), "testPredicateType", "testPredicate")
+        )));
         return query;
     }
 
@@ -293,6 +306,13 @@ public class QueryBuilder {
         return query;
     }
 
+    protected Query buildQueryGroupByFieldSparql() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTable"));
+        query.setGroupByClauses(Arrays.asList(new GroupByFieldClause(new FieldClause("testDatabase", "testTable", "o"))));
+        return query;
+    }
+
     protected Query buildQueryGroupByDateSecond() {
         Query query = new Query();
         query.setSelectClause(new SelectClause("testDatabase", "testTable"));
@@ -421,10 +441,24 @@ public class QueryBuilder {
         return query;
     }
 
+    protected Query buildQuerySortAscendingSparql() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTable"));
+        query.setOrderByClauses(Arrays.asList(new OrderByFieldClause(new FieldClause("testDatabase", "testTable", "o"), Order.ASCENDING)));
+        return query;
+    }
+
     protected Query buildQuerySortDescending() {
         Query query = new Query();
         query.setSelectClause(new SelectClause("testDatabase", "testTable"));
         query.setOrderByClauses(Arrays.asList(new OrderByFieldClause(new FieldClause("testDatabase", "testTable", "testSortField"), Order.DESCENDING)));
+        return query;
+    }
+
+    protected Query buildQuerySortDescendingSparql() {
+        Query query = new Query();
+        query.setSelectClause(new SelectClause("testDatabase", "testTable"));
+        query.setOrderByClauses(Arrays.asList(new OrderByFieldClause(new FieldClause("testDatabase", "testTable", "o"), Order.DESCENDING)));
         return query;
     }
 
