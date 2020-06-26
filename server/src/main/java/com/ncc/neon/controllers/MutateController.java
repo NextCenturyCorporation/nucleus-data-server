@@ -46,21 +46,9 @@ public class MutateController {
             Triple.of("Fields with Values", mutateQuery.getFieldsWithValues().entrySet(), isEmpty),
         };
 
-        List<String> invalidInput = Arrays.asList(labeledInput).stream()
-            .filter(triple -> ((Predicate)triple.getRight()).test(triple.getMiddle()))
-            .map(triple -> (String)triple.getLeft()).collect(Collectors.toList());
+        String mutationErrorString = "Mutation by ID Query Missing ";
 
-        if (invalidInput.size() > 0) {
-            return ResponseEntity.badRequest().body(Mono.just(new ActionResult("Mutation by ID Query Missing " +
-                String.join(", ", invalidInput))));
-        }
-
-        ConnectionInfo info = new ConnectionInfo(mutateQuery.getDatastoreType(), mutateQuery.getDatastoreHost());
-
-        datasetService.notify(new DataNotification(mutateQuery.getDatastoreHost(), mutateQuery.getDatastoreType(),
-            mutateQuery.getDatabaseName(), mutateQuery.getTableName(), 1));
-
-        return ResponseEntity.ok().body(queryService.mutateData(info, mutateQuery));
+        return mutateData(labeledInput, mutateQuery, mutationErrorString, false);
     }
 
     @PostMapping(path="/byfilter", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
@@ -76,16 +64,23 @@ public class MutateController {
                 Triple.of("Fields with Values", mutateQuery.getFieldsWithValues().entrySet(), isEmpty)
         };
 
+        String mutationErrorString = "Mutation by filter Query Missing ";
+
+        return mutateData(labeledInput, mutateQuery, mutationErrorString, true);
+    }
+
+    private ResponseEntity<Mono<ActionResult>> mutateData(Triple[] labeledInput, @RequestBody MutateQuery mutateQuery,
+                                                          String mutationErrorString, Boolean checkWhereClause) {
         List<String> invalidInput = Arrays.asList(labeledInput).stream()
                 .filter(triple -> ((Predicate)triple.getRight()).test(triple.getMiddle()))
                 .map(triple -> (String)triple.getLeft()).collect(Collectors.toList());
 
-        if (mutateQuery.getWhereClause() == null) {
+        if (checkWhereClause && mutateQuery.getWhereClause() == null) {
             invalidInput.add("Where Clause");
         }
 
         if (invalidInput.size() > 0) {
-            return ResponseEntity.badRequest().body(Mono.just(new ActionResult("Mutation by ID Query Missing " +
+            return ResponseEntity.badRequest().body(Mono.just(new ActionResult(mutationErrorString +
                     String.join(", ", invalidInput))));
         }
 

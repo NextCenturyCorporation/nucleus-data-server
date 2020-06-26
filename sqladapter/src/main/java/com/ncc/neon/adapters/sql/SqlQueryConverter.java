@@ -250,7 +250,7 @@ public class SqlQueryConverter {
             .map(entry -> entry.getKey() + " = " + SqlQueryConverter.transformObjectToString(entry.getValue(), false))
             .collect(Collectors.toList());
 
-        String whereClause = getWhereClause(mutateQuery);
+        String whereClause = getWhereClauseFromMutateQuery(mutateQuery);
 
         String sqlQueryString = "UPDATE " + mutateQuery.getDatabaseName() + "." + mutateQuery.getTableName() +
             " SET " + String.join(", ", fieldAndValueStrings) + " WHERE " + whereClause;
@@ -269,14 +269,14 @@ public class SqlQueryConverter {
     }
 
     public static String convertMutationQueryIntoDeleteQuery(MutateQuery mutateQuery) {
-        String whereClause = getWhereClause(mutateQuery);
+        String whereClause = getWhereClauseFromMutateQuery(mutateQuery);
         String sqlQueryString = "DELETE FROM " + mutateQuery.getDatabaseName() + "." +
                 mutateQuery.getTableName() + " WHERE " + whereClause;
 
         return sqlQueryString;
     }
 
-    private static String getWhereClause(MutateQuery mutateQuery) {
+    private static String getWhereClauseFromMutateQuery(MutateQuery mutateQuery) {
         SqlType type = SqlType.MYSQL;
         if (mutateQuery.getDatastoreType().equals("postgresql")) {
             type = SqlType.POSTGRESQL;

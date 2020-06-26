@@ -434,7 +434,7 @@ public class ElasticsearchQueryConverter {
         QueryBuilder queryBuilder = convertWhereClauses(selectClause, List.of(mutateQuery.getWhereClause()));
         UpdateByQueryRequest request = new UpdateByQueryRequest();
         request.setQuery(queryBuilder);
-        request.getSearchRequest().indices("_all");
+        request.getSearchRequest().indices(mutateQuery.getDatabaseName());
         request.setScript(new Script(
                 ScriptType.INLINE,
                 "painless",
