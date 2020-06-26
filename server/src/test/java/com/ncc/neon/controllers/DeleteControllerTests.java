@@ -40,7 +40,7 @@ public class DeleteControllerTests {
     public void testDeleteWithInvalidInput() {
         MutateQuery mutateQuery = new MutateQuery("", "", "", "", "", "", new LinkedHashMap<String, Object>(), null);
         webTestClient.post()
-                .uri("/deleteservice/delete")
+                .uri("/deleteservice/byid")
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
                 .body(Mono.just(mutateQuery), MutateQuery.class)
                 .exchange()
