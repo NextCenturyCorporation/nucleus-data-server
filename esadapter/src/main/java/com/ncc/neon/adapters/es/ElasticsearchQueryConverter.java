@@ -434,13 +434,16 @@ public class ElasticsearchQueryConverter {
         QueryBuilder queryBuilder = convertWhereClauses(selectClause, List.of(mutateQuery.getWhereClause()));
         UpdateByQueryRequest request = new UpdateByQueryRequest();
         request.setQuery(queryBuilder);
-        request.getSearchRequest().indices(mutateQuery.getDatabaseName());
+        request.getSearchRequest().indices(mutateQuery.getDatabaseName()).types(mutateQuery.getTableName());
+        /* TODO Don't use scripts in ES queries due to security concerns.
         request.setScript(new Script(
                 ScriptType.INLINE,
                 "painless",
                 "for (entry in params.entrySet()) { ctx._source[entry.getKey()] = entry.getValue(); }",
                 mutateQuery.getFieldsWithValues()));
         return request;
+        */
+        return null;
     }
 
     public static IndexRequest convertMutationInsertQuery(MutateQuery mutateQuery) {
@@ -458,7 +461,7 @@ public class ElasticsearchQueryConverter {
         QueryBuilder queryBuilder = convertWhereClauses(selectClause, List.of(mutateQuery.getWhereClause()));
         DeleteByQueryRequest request = new DeleteByQueryRequest();
         request.setQuery(queryBuilder);
-        request.getSearchRequest().indices(mutateQuery.getDatabaseName());
+        request.getSearchRequest().indices(mutateQuery.getDatabaseName()).types(mutateQuery.getTableName());
         return request;
     }
 }

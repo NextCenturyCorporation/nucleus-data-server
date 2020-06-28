@@ -391,6 +391,8 @@ public class ElasticsearchAdapter extends QueryAdapter {
                 });
             });
         } else {
+            return Mono.just(new ActionResult("ES update-by-query request not yet supported."));
+            /* TODO Use once query is properly implemented.
             UpdateByQueryRequest updateRequest = ElasticsearchQueryConverter.convertMutationByFilterQuery(mutateQuery);
 
             return Mono.create(sink -> {
@@ -408,6 +410,7 @@ public class ElasticsearchAdapter extends QueryAdapter {
                     }
                 });
             });
+            */
         }
     }
 
