@@ -441,7 +441,7 @@ public class ElasticsearchQueryConverter {
         QueryBuilder queryBuilder = convertWhereClauses(selectClause, List.of(mutateQuery.getWhereClause()));
         DeleteByQueryRequest request = new DeleteByQueryRequest();
         request.setQuery(queryBuilder);
-        request.getSearchRequest().indices("_all");
+        request.getSearchRequest().indices(mutateQuery.getDatabaseName()).types(mutateQuery.getTableName());
         return request;
     }
 }
