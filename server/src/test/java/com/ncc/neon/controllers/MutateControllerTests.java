@@ -1,17 +1,10 @@
 package com.ncc.neon.controllers;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-
 import com.ncc.neon.NeonServerApplication;
 import com.ncc.neon.models.ConnectionInfo;
 import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.results.ActionResult;
 import com.ncc.neon.services.QueryService;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,8 +15,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
-
 import reactor.core.publisher.Mono;
+
+import java.util.LinkedHashMap;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = NeonServerApplication.class)
@@ -39,7 +36,7 @@ public class MutateControllerTests {
 
     @Test
     public void testMutateWithInvalidInput() {
-        MutateQuery mutateQuery = new MutateQuery("", "", "", "", "", "", new LinkedHashMap<String, Object>());
+        MutateQuery mutateQuery = new MutateQuery("", "", "", "", "", "", new LinkedHashMap<String, Object>(), null);
         webTestClient.post()
                 .uri("/mutateservice/byid")
 				.contentType(MediaType.APPLICATION_JSON_UTF8)
@@ -53,7 +50,7 @@ public class MutateControllerTests {
         MutateQuery mutateQuery = new MutateQuery("testHost", "testType", "testDatabase", "testTable", "testIdField",
             "testId", new LinkedHashMap<String, Object>(){{
                 put("testStringField", "testStringValue");
-            }}
+            }}, null
         );
 
         ActionResult mutateResult = new ActionResult("One record failed to import");

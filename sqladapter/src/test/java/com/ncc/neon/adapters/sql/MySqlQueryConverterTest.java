@@ -732,9 +732,9 @@ public class MySqlQueryConverterTest extends QueryBuilder {
     public void convertInsertQueryTest() {
         MutateQuery mutateQuery = buildMutationByIdQuery();
         String actual = SqlQueryConverter.convertMutationIntoInsertQuery(mutateQuery);
-        String expected = "INSERT INTO testDatabase.testTable (testString, testZero, testInteger, testDecimal, " +
-                "testNegativeInteger, testNegativeDecimal, testTrue, testFalse) VALUES ('a', 0, 1, 0.5, -1, -0.5, " +
-                "true, false)";
+        String expected = "INSERT INTO testDatabase.testTable (id, testString, testZero, testInteger, testDecimal, " +
+                "testNegativeInteger, testNegativeDecimal, testTrue, testFalse) VALUES ('testId', 'a', 0, 1, 0.5, " +
+                "-1, -0.5, true, false)";
         assertThat(actual).isEqualTo(expected);
     }
 
@@ -742,18 +742,28 @@ public class MySqlQueryConverterTest extends QueryBuilder {
     public void convertArrayAndObjectInsertQueryTest() {
         MutateQuery mutateQuery = buildArrayAndObjectMutationByIdQuery();
         String actual = SqlQueryConverter.convertMutationIntoInsertQuery(mutateQuery);
-        String expected = "INSERT INTO testDatabase.testTable (testEmptyArray, testEmptyObject, testArray, " +
-                "testObject) VALUES ('[]', '{}', '[\"b\",2,true,{\"testArrayObjectString\":\"c\"," +
+        String expected = "INSERT INTO testDatabase.testTable (id, testEmptyArray, testEmptyObject, testArray, " +
+                "testObject) VALUES ('testId', '[]', '{}', '[\"b\",2,true,{\"testArrayObjectString\":\"c\"," +
                 "\"testArrayObjectInteger\":3}]', '{\"testObjectString\":\"d\",\"testObjectInteger\":4," +
                 "\"testObjectBoolean\":true,\"testObjectArray\":[\"e\",5]}')";
         assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    public void convertDeleteQueryTest() {
+    public void convertDeleteByIdQueryTest() {
         MutateQuery mutateQuery = buildMutationByIdQuery();
+        mutateQuery.setDatastoreType("mysql");
         String actual = SqlQueryConverter.convertMutationQueryIntoDeleteQuery(mutateQuery);
         String expected = "DELETE FROM testDatabase.testTable WHERE testIdField = 'testId'";
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void convertDeleteByFilterQueryTest() {
+        MutateQuery mutateQuery = buildMutationByFilterQuery();
+        mutateQuery.setDatastoreType("mysql");
+        String actual = SqlQueryConverter.convertMutationQueryIntoDeleteQuery(mutateQuery);
+        String expected = "DELETE FROM testDatabase.testTable WHERE testDatabase.testTable.testFilterField1 = 'testFilterValue1'";
         assertThat(actual).isEqualTo(expected);
     }
 }

@@ -30,8 +30,8 @@ public class DeleteController {
         this.queryService = queryService;
     }
 
-    @PostMapping(path="/delete", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity<Mono<ActionResult>> deleteData(@RequestBody MutateQuery mutateQuery) {
+    @PostMapping(path="/byid", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity<Mono<ActionResult>> deleteDataById(@RequestBody MutateQuery mutateQuery) {
 
         final Predicate<String> isBlank = StringUtils::isBlank;
 
@@ -44,12 +44,42 @@ public class DeleteController {
                 Triple.of("Data ID", mutateQuery.getDataId(), isBlank)
         };
 
+        String deletionErrorString = "Deletion by ID Query Missing ";
+
+        return deleteData(labeledInput, mutateQuery, deletionErrorString, false);
+    }
+
+    @PostMapping(path="/byfilter", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity<Mono<ActionResult>> deleteDataByFilter(@RequestBody MutateQuery mutateQuery) {
+
+        final Predicate<String> isBlank = StringUtils::isBlank;
+
+        Triple[] labeledInput = new Triple[]{
+                Triple.of("Datastore Host", mutateQuery.getDatastoreHost(), isBlank),
+                Triple.of("Datastore Type", mutateQuery.getDatastoreType(), isBlank),
+                Triple.of("Database Name", mutateQuery.getDatabaseName(), isBlank),
+                Triple.of("Table Name", mutateQuery.getTableName(), isBlank),
+                Triple.of("ID Field", mutateQuery.getIdFieldName(), isBlank)
+        };
+
+        String deletionErrorString = "Deletion by filter Query Missing ";
+
+        return deleteData(labeledInput, mutateQuery, deletionErrorString, true);
+    }
+
+    private ResponseEntity<Mono<ActionResult>> deleteData(Triple[] labeledInput, @RequestBody MutateQuery mutateQuery,
+                                                          String deletionErrorString, Boolean checkWhereClause) {
+
         List<String> invalidInput = Arrays.asList(labeledInput).stream()
                 .filter(triple -> ((Predicate)triple.getRight()).test(triple.getMiddle()))
                 .map(triple -> (String)triple.getLeft()).collect(Collectors.toList());
 
+        if (checkWhereClause && mutateQuery.getWhereClause() == null) {
+            invalidInput.add("Where Clause");
+        }
+
         if (invalidInput.size() > 0) {
-            return ResponseEntity.badRequest().body(Mono.just(new ActionResult("Mutation by ID Query Missing " +
+            return ResponseEntity.badRequest().body(Mono.just(new ActionResult(deletionErrorString +
                     String.join(", ", invalidInput))));
         }
 

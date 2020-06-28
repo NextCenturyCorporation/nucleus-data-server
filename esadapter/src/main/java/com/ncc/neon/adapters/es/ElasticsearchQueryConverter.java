@@ -10,6 +10,7 @@ import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.*;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.BucketOrder;
@@ -132,7 +133,7 @@ public class ElasticsearchQueryConverter {
      * this case, a BoolQueryBuilder that combines all the subsidiary QueryBuilder
      * objects
      */
-    private static QueryBuilder convertWhereClauses(SelectClause selectClause, List<WhereClause> whereClauses) {
+    static QueryBuilder convertWhereClauses(SelectClause selectClause, List<WhereClause> whereClauses) {
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
         // Build the elasticsearch filters for the where clauses
@@ -430,7 +431,17 @@ public class ElasticsearchQueryConverter {
                 .source(mutateQuery.getFieldsWithValues());
     }
 
-    public static DeleteRequest convertMutationDeleteQuery(MutateQuery mutateQuery) {
+    public static DeleteRequest convertMutationDeleteByIdQuery(MutateQuery mutateQuery) {
         return new DeleteRequest(mutateQuery.getDatabaseName(), mutateQuery.getTableName(), mutateQuery.getDataId());
+
+    }
+
+    public static DeleteByQueryRequest convertMutationDeleteByFilterQuery(MutateQuery mutateQuery) {
+        SelectClause selectClause = new SelectClause(mutateQuery.getDatabaseName(), mutateQuery.getTableName());
+        QueryBuilder queryBuilder = convertWhereClauses(selectClause, List.of(mutateQuery.getWhereClause()));
+        DeleteByQueryRequest request = new DeleteByQueryRequest();
+        request.setQuery(queryBuilder);
+        request.getSearchRequest().indices(mutateQuery.getDatabaseName()).types(mutateQuery.getTableName());
+        return request;
     }
 }

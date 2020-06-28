@@ -1,12 +1,6 @@
 package com.ncc.neon.models.queries;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-
 import com.ncc.neon.NeonServerApplication;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +8,11 @@ import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = NeonServerApplication.class)
@@ -64,8 +63,8 @@ public class MutateQueryJsonTest {
                         add(5);
                     }});
                 }});
-            }}
-        );
+            }},
+        null);
     }
 
 }
