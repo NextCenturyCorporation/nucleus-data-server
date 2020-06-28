@@ -1121,7 +1121,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
                         "=", "testFilterValue1")));
         DeleteByQueryRequest expected = new DeleteByQueryRequest();
         expected.setQuery(queryBuilder);
-        expected.getSearchRequest().indices("_all");
+        expected.getSearchRequest().indices("testDatabase").types("testTable");
         // This test fails without the toString (I don't know why)
         assertThat(actual.toString()).isEqualTo(expected.toString());
     }
