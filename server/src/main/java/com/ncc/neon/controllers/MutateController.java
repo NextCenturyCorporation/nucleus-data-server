@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -42,7 +43,8 @@ public class MutateController {
             Triple.of("Datastore Type", mutateQuery.getDatastoreType(), isBlank),
             Triple.of("Database Name", mutateQuery.getDatabaseName(), isBlank),
             Triple.of("Table Name", mutateQuery.getTableName(), isBlank),
-            Triple.of("Data Id", mutateQuery.getDataId(), isBlank),
+            Triple.of("ID Field", mutateQuery.getIdFieldName(), isBlank),
+            Triple.of("Data ID", mutateQuery.getDataId(), isBlank),
             Triple.of("Fields with Values", mutateQuery.getFieldsWithValues().entrySet(), isEmpty),
         };
 
@@ -55,16 +57,18 @@ public class MutateController {
     public ResponseEntity<Mono<ActionResult>> mutateDataByFilter(@RequestBody MutateQuery mutateQuery) {
         final Predicate<String> isBlank = StringUtils::isBlank;
         final Predicate<Collection> isEmpty = CollectionUtils::isEmpty;
+        final Predicate<Object> isNull = Objects::isNull;
 
         Triple[] labeledInput = new Triple[]{
-                Triple.of("Datastore Host", mutateQuery.getDatastoreHost(), isBlank),
-                Triple.of("Datastore Type", mutateQuery.getDatastoreType(), isBlank),
-                Triple.of("Database Name", mutateQuery.getDatabaseName(), isBlank),
-                Triple.of("Table Name", mutateQuery.getTableName(), isBlank),
-                Triple.of("Fields with Values", mutateQuery.getFieldsWithValues().entrySet(), isEmpty)
+            Triple.of("Datastore Host", mutateQuery.getDatastoreHost(), isBlank),
+            Triple.of("Datastore Type", mutateQuery.getDatastoreType(), isBlank),
+            Triple.of("Database Name", mutateQuery.getDatabaseName(), isBlank),
+            Triple.of("Table Name", mutateQuery.getTableName(), isBlank),
+            Triple.of("Where Clause", mutateQuery.getWhereClause(), isNull),
+            Triple.of("Fields with Values", mutateQuery.getFieldsWithValues().entrySet(), isEmpty)
         };
 
-        String mutationErrorString = "Mutation by filter Query Missing ";
+        String mutationErrorString = "Mutation by Filter Query Missing ";
 
         return mutateData(labeledInput, mutateQuery, mutationErrorString, true);
     }

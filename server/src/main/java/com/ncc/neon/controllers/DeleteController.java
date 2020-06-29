@@ -6,6 +6,8 @@ import com.ncc.neon.models.queries.MutateQuery;
 import com.ncc.neon.models.results.ActionResult;
 import com.ncc.neon.services.DatasetService;
 import com.ncc.neon.services.QueryService;
+
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.http.MediaType;
@@ -14,7 +16,9 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -36,12 +40,12 @@ public class DeleteController {
         final Predicate<String> isBlank = StringUtils::isBlank;
 
         Triple[] labeledInput = new Triple[]{
-                Triple.of("Datastore Host", mutateQuery.getDatastoreHost(), isBlank),
-                Triple.of("Datastore Type", mutateQuery.getDatastoreType(), isBlank),
-                Triple.of("Database Name", mutateQuery.getDatabaseName(), isBlank),
-                Triple.of("Table Name", mutateQuery.getTableName(), isBlank),
-                Triple.of("ID Field", mutateQuery.getIdFieldName(), isBlank),
-                Triple.of("Data ID", mutateQuery.getDataId(), isBlank)
+            Triple.of("Datastore Host", mutateQuery.getDatastoreHost(), isBlank),
+            Triple.of("Datastore Type", mutateQuery.getDatastoreType(), isBlank),
+            Triple.of("Database Name", mutateQuery.getDatabaseName(), isBlank),
+            Triple.of("Table Name", mutateQuery.getTableName(), isBlank),
+            Triple.of("ID Field", mutateQuery.getIdFieldName(), isBlank),
+            Triple.of("Data ID", mutateQuery.getDataId(), isBlank)
         };
 
         String deletionErrorString = "Deletion by ID Query Missing ";
@@ -53,16 +57,17 @@ public class DeleteController {
     public ResponseEntity<Mono<ActionResult>> deleteDataByFilter(@RequestBody MutateQuery mutateQuery) {
 
         final Predicate<String> isBlank = StringUtils::isBlank;
+        final Predicate<Object> isNull = Objects::isNull;
 
         Triple[] labeledInput = new Triple[]{
-                Triple.of("Datastore Host", mutateQuery.getDatastoreHost(), isBlank),
-                Triple.of("Datastore Type", mutateQuery.getDatastoreType(), isBlank),
-                Triple.of("Database Name", mutateQuery.getDatabaseName(), isBlank),
-                Triple.of("Table Name", mutateQuery.getTableName(), isBlank),
-                Triple.of("ID Field", mutateQuery.getIdFieldName(), isBlank)
+            Triple.of("Datastore Host", mutateQuery.getDatastoreHost(), isBlank),
+            Triple.of("Datastore Type", mutateQuery.getDatastoreType(), isBlank),
+            Triple.of("Database Name", mutateQuery.getDatabaseName(), isBlank),
+            Triple.of("Table Name", mutateQuery.getTableName(), isBlank),
+            Triple.of("Where Clause", mutateQuery.getWhereClause(), isNull)
         };
 
-        String deletionErrorString = "Deletion by filter Query Missing ";
+        String deletionErrorString = "Deletion by Filter Query Missing ";
 
         return deleteData(labeledInput, mutateQuery, deletionErrorString, true);
     }
