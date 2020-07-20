@@ -43,6 +43,16 @@ public class AsyncService {
                                         Integer.parseInt(Objects.requireNonNull(env.getProperty("server_gpu_count")))).collectList()));
     }
 
+    public Mono<?> performDirectTranslation(DirectTranslationConfig translationConfig) {
+        return moduleService.buildNlpModuleClient(translationConfig.module).flatMap(nlpModule -> {
+            PreprocessorNlpModule preprocessorNlpModule = (PreprocessorNlpModule)nlpModule;
+
+            return moduleService.incrementJobCount(nlpModule.getName())
+                    .flatMap(ignored -> preprocessorNlpModule.performPreprocessing(translationConfig.getResultFile()))
+                    .flatMap(ignored -> moduleService.decrementJobCount(nlpModule.getName()));
+        });
+    }
+
     public Mono<?> performPreprocess(String file, String module) {
         return moduleService.buildNlpModuleClient(module).flatMap(nlpModule -> {
             PreprocessorNlpModule preprocessorNlpModule = (PreprocessorNlpModule)nlpModule;

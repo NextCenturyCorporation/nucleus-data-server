@@ -140,5 +140,21 @@
         "method": "GET"
       }
     ]
+  }, 
+  {
+    "name": "direct_translation", 
+    "type": "PREPROCESSOR", 
+    "endpoints": [
+      {
+        "type": "PREPROCESS",
+        "pathSegment": "translate",
+        "method": "POST"
+      },
+      {
+        "type": "LIST",
+        "pathSegment": "translate/list",
+        "method": "POST"
+      }
+    ]
   }
 ]

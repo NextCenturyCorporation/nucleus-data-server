@@ -1,9 +1,11 @@
 package com.ncc.neon.controllers;
 
+import com.ncc.neon.better.DirectTranslationConfig;
 import com.ncc.neon.better.ExperimentConfig;
 import com.ncc.neon.better.IENlpModule;
 import com.ncc.neon.better.IRNlpModule;
 import com.ncc.neon.exception.UpsertException;
+import com.ncc.neon.models.DirectTranslationForm;
 import com.ncc.neon.models.ExperimentForm;
 import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.*;
@@ -149,6 +151,22 @@ public class BetterController {
         asyncService.performPreprocess(file, module)
                 .subscribeOn(Schedulers.newSingle("thread"))
                 .subscribe();
+
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping(path="directtranslation")
+    ResponseEntity<Object> experiment(@RequestBody DirectTranslationForm translationForm) {
+        try {
+            DirectTranslationConfig translationConfig = new DirectTranslationConfig(translationForm);
+
+            // Build the experiment config for the evaluation
+            asyncService.performDirectTranslation(translationConfig)
+                .subscribeOn(Schedulers.newSingle("thread"))
+                .subscribe();
+        } catch (IOException e) {
+            return ResponseEntity.badRequest().build();
+        }
 
         return ResponseEntity.ok().build();
     }
