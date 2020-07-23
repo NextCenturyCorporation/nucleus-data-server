@@ -156,7 +156,7 @@ public class BetterController {
     }
 
     @PostMapping(path="directtranslation")
-    ResponseEntity<Object> experiment(@RequestBody DirectTranslationForm translationForm) {
+    ResponseEntity<Object> directTranslation(@ModelAttribute DirectTranslationForm translationForm) {
         try {
             DirectTranslationConfig translationConfig = new DirectTranslationConfig(translationForm);
 
