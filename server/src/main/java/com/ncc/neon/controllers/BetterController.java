@@ -144,6 +144,19 @@ public class BetterController {
                
     }
 
+    @GetMapping(path="docfile")
+    Mono<Object> docfile(@RequestParam("query") String query, @RequestParam("module") String module)  {
+        // synchronous service 
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> {
+                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+                    return irModule.searchIR(query);
+                });
+                // static cast from nlpModule -> IR 
+                // return Mono String[]
+               
+    }
+
     @GetMapping(path="preprocess")
     ResponseEntity<Object> preprocess(@RequestParam("file") String file, @RequestParam("module") String module) {
         asyncService.performPreprocess(file, module)
