@@ -147,11 +147,18 @@ public class BetterController {
     @GetMapping(path="docfile")
     Mono<Object> docfile(@RequestParam("query") String query, @RequestParam("module") String module)  {
         // synchronous service 
-        return moduleService.buildNlpModuleClient(module)
+        // below store FILEPATH/ instead of return. 
+        Mono<Object> filepath = moduleService.buildNlpModuleClient(module)
                 .flatMap(nlpModule -> {
                     IRNlpModule irModule = (IRNlpModule) nlpModule;
                     return irModule.searchIR(query);
                 });
+
+        // Use filepath to read file and parse it as a json. Store it in a json obj, 
+        // or send directly to whatever service that we can use for putting that data 
+        // inside ES. 
+        
+        return filepath;
                 // static cast from nlpModule -> IR 
                 // return Mono String[]
                
