@@ -6,5 +6,5 @@ import lombok.Data;
 public class Docfile {
     private final String id;
     private final String uuid;
-    private String text;
+    private final String text;
 }

@@ -8,12 +8,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import java.util.*;
 
 @Component
 public class IRDataService extends ElasticSearchService<Docfile> {
     @Autowired
     private DatasetService datasetService;
-    public static final String STATUS_FIELD = "status";
 
     @Autowired
     IRDataService(DatasetService datasetService,
@@ -22,15 +22,17 @@ public class IRDataService extends ElasticSearchService<Docfile> {
         super(dbHost, fileTable, fileTable, Docfile.class, datasetService);
     }
 
-    public Mono<RestStatus> initFile(String fileToAdd) {
-        Docfile docfileToAdd = new Docfile(fileToAdd, 0);
-        // docfileToAdd.setTimestamp(DateUtil.getCurrentDateTime());
-        return upsertAndRefresh(docfileToAdd, fileToAdd);
+    public Mono<RestStatus> initFile(String id, String uuid, String text) {
+        Docfile docfileToAdd = new Docfile(id, uuid, text);
+        return insertAndRefresh(docfileToAdd);
     }
 
-    public Mono<RestStatus> initMany(String[] filesToAdd) {
+    /*
+    public Mono<RestStatus> initMany(HashMap[] filesToAdd) {
         return Flux.fromArray(filesToAdd)
                 .flatMap(this::initFile)
                 .then(Mono.just(RestStatus.OK));
     }
+    */
+    
 }
