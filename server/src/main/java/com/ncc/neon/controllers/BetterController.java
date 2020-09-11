@@ -41,15 +41,18 @@ public class BetterController {
     private BetterFileService betterFileService;
     private ModuleService moduleService;
     private AsyncService asyncService;
+    private IRDataService irDataService;
 
     BetterController(FileShareService fileShareService,
                      BetterFileService betterFileService,
                      ModuleService moduleService,
-                     AsyncService asyncService) {
+                     AsyncService asyncService,
+                     IRDataService irDataService) {
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
         this.moduleService = moduleService;
         this.asyncService = asyncService;
+        this.irDataService = irDataService;
     }
 
     @GetMapping(path = "status")
@@ -161,13 +164,19 @@ public class BetterController {
     @GetMapping(path="docfile")
     Mono<Object> docfile(@RequestParam("query") String query, @RequestParam("module") String module)  {
         // synchronous service 
-        return moduleService.buildNlpModuleClient(module)
+        // below store FILEPATH/ instead of return. 
+        Mono<Object> filepath = moduleService.buildNlpModuleClient(module)
                 .flatMap(nlpModule -> {
                     IRNlpModule irModule = (IRNlpModule) nlpModule;
                     return irModule.searchIR(query);
                 });
-                // static cast from nlpModule -> IR 
-                // return Mono String[]
+
+        // Use filepath to read file and parse it as a json. Store it in a json obj, 
+        // or send directly to whatever service that we can use for putting that data 
+        // inside ES. 
+        
+        return filepath;
+                
                
     }
 

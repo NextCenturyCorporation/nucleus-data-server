@@ -46,6 +46,10 @@ public class IRNlpModule extends NlpModule {
         return this.performNlpOperation(params, queryEndpoint).cast(String[].class);
     }
 
+    //build a query for the docfile flask endpoint.
+    
+
+
     @Override
     protected Map<String, String> getListEndpointParams(String filePrefix) {
         // This Module does not have a list endpoint. 
