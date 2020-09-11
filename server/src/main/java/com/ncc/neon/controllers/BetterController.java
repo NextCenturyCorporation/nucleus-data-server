@@ -39,15 +39,18 @@ public class BetterController {
     private BetterFileService betterFileService;
     private ModuleService moduleService;
     private AsyncService asyncService;
+    private IRDataService irDataService;
 
     BetterController(FileShareService fileShareService,
                      BetterFileService betterFileService,
                      ModuleService moduleService,
-                     AsyncService asyncService) {
+                     AsyncService asyncService,
+                     IRDataService irDataService) {
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
         this.moduleService = moduleService;
         this.asyncService = asyncService;
+        this.irDataService = irDataService;
     }
 
     @GetMapping(path = "status")
