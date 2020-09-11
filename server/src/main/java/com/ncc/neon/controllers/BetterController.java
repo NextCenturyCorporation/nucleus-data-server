@@ -150,7 +150,7 @@ public class BetterController {
                     	for (String docID : queryResults) {
                     		String doc = ""; // introspect on documents to get the one corresponding to docID
                     		String uuid = ""; // introspect on documents to get the one corresponding to docID
-                    		storeInES(docID, doc, uuid);
+                    		IRDataService.initFile(docID, doc, uuid);
                     	}
                     	return queryResults;
                     });
