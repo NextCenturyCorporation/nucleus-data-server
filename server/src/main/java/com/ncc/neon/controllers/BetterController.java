@@ -8,6 +8,8 @@ import com.ncc.neon.models.ExperimentForm;
 import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.*;
 import lombok.extern.slf4j.Slf4j;
+
+import org.json.JSONObject;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -132,13 +134,25 @@ public class BetterController {
     }
 
     @GetMapping(path="irsearch")
-    Mono<Object> irsearch(@RequestParam("query") String query, @RequestParam("module") String module)  {
+    Mono<String[]> irsearch(@RequestParam("query") String query, @RequestParam("module") String module)  {
         // synchronous service 
         return moduleService.buildNlpModuleClient(module)
                 .flatMap(nlpModule -> {
                     IRNlpModule irModule = (IRNlpModule) nlpModule;
-                    return irModule.searchIR(query);
+                    Mono<String> docfileM = irModule.getDocfile();
+                    Mono<String[]> queryResultsM = irModule.searchIR(query);
+                    return docfileM.zipWith(queryResultsM, (docfile, queryResults) -> {
+                    	// load docfile
+                    	JSONObject documents = loadDocfileFromSharedir(docfile);
+                    	for (String docID : queryResults) {
+                    		String doc = ""; // introspect on documents to get the one corresponding to docID
+                    		String uuid = ""; // introspect on documents to get the one corresponding to docID
+                    		storeInES(docID, doc, uuid);
+                    	}
+                    	return queryResults;
+                    });
                 });
+        
                 // static cast from nlpModule -> IR 
                 // return Mono String[]
                

@@ -40,10 +40,10 @@ public class IRNlpModule extends NlpModule {
         return nlpResponse.bodyToMono(String[].class);
     }
 
-    public Mono<Object> searchIR(String query) {
+    public Mono<String[]> searchIR(String query) {
         HashMap<String, String> params = new HashMap<>();
         params.put("query", query);
-        return this.performNlpOperation(params, queryEndpoint);
+        return this.performNlpOperation(params, queryEndpoint).cast(String[].class);
     }
 
     @Override
