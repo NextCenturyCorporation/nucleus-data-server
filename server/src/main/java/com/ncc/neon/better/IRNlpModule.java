@@ -47,7 +47,10 @@ public class IRNlpModule extends NlpModule {
     }
 
     //build a query for the docfile flask endpoint.
-    
+    public Mono<String> getDocfile() {
+        HashMap<String, String> params = new HashMap<>();
+        return this.performNlpOperation(params, queryEndpoint).cast(String.class);
+    }
 
 
     @Override
