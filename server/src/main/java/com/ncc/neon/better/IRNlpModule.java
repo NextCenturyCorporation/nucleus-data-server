@@ -16,7 +16,8 @@ import java.util.Map;
 
 public class IRNlpModule extends NlpModule {
 
-    private HttpEndpoint queryEndpoint;
+    private HttpEndpoint irEndpoint;
+    private HttpEndpoint docfileEndpoint;
 
     public IRNlpModule(NlpModuleModel moduleModel, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService, Environment env) {
         // does not need runservice variable. 
@@ -29,7 +30,9 @@ public class IRNlpModule extends NlpModule {
         for (HttpEndpoint endpoint : endpoints) {
             switch (endpoint.getType()) {
                 case IR:
-                    queryEndpoint = endpoint;
+                    irEndpoint = endpoint;
+                case DOCFILE:
+                    docfileEndpoint = endpoint;
             }
         }
     }
@@ -43,13 +46,13 @@ public class IRNlpModule extends NlpModule {
     public Mono<String[]> searchIR(String query) {
         HashMap<String, String> params = new HashMap<>();
         params.put("query", query);
-        return this.performNlpOperation(params, queryEndpoint).cast(String[].class);
+        return this.performNlpOperation(params, irEndpoint).cast(String[].class);
     }
 
     //build a query for the docfile flask endpoint.
     public Mono<String> getDocfile() {
         HashMap<String, String> params = new HashMap<>();
-        return this.performNlpOperation(params, queryEndpoint).cast(String.class);
+        return this.performNlpOperation(params, docfileEndpoint).cast(String.class);
     }
 
 

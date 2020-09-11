@@ -80,6 +80,11 @@
         "type": "STATUS",
         "pathSegment": "/status",
         "method": "GET"
+      }, 
+      {
+        "type": "",
+        "pathSegment": "/docfile",
+        "method": "GET"
       }
     ]
   },
