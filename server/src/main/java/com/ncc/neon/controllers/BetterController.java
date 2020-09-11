@@ -141,7 +141,7 @@ public class BetterController {
         // synchronous service 
         return moduleService.buildNlpModuleClient(module)
                 .flatMap(nlpModule -> {
-                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+                    IRNlpModule irModule = (IRNlpModule) nlpModule; // static cast from nlpModule -> IR 
                     Mono<String> docfileM = irModule.getDocfile();
                     Mono<String[]> queryResultsM = irModule.searchIR(query);
                     return docfileM.zipWith(queryResultsM, (docfile, queryResults) -> {
@@ -152,32 +152,9 @@ public class BetterController {
                     		String uuid = ""; // introspect on documents to get the one corresponding to docID
                     		IRDataService.initFile(docID, doc, uuid);
                     	}
-                    	return queryResults;
+                    	return queryResults; // return Mono String[]
                     });
-                });
-        
-                // static cast from nlpModule -> IR 
-                // return Mono String[]
-               
-    }
-
-    @GetMapping(path="docfile")
-    Mono<Object> docfile(@RequestParam("query") String query, @RequestParam("module") String module)  {
-        // synchronous service 
-        // below store FILEPATH/ instead of return. 
-        Mono<Object> filepath = moduleService.buildNlpModuleClient(module)
-                .flatMap(nlpModule -> {
-                    IRNlpModule irModule = (IRNlpModule) nlpModule;
-                    return irModule.searchIR(query);
-                });
-
-        // Use filepath to read file and parse it as a json. Store it in a json obj, 
-        // or send directly to whatever service that we can use for putting that data 
-        // inside ES. 
-        
-        return filepath;
-                
-               
+                });               
     }
 
     @GetMapping(path="preprocess")
