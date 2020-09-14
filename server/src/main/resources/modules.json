@@ -82,7 +82,7 @@
         "method": "GET"
       }, 
       {
-        "type": "",
+        "type": "DOCFILE",
         "pathSegment": "/docfile",
         "method": "GET"
       }

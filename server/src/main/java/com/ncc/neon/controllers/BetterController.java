@@ -145,8 +145,9 @@ public class BetterController {
                     Mono<String> docfileM = irModule.getDocfile();
                     Mono<String[]> queryResultsM = irModule.searchIR(query);
                     return docfileM.zipWith(queryResultsM, (docfile, queryResults) -> {
-                    	// load docfile
-                    	JSONObject documents = loadDocfileFromSharedir(docfile);
+                        // load docfile
+                        Path filePath = fileShareService.getSharePath().resolve(docfile);
+                    	JSONObject documents = loadDocfileFromSharedir(filePath);
                     	for (String docID : queryResults) {
                     		String doc = ""; // introspect on documents to get the one corresponding to docID
                     		String uuid = ""; // introspect on documents to get the one corresponding to docID
