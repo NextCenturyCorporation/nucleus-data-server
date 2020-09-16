@@ -8,6 +8,7 @@ import java.util.Map;
 import com.ncc.neon.exception.InvalidConfigDataTypeException;
 import com.ncc.neon.models.*;
 import com.ncc.neon.models.BetterFile;
+import com.ncc.neon.models.Docfile;
 import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.FileShareService;

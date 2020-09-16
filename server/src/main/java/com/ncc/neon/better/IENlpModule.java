@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.ncc.neon.models.BetterFile;
+import com.ncc.neon.models.Docfile;
 import com.ncc.neon.models.NlpModuleModel;
 import com.ncc.neon.services.*;
 import org.elasticsearch.rest.RestStatus;
