@@ -136,6 +136,21 @@ public class BetterController {
         return res;
     }
 
+    @GetMapping(path="getdoc")
+    Mono<?> getdoc(@RequestParam("docId") String id) {
+        return betterFileService.getById(id);
+    }
+
+    @GetMapping(path="getdocs")
+    Mono<?> getdocs(@RequestParam("docIds") String[] ids) {
+        Mono<?> docs;
+        for(String id : ids) {
+            docs.add(betterFileService.getById(id));
+        }
+        return docs; 
+    }
+
+
     @GetMapping(path="irsearch")
     Mono<String[]> irsearch(@RequestParam("query") String query, @RequestParam("module") String module)  {
         // synchronous service 
