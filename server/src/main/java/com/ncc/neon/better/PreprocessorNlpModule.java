@@ -1,6 +1,7 @@
 package com.ncc.neon.better;
 
 import com.ncc.neon.models.BetterFile;
+import com.ncc.neon.models.Docfile;
 import com.ncc.neon.models.NlpModuleModel;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.FileShareService;
