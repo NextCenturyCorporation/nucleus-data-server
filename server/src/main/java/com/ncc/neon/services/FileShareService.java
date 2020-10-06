@@ -2,6 +2,7 @@ package com.ncc.neon.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ncc.neon.models.Docfile;
 import jdk.javadoc.internal.doclets.toolkit.util.DocFile;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Component;
@@ -47,10 +48,4 @@ public class FileShareService {
         return Mono.just(new File(filepath).delete());
     }
 
-    public Mono<ArrayList<DocFile>> readDocFile(Path filePath) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        String filepath = this.SHARE_PATH.resolve(filePath).toString();
-        ArrayList<DocFile> readFile = objectMapper.readValue(filepath, ArrayList<DocFile>);
-        return Mono.just(readFile);
-    }
 }

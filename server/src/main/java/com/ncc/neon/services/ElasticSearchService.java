@@ -95,6 +95,30 @@ public abstract class ElasticSearchService<T> {
         });
     }
 
+    public Mono<T> getByDocId(String index, String dataType, String docid) {
+        SearchRequest searchRequest = new SearchRequest();
+
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(QueryBuilders.termQuery("uuid", docid));
+        sourceBuilder.from(0);
+        sourceBuilder.size(100);
+        searchRequest.indices(index);
+        searchRequest.source(sourceBuilder);
+
+        return Mono.create(sink -> {
+            try {
+                SearchResponse searchResponse = elasticSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+                SearchHit[] hits = searchResponse.getHits().getHits();
+
+                for (SearchHit hit : hits) {
+                    T res = new ObjectMapper().readValue(hit.getSourceAsString(), type);
+                }
+            } catch (Exception e) {
+                sink.error(e);
+            }
+        });
+    }
+
     public T getByIdSync(String id) throws IOException {
         GetRequest gr = new GetRequest(index, dataType, id);
         GetResponse response = elasticSearchClient.get(gr, RequestOptions.DEFAULT);

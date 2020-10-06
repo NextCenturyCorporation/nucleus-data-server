@@ -22,11 +22,6 @@ public class IRDataService extends ElasticSearchService<Docfile> {
         super(dbHost, fileTable, fileTable, Docfile.class, datasetService);
     }
 
-    public Mono<RestStatus> initFile(String id, String uuid, String text) {
-        Docfile docfileToAdd = new Docfile(id, uuid, text);
-        return insertAndRefresh(docfileToAdd);
-    }
-
     /*
     public Mono<RestStatus> initMany(HashMap[] filesToAdd) {
         return Flux.fromArray(filesToAdd)
@@ -34,5 +29,19 @@ public class IRDataService extends ElasticSearchService<Docfile> {
                 .then(Mono.just(RestStatus.OK));
     }
     */
+
+    public Flux<Docfile> getIRDocResponse(String index, String type, String[] searchIDs) {
+        Flux<Docfile> docList = Flux.just();
+
+        return Flux.create(sink -> {
+            for(String id : searchIDs) {
+                docList.flatMap(x -> this.getByDocId(index, type, id));
+//                Flux<Docfile> returnList = Flux.just(this.getByDocId(index, type, id));
+                //docList = Flux.concat(docList, returnList);
+            }
+        });
+
+//        return docList.flatMap(x -> this.getByDocId(index, type, id));
+    }
     
 }

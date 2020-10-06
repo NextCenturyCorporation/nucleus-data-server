@@ -1,15 +1,17 @@
 package com.ncc.neon.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ncc.neon.better.ExperimentConfig;
 import com.ncc.neon.better.IENlpModule;
 import com.ncc.neon.better.IRNlpModule;
 import com.ncc.neon.exception.UpsertException;
+import com.ncc.neon.models.Docfile;
 import com.ncc.neon.models.ExperimentForm;
 import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.*;
+import jdk.javadoc.internal.doclets.toolkit.util.DocFile;
 import lombok.extern.slf4j.Slf4j;
 
-import org.json.JSONObject;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -25,6 +28,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -141,36 +145,9 @@ public class BetterController {
         return betterFileService.getById(id);
     }
 
-    @GetMapping(path="getdocs")
-    Mono<?> getdocs(@RequestParam("docIds") String[] ids) {
-        Mono<?> docs;
-        for(String id : ids) {
-            docs.add(betterFileService.getById(id));
-        }
-        return docs; 
-    }
-
-
-    @GetMapping(path="irsearch")
-    Mono<String[]> irsearch(@RequestParam("query") String query, @RequestParam("module") String module)  {
-        // synchronous service 
-        return moduleService.buildNlpModuleClient(module)
-                .flatMap(nlpModule -> {
-                    IRNlpModule irModule = (IRNlpModule) nlpModule; // static cast from nlpModule -> IR 
-                    Mono<String> docfileM = irModule.getDocfile();
-                    Mono<String[]> queryResultsM = irModule.searchIR(query);
-                    return docfileM.zipWith(queryResultsM, (docfile, queryResults) -> {
-                        // load docfile
-                        Path filePath = fileShareService.getSharePath().resolve(docfile);
-                    	JSONObject documents = loadDocfileFromSharedir(filePath);
-                    	for (String docID : queryResults) {
-                    		String doc = ""; // introspect on documents to get the one corresponding to docID
-                    		String uuid = ""; // introspect on documents to get the one corresponding to docID
-                    		this.irDataService.initFile(docID, doc, uuid);
-                    	}
-                    	return queryResults; // return Mono String[]
-                    });
-                });               
+    @GetMapping(path="getirdocs")
+    Flux<Docfile> getirdocs(@RequestParam("docIds") String[] ids) {
+        return this.irDataService.getIRDocResponse("irdata", "irdata", ids);
     }
 
     @GetMapping(path="preprocess")
