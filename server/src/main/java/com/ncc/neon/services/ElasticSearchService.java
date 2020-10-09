@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.DataNotification;
+import com.ncc.neon.models.Docfile;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
@@ -96,25 +97,38 @@ public abstract class ElasticSearchService<T> {
     }
 
     public Mono<T> getByDocId(String index, String dataType, String docid) {
-        SearchRequest searchRequest = new SearchRequest();
+        SearchRequest searchRequest = new SearchRequest(index);
 
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         sourceBuilder.query(QueryBuilders.termQuery("uuid", docid));
-        sourceBuilder.from(0);
         sourceBuilder.size(100);
-        searchRequest.indices(index);
         searchRequest.source(sourceBuilder);
-
+        System.out.println(index);
+        System.out.println(docid);
+        System.out.println(searchRequest);
+        Mono<Docfile> returnHit;// = new Mono<Docfile>();
         return Mono.create(sink -> {
+            System.out.println("Start of sink");
             try {
+                System.out.println("Querying Elasticsearch");
                 SearchResponse searchResponse = elasticSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+                System.out.println(searchRequest);
                 SearchHit[] hits = searchResponse.getHits().getHits();
-
+                System.out.println(hits);
+                System.out.println(hits.length);
+                System.out.println("Before Printing Hit");
                 for (SearchHit hit : hits) {
-                    T res = new ObjectMapper().readValue(hit.getSourceAsString(), type);
+                    System.out.println("Printing Hit");
+                    System.out.println(hit);
+//                    System.out.println(hit.getSourceAsString());
+                    System.out.println(new ObjectMapper().readValue(hit.getSourceAsString(), type));
+                    T returnDoc = (new ObjectMapper().readValue(hit.getSourceAsString(), type));
+                    sink.success(returnDoc);
+//                    System.out.println(res);
+                    //Docfile res = new ObjectMapper().readValue(hit.getSourceAsString(), Docfile);
                 }
             } catch (Exception e) {
-                sink.error(e);
+                System.out.println(e);
             }
         });
     }
