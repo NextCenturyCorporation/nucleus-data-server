@@ -1,17 +1,13 @@
 package com.ncc.neon.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ncc.neon.better.ExperimentConfig;
 import com.ncc.neon.better.IENlpModule;
-import com.ncc.neon.better.IRNlpModule;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.Docfile;
 import com.ncc.neon.models.ExperimentForm;
 import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.*;
-import jdk.javadoc.internal.doclets.toolkit.util.DocFile;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -20,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -129,8 +124,7 @@ public class BetterController {
                         .header(HttpHeaders.CONTENT_DISPOSITION,
                                 "attachment; filename=\"" + resource.getFilename() + "\"")
                         .body(resource);
-            }
-            else {
+            } else {
                 res = ResponseEntity.notFound().build();
             }
         } catch (MalformedURLException e) {
@@ -140,17 +134,17 @@ public class BetterController {
         return res;
     }
 
-    @GetMapping(path="getdoc")
+    @GetMapping(path = "getdoc")
     Mono<?> getdoc(@RequestParam("docId") String id) {
         return betterFileService.getById(id);
     }
 
-    @GetMapping(path="getirdocs")
-    Flux<Docfile> getirdocs(@RequestParam("docIds") String[] ids) {
+    @GetMapping(path = "getirdocs")
+    ArrayList<Docfile> getirdocs(@RequestParam("docIds") String[] ids) throws IOException {
         return this.irDataService.getIRDocResponse("irdata", "irdata", ids);
     }
 
-    @GetMapping(path="preprocess")
+    @GetMapping(path = "preprocess")
     ResponseEntity<Object> preprocess(@RequestParam("file") String file, @RequestParam("module") String module) {
         asyncService.performPreprocess(file, module)
                 .subscribeOn(Schedulers.newSingle("thread"))
@@ -159,15 +153,15 @@ public class BetterController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(path="experiment")
+    @PostMapping(path = "experiment")
     ResponseEntity<Object> experiment(@RequestBody ExperimentForm experimentForm) {
         try {
             ExperimentConfig experimentConfig = new ExperimentConfig(experimentForm);
 
             // Build the experiment config for the evaluation
             asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly())
-                .subscribeOn(Schedulers.newSingle("thread"))
-                .subscribe();
+                    .subscribeOn(Schedulers.newSingle("thread"))
+                    .subscribe();
         } catch (IOException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -175,7 +169,7 @@ public class BetterController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(path="syncexperiment")
+    @PostMapping(path = "syncexperiment")
     Mono<Object> syncExperiment(@RequestBody ExperimentForm experimentForm) {
         ExperimentConfig experimentConfig;
         try {
@@ -186,7 +180,7 @@ public class BetterController {
         return asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly());
     }
 
-    @DeleteMapping(path="eval/cancel")
+    @DeleteMapping(path = "eval/cancel")
     Mono<Object> cancelEval(@RequestParam("module") String module, @RequestParam("run_id") String runId) {
         return moduleService.buildNlpModuleClient(module)
                 .flatMap(nlpModule -> {

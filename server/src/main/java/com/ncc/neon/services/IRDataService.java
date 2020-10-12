@@ -1,14 +1,13 @@
 package com.ncc.neon.services;
 
 import com.ncc.neon.models.Docfile;
-import com.ncc.neon.util.DateUtil;
-import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import java.util.*;
+
+import java.io.IOException;
+import java.util.ArrayList;
+
 
 @Component
 public class IRDataService extends ElasticSearchService<Docfile> {
@@ -17,31 +16,17 @@ public class IRDataService extends ElasticSearchService<Docfile> {
 
     @Autowired
     IRDataService(DatasetService datasetService,
-                      @Value("${db_host}") String dbHost,
-                      @Value("${file.table}") String fileTable) {
+                  @Value("${db_host}") String dbHost,
+                  @Value("${file.table}") String fileTable) {
         super(dbHost, fileTable, fileTable, Docfile.class, datasetService);
     }
 
-    /*
-    public Mono<RestStatus> initMany(HashMap[] filesToAdd) {
-        return Flux.fromArray(filesToAdd)
-                .flatMap(this::initFile)
-                .then(Mono.just(RestStatus.OK));
+    public ArrayList<Docfile> getIRDocResponse(String index, String type, String[] searchIDs) throws IOException {
+        ArrayList<Docfile> respondList = new ArrayList<Docfile>();
+        for (String id : searchIDs) {
+            respondList.add(this.getByDocId(index, type, id));
+        }
+        return respondList;
     }
-    */
 
-    public Flux<Docfile> getIRDocResponse(String index, String type, String[] searchIDs) {
-        Flux<Docfile> docList = Flux.just();
-
-        return Flux.create(sink -> {
-            for(String id : searchIDs) {
-                docList.flatMap(x -> this.getByDocId(index, type, id));
-//                Flux<Docfile> returnList = Flux.just(this.getByDocId(index, type, id));
-                //docList = Flux.concat(docList, returnList);
-            }
-        });
-
-//        return docList.flatMap(x -> this.getByDocId(index, type, id));
-    }
-    
 }
