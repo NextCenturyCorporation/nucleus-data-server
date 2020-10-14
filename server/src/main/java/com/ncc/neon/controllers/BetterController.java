@@ -2,10 +2,12 @@ package com.ncc.neon.controllers;
 
 import com.ncc.neon.better.ExperimentConfig;
 import com.ncc.neon.better.IENlpModule;
+import com.ncc.neon.better.IRNlpModule;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.Docfile;
 import com.ncc.neon.models.ExperimentForm;
 import com.ncc.neon.models.FileStatus;
+import com.ncc.neon.models.RelevanceJudgement;
 import com.ncc.neon.services.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -134,6 +136,18 @@ public class BetterController {
         return res;
     }
 
+    @GetMapping(path="irsearch")
+    Mono<Object> irsearch(@RequestParam("query") String query, @RequestParam("module") String module)  {
+        // synchronous service
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> {
+                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+                    return irModule.searchIR(query);
+                });
+        // static cast from nlpModule -> IR
+        // return Mono String[]
+    }
+
     @GetMapping(path = "getdoc")
     Mono<?> getdoc(@RequestParam("docId") String id) {
         return betterFileService.getById(id);
@@ -186,6 +200,15 @@ public class BetterController {
                 .flatMap(nlpModule -> {
                     IENlpModule ieNlpModule = (IENlpModule) nlpModule;
                     return ieNlpModule.cancelEval(runId);
+                });
+    }
+
+    @GetMapping(path = "retrofitter")
+    Mono<Object> retroactive(@RequestParam("rels") ArrayList<RelevanceJudgement> rels, @RequestParam("module") String module) throws IOException {
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> {
+                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+                    return irModule.retrofit(rels);
                 });
     }
 }
