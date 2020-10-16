@@ -203,8 +203,10 @@ public class BetterController {
                 });
     }
 
-    @GetMapping(path = "retrofitter")
-    Mono<Object> retroactive(@RequestParam("rels") ArrayList<RelevanceJudgement> rels, @RequestParam("module") String module) throws IOException {
+    @PostMapping(path = "retrofitter")
+    Mono<Object> retroactive(@RequestBody ArrayList<RelevanceJudgement> rels) throws IOException {
+        System.out.println(rels);
+        String module = "ir-wrapper";
         return moduleService.buildNlpModuleClient(module)
                 .flatMap(nlpModule -> {
                     IRNlpModule irModule = (IRNlpModule) nlpModule;
