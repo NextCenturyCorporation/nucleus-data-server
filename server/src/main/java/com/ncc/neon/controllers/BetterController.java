@@ -206,7 +206,7 @@ public class BetterController {
     @PostMapping(path = "retrofitter")
     Mono<Object> retroactive(@RequestBody ArrayList<RelevanceJudgement> rels) throws IOException {
         System.out.println(rels);
-        String module = "ir-wrapper";
+        String module = "ir_wrapper";
         return moduleService.buildNlpModuleClient(module)
                 .flatMap(nlpModule -> {
                     IRNlpModule irModule = (IRNlpModule) nlpModule;
