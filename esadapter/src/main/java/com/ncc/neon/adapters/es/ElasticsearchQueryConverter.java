@@ -338,10 +338,6 @@ public class ElasticsearchQueryConverter {
                 .indices(indexName)
                 .types(indexType);
 
-        if (req.searchType() == SearchType.DFS_QUERY_THEN_FETCH
-            && params.getLimitClause() != null && params.getLimitClause().getLimit() > MAX_QUERY_LIMIT) {
-            req = req.scroll(TimeValue.timeValueMinutes(1));
-        }
         return req;
     }
 

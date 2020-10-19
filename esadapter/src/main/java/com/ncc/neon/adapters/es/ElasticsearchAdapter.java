@@ -27,6 +27,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -94,12 +95,15 @@ public class ElasticsearchAdapter extends QueryAdapter {
         log.debug("Neon query: " + query.toString());
 
         SearchRequest request = ElasticsearchQueryConverter.convertQuery(query);
-        final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
-        request.scroll(scroll);
+        boolean bigLimit = (query.getLimitClause() != null && query.getLimitClause().getLimit() > ElasticsearchQueryConverter.MAX_QUERY_LIMIT);
+        Scroll scroll = null;
+        if (request.searchType() == SearchType.DFS_QUERY_THEN_FETCH && bigLimit) {
+            scroll = new Scroll(TimeValue.timeValueMinutes(1L));
+            request.scroll(scroll);
+        }
         SearchResponse response = null;
         TabularQueryResult results = null;
         List<Map<String, Object>> collectedResults = null;
-        boolean bigLimit = (query.getLimitClause() != null && query.getLimitClause().getLimit() > ElasticsearchQueryConverter.MAX_QUERY_LIMIT);
 
         try {
             if (bigLimit && query.getAggregateClauses() != null && !query.getAggregateClauses().isEmpty()) {

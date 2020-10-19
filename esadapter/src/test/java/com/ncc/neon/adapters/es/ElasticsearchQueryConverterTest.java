@@ -942,7 +942,7 @@ public class ElasticsearchQueryConverterTest extends QueryBuilder {
         SearchRequest actual = ElasticsearchQueryConverter.convertQuery(query);
         SearchSourceBuilder source = createSourceBuilder();
         SearchRequest expected = createRequest("testDatabase", "testTable", source);
-        expected = expected.scroll(TimeValue.timeValueMinutes(1));
+        // A scroll will be set on the SearchRequest by the ElasticsearchAdapter later.
         assertThat(actual).isEqualTo(expected);
     }
 
