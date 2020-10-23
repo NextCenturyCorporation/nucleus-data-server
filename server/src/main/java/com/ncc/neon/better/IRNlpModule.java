@@ -65,8 +65,15 @@ public class IRNlpModule extends NlpModule {
 
     public Mono<String[]> retrofit(ArrayList<RelevanceJudgement> rels) {
         HashMap<String, String> params = new HashMap<>();
-
+        System.out.println("-----------------------------------------");
+        System.out.println("Inside IRNLP Retrofit");
+//        System.out.println(rels.toString());
         params.put("rels", rels.toString());
+        System.out.println(params);
+        System.out.println("-----------------------------------------");
+        System.out.println(this.retrofitterEndpoint);
+        System.out.println(retrofitterEndpoint.getMethod());
+        System.out.println("-----------------------------------------");
         return this.performNlpOperation(params, retrofitterEndpoint).cast(String[].class);
     }
 

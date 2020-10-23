@@ -85,6 +85,11 @@
         "type": "DOCFILE",
         "pathSegment": "/docfile",
         "method": "GET"
+      },
+      {
+        "type": "RETROFITTER",
+        "pathSegment": "/retrofitter",
+        "method": "POST"
       }
     ]
   },

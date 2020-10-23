@@ -1,12 +1,10 @@
 package com.ncc.neon.better;
 
 import com.ncc.neon.models.BetterFile;
-import com.ncc.neon.models.Docfile;
 import com.ncc.neon.models.NlpModuleModel;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.FileShareService;
 import com.ncc.neon.services.ModuleService;
-import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.env.Environment;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClientResponseException;

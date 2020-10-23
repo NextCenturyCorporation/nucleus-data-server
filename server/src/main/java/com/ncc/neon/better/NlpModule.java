@@ -1,22 +1,13 @@
 package com.ncc.neon.better;
 
-import java.net.ConnectException;
-import java.net.UnknownHostException;
-import java.util.Collections;
-import java.util.Map;
-
 import com.ncc.neon.exception.InvalidConfigDataTypeException;
 import com.ncc.neon.models.*;
-import com.ncc.neon.models.BetterFile;
-import com.ncc.neon.models.Docfile;
-import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.FileShareService;
 import com.ncc.neon.services.ModuleService;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -26,6 +17,11 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.net.ConnectException;
+import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.Map;
 
 
 /*
@@ -103,6 +99,12 @@ public abstract class NlpModule {
     }
 
     protected Mono<Object> performNlpOperation(Map<String, String> data, HttpEndpoint endpoint) {
+        System.out.println(data);
+        System.out.println(endpoint);
+        System.out.println(endpoint.getType());
+        System.out.println(endpoint.getPathSegment());
+        System.out.println(endpoint.getClass());
+        System.out.println(endpoint.getMethod());
         return buildRequest(data, endpoint)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
@@ -139,6 +141,7 @@ public abstract class NlpModule {
     }
 
     protected WebClient.RequestHeadersSpec<?> buildRequest(Map<String, String> data, HttpEndpoint endpoint) {
+        System.out.println("Inside Build Request");
         switch (endpoint.getMethod()) {
             case GET:
                 return client.get().uri(uriBuilder -> {
@@ -154,6 +157,7 @@ public abstract class NlpModule {
                 });
             // Default to post request.
             default:
+                System.out.println(endpoint.getMethod());
                 return client.post()
                         .uri(uriBuilder -> uriBuilder.pathSegment(endpoint.getPathSegment()).build())
                         .contentType(MediaType.APPLICATION_JSON)
