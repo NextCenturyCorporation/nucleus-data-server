@@ -99,12 +99,6 @@ public abstract class NlpModule {
     }
 
     protected Mono<Object> performNlpOperation(Map<String, String> data, HttpEndpoint endpoint) {
-        System.out.println(data);
-        System.out.println(endpoint);
-        System.out.println(endpoint.getType());
-        System.out.println(endpoint.getPathSegment());
-        System.out.println(endpoint.getClass());
-        System.out.println(endpoint.getMethod());
         return buildRequest(data, endpoint)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
@@ -141,7 +135,6 @@ public abstract class NlpModule {
     }
 
     protected WebClient.RequestHeadersSpec<?> buildRequest(Map<String, String> data, HttpEndpoint endpoint) {
-        System.out.println("Inside Build Request");
         switch (endpoint.getMethod()) {
             case GET:
                 return client.get().uri(uriBuilder -> {
@@ -157,7 +150,6 @@ public abstract class NlpModule {
                 });
             // Default to post request.
             default:
-                System.out.println(endpoint.getMethod());
                 return client.post()
                         .uri(uriBuilder -> uriBuilder.pathSegment(endpoint.getPathSegment()).build())
                         .contentType(MediaType.APPLICATION_JSON)

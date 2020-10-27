@@ -205,19 +205,9 @@ public class BetterController {
 
     @PostMapping(path = "retrofitter" )
     Mono<Object> retroactive(@RequestBody RelevanceJudgementList rels) throws IOException {
-        System.out.println("Entered");
-        RelevanceJudgementList list;
-//        try{
-//            list = new RelevanceJudgementList(rels);
-//        }
-//        System.out.println(rels);
         String module = "ir_wrapper";
         return moduleService.buildNlpModuleClient(module)
                 .flatMap(nlpModule -> {
-                    System.out.println("-----------------------------------------");
-                    System.out.println("Inside");
-                    System.out.println("-----------------------------------------");
-                    System.out.println(module);
                     IRNlpModule irModule = (IRNlpModule) nlpModule;
                     return irModule.retrofit(rels.getRelList());
                 });
