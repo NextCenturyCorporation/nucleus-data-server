@@ -2,7 +2,7 @@ package com.ncc.neon.better;
 
 import com.ncc.neon.models.NlpModuleModel;
 import com.ncc.neon.models.RelevanceJudgement;
-import com.ncc.neon.models.retroResponse;
+import com.ncc.neon.models.IRResponse;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.FileShareService;
 import com.ncc.neon.services.ModuleService;
@@ -43,13 +43,13 @@ public class IRNlpModule extends NlpModule {
     @Override
     protected Mono<Object> handleNlpOperationSuccess(ClientResponse nlpResponse) {
         // Assume doc ids were returned.
-        return nlpResponse.bodyToMono(String[].class);
+        return nlpResponse.bodyToMono(IRResponse.class);
     }
 
-    public Mono<String[]> searchIR(String query) {
+    public Mono<IRResponse> searchIR(String query) {
         HashMap<String, String> params = new HashMap<>();
         params.put("query", query);
-        return this.performNlpOperation(params, irEndpoint).cast(String[].class);
+        return this.performNlpOperation(params, irEndpoint).cast(IRResponse.class);
     }
 
     //build a query for the docfile flask endpoint.
@@ -64,10 +64,10 @@ public class IRNlpModule extends NlpModule {
         return null;
     }
 
-    public Mono<?> retrofit(ArrayList<RelevanceJudgement> rels) {
+    public Mono<IRResponse> retrofit(ArrayList<RelevanceJudgement> rels) {
         HashMap<String, String> params = new HashMap<>();
         params.put("rels", rels.toString());
-        return this.performNlpOperation(params, retrofitterEndpoint).cast(retroResponse.class);
+        return this.performNlpOperation(params, retrofitterEndpoint).cast(IRResponse.class);
     }
 
 }
