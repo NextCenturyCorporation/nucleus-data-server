@@ -1,7 +1,6 @@
 package com.ncc.neon.services;
 
 import com.ncc.neon.models.BetterFile;
-import com.ncc.neon.models.Docfile;
 import com.ncc.neon.util.DateUtil;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Autowired;
