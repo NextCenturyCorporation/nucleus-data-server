@@ -19,6 +19,7 @@ public class IRNlpModule extends NlpModule {
     private HttpEndpoint irEndpoint;
     private HttpEndpoint docfileEndpoint;
     private HttpEndpoint retrofitterEndpoint;
+    private HashMap<String, String> params;
 
     public IRNlpModule(NlpModuleModel moduleModel, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService, Environment env) {
         // does not need runservice variable. 
@@ -28,6 +29,7 @@ public class IRNlpModule extends NlpModule {
     @Override
     protected void initEndpoints(HttpEndpoint[] endpoints) {
         super.initEndpoints(endpoints);
+        this.params = new HashMap<>();
         for (HttpEndpoint endpoint : endpoints) {
             switch (endpoint.getType()) {
                 case IR:
@@ -47,15 +49,14 @@ public class IRNlpModule extends NlpModule {
     }
 
     public Mono<IRResponse> searchIR(String query) {
-        HashMap<String, String> params = new HashMap<>();
-        params.put("query", query);
-        return this.performNlpOperation(params, irEndpoint).cast(IRResponse.class);
+        this.params.put("query", query);
+        return this.performNlpOperation(this.params, irEndpoint).cast(IRResponse.class);
     }
 
     //build a query for the docfile flask endpoint.
     public Mono<String> getDocfile() {
         HashMap<String, String> params = new HashMap<>();
-        return this.performNlpOperation(params, docfileEndpoint).cast(String.class);
+        return this.performNlpOperation(this.params, docfileEndpoint).cast(String.class);
     }
 
     @Override
@@ -65,9 +66,8 @@ public class IRNlpModule extends NlpModule {
     }
 
     public Mono<IRResponse> retrofit(ArrayList<RelevanceJudgement> rels) {
-        HashMap<String, String> params = new HashMap<>();
-        params.put("rels", rels.toString());
-        return this.performNlpOperation(params, retrofitterEndpoint).cast(IRResponse.class);
+        this.params.put("rels", rels.toString());
+        return this.performNlpOperation(this.params, retrofitterEndpoint).cast(IRResponse.class);
     }
 
 }

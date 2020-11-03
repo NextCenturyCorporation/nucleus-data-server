@@ -5,6 +5,7 @@ import com.ncc.neon.models.NlpModuleModel;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.FileShareService;
 import com.ncc.neon.services.ModuleService;
+import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.env.Environment;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -48,12 +49,13 @@ public class PreprocessorNlpModule extends NlpModule {
         }
     }
 
-    public Mono<?> performPreprocessing(String filename) {
+    public Mono<RestStatus> performPreprocessing(String filename) {
         HashMap<String, String> params = new HashMap<>();
         params.put("file", filename);
         return this.performListOperation(filename, listEndpoint)
                 .flatMap(pendingFiles -> this.initPendingFiles(pendingFiles)
                 .then(this.performNlpOperation(params, preprocessEndpoint)
-                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))));
+                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)))
+                .flatMap(this::handleNlpOperationSuccess));
     }
 }
