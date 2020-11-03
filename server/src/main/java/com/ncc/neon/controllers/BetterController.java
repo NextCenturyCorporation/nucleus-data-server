@@ -4,10 +4,7 @@ import com.ncc.neon.better.ExperimentConfig;
 import com.ncc.neon.better.IENlpModule;
 import com.ncc.neon.better.IRNlpModule;
 import com.ncc.neon.exception.UpsertException;
-import com.ncc.neon.models.Docfile;
-import com.ncc.neon.models.ExperimentForm;
-import com.ncc.neon.models.FileStatus;
-import com.ncc.neon.models.RelevanceJudgementList;
+import com.ncc.neon.models.*;
 import com.ncc.neon.services.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -204,7 +201,7 @@ public class BetterController {
     }
 
     @PostMapping(path = "retrofitter" )
-    Mono<Object> retroactive(@RequestBody RelevanceJudgementList rels) throws IOException {
+    Mono<IRResponse> retroactive(@RequestBody RelevanceJudgementList rels) throws IOException {
         String module = "ir_wrapper";
         return moduleService.buildNlpModuleClient(module)
                 .flatMap(nlpModule -> {

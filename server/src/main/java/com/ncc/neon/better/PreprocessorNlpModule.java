@@ -49,13 +49,12 @@ public class PreprocessorNlpModule extends NlpModule {
         }
     }
 
-    public Mono<RestStatus> performPreprocessing(String filename) {
+    public Mono<?> performPreprocessing(String filename) {
         HashMap<String, String> params = new HashMap<>();
         params.put("file", filename);
         return this.performListOperation(filename, listEndpoint)
                 .flatMap(pendingFiles -> this.initPendingFiles(pendingFiles)
                 .then(this.performNlpOperation(params, preprocessEndpoint)
-                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles)))
-                .flatMap(this::handleNlpOperationSuccess));
+                .doOnError(onError -> this.handleNlpOperationError((WebClientResponseException) onError, pendingFiles))));
     }
 }
