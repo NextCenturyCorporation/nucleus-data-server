@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @CrossOrigin(origins = "*")
@@ -151,7 +151,7 @@ public class BetterController {
     }
 
     @GetMapping(path = "getirdocs")
-    ArrayList<Docfile> getirdocs(@RequestParam("docIds") String[] ids) throws IOException {
+    List<Docfile> getirdocs(@RequestParam("docIds") String[] ids) throws IOException {
         return this.irDataService.getIRDocResponse("irdata", "irdata", ids);
     }
 

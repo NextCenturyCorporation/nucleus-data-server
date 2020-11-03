@@ -53,7 +53,7 @@ public class AsyncService {
         });
     }
 
-    private Mono<String> processEvaluation(String experimentId, EvalConfig config, IENlpModule ieNlpModule1, boolean infOnly, String testFile) {
+    private Mono<String> processEvaluation(String experimentId, EvalConfig config, IENlpModule ieNlpModule, boolean infOnly, String testFile) {
         // Get the run id for the entire evaluation.
         String runId;
         try {
@@ -65,23 +65,23 @@ public class AsyncService {
         // Variables used in flatMaps must be final.
         String finalRunId = runId;
 
-        Mono<Object> trainMono = moduleService.incrementJobCount(ieNlpModule1.getName())
+        Mono<Object> trainMono = moduleService.incrementJobCount(ieNlpModule.getName())
                 .flatMap(ignored -> {
                     // Set job id equal to the new run id.
                     config.setJobIdParam(finalRunId);
 
                     if (!infOnly) {
                         return runService.updateToTrainStatus(finalRunId)
-                                .flatMap(test -> ieNlpModule1.performTraining(config, finalRunId))
+                                .flatMap(test -> ieNlpModule.performTraining(config, finalRunId))
                                 .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())));
                     }
 
                     return Mono.empty();
                 });
 
-        Mono<RestStatus> infMono = ieNlpModule1.performInference(config, runId)
+        Mono<RestStatus> infMono = ieNlpModule.performInference(config, runId)
                         .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
-                        .flatMap(infRes -> moduleService.decrementJobCount(ieNlpModule1.getName()));
+                        .flatMap(infRes -> moduleService.decrementJobCount(ieNlpModule.getName()));
 
         Mono<RestStatus> evalMono = moduleService.buildNlpModuleClient(ModuleService.EVAL_SERVICE_NAME)
                         .flatMap(evalModule -> {

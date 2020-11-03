@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 
 @Component
@@ -21,8 +22,8 @@ public class IRDataService extends ElasticSearchService<Docfile> {
         super(dbHost, fileTable, fileTable, Docfile.class, datasetService);
     }
 
-    public ArrayList<Docfile> getIRDocResponse(String index, String type, String[] searchIDs) throws IOException {
-        ArrayList<Docfile> respondList = new ArrayList<Docfile>();
+    public List<Docfile> getIRDocResponse(String index, String type, String[] searchIDs) throws IOException {
+        List<Docfile> respondList = new ArrayList<Docfile>();
         for (String id : searchIDs) {
             respondList.add(this.getByDocId(index, type, id));
         }
