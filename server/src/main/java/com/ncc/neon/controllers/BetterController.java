@@ -145,11 +145,6 @@ public class BetterController {
         // return Mono String[]
     }
 
-    @GetMapping(path = "getdoc")
-    Mono<BetterFile> getdoc(@RequestParam("docId") String id) {
-        return betterFileService.getById(id);
-    }
-
     @GetMapping(path = "getirdocs")
     List<Docfile> getirdocs(@RequestParam("docIds") String[] ids) throws IOException {
         return this.irDataService.getIRDocResponse("irdata", "irdata", ids);
