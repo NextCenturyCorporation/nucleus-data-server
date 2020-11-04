@@ -2,12 +2,11 @@ package com.ncc.neon.better;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ncc.neon.models.ExperimentForm;
+import com.ncc.neon.util.DateUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static com.ncc.neon.controllers.BetterController.SHARE_PATH;
@@ -27,6 +26,7 @@ public class ExperimentConfig {
         trainFile = experimentForm.getTrainFile();
         devFile = experimentForm.getDevFile();
         testFile = experimentForm.getTestFile();
+        name = module + "_experiment_" + DateUtil.getCurrentDateTime();
 
         // Read config file.
         ObjectMapper objectMapper = new ObjectMapper();
@@ -34,8 +34,6 @@ public class ExperimentConfig {
 
         rawConfig = objectMapper.readValue(configFile, Map.class);
         evalConfigs = new ArrayList<>();
-
-        initName();
 
         if (rawConfig.size() == 0) {
             // Add a single config with only required parameters.
