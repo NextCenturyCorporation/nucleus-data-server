@@ -146,7 +146,7 @@ public class BetterController {
     }
 
     @GetMapping(path = "getdoc")
-    Mono<?> getdoc(@RequestParam("docId") String id) {
+    Mono<BetterFile> getdoc(@RequestParam("docId") String id) {
         return betterFileService.getById(id);
     }
 
