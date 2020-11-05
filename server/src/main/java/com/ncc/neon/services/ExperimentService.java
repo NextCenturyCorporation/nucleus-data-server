@@ -31,7 +31,7 @@ public class ExperimentService extends ElasticSearchService<Experiment> {
         this.runService = runService;
     }
 
-    public Mono<Tuple2<String, RestStatus>> insertNew(ExperimentConfig config) {
+    public Mono<String> insertNew(ExperimentConfig config) {
         Experiment experiment = new Experiment(config.getName(), config.getEvalConfigs().length);
         return insert(experiment);
     }

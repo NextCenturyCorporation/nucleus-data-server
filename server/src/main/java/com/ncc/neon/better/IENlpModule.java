@@ -1,13 +1,17 @@
 package com.ncc.neon.better;
 
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.ncc.neon.models.BetterFile;
+import com.ncc.neon.models.Docfile;
 import com.ncc.neon.models.NlpModuleModel;
 import com.ncc.neon.services.*;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import reactor.core.Disposable;
@@ -16,11 +20,13 @@ import reactor.core.publisher.Mono;
 public class IENlpModule extends NlpModule {
     private final String TRAIN_OUTPUTS_KEY = "train_outputs";
     private final String INF_OUTPUTS_KEY = "inf_outputs";
+    private final String JOB_ID_KEY = "job_id";
 
     private HttpEndpoint trainEndpoint;
     private HttpEndpoint trainListEndpoint;
     private HttpEndpoint infEndpoint;
     private HttpEndpoint infListEndpoint;
+    private HttpEndpoint cancelEndpoint;
     private RunService runService;
 
     public IENlpModule(NlpModuleModel moduleModel, FileShareService fileShareService, BetterFileService betterFileService, RunService runService, ModuleService moduleService, Environment env) {
@@ -33,6 +39,19 @@ public class IENlpModule extends NlpModule {
         Map<String, String> res = new HashMap<>();
         res.put("output_file_prefix", filePrefix);
         return res;
+    }
+
+    @Override
+    protected Mono<Object> handleNlpOperationSuccess(ClientResponse nlpResponse) {
+        HttpStatus responseStatus = nlpResponse.statusCode();
+
+        // Check if nlp operation was canceled.
+        if (responseStatus == HttpStatus.RESET_CONTENT) {
+            return nlpResponse.bodyToMono(String.class).flatMap(runService::updateToCanceledStatus);
+        }
+
+        // Assume files were returned otherwise.
+        return nlpResponse.bodyToMono(BetterFile[].class).flatMap(this::updateFilesToReady);
     }
 
     @SuppressWarnings("incomplete-switch")
@@ -53,47 +72,55 @@ public class IENlpModule extends NlpModule {
                 case INF_LIST:
                     infListEndpoint = endpoint;
                     break;
+                case CANCEL:
+                    cancelEndpoint = endpoint;
+                    break;
             }
         }
     }
 
-    public Mono<RestStatus> performTraining(EvalConfig config, String runId) {
+    public Mono<Object> performTraining(EvalConfig config, String runId) {
         return performListOperation(config.outputFilePrefix, trainListEndpoint)
                 .doOnError(onError -> handleErrorDuringRun(onError, runId))
                 .flatMap(pendingFiles -> initPendingFiles(pendingFiles)
                         .then(runService.updateOutputs(runId, TRAIN_OUTPUTS_KEY, pendingFiles))
                         .flatMap(initRes -> performNlpOperation(config.trainConfigParams, trainEndpoint)
-                                .flatMap(this::handleNlpOperationSuccess)
-                                .flatMap(ignored -> runService.completeTraining(runId))
                                 .doOnError(onError -> {
                                     handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
                                     handleErrorDuringRun(onError, runId);
                                 })));
     }
 
-    public Mono<RestStatus> performInference(EvalConfig config, String runId) {
-        return performListOperation(config.outputFilePrefix, infListEndpoint)
-                .doOnError(onError -> handleErrorDuringRun(onError, runId))
-                .flatMap(pendingFiles -> initPendingFiles(pendingFiles)
-                        .then(runService.updateOutputs(runId, INF_OUTPUTS_KEY, pendingFiles))
-                        .then(performNlpOperation(config.infConfigParams, infEndpoint)
-                        .flatMap(this::handleNlpOperationSuccess)
-                                .doOnError(onError -> {
-                                    handleNlpOperationError((WebClientResponseException) onError, pendingFiles);
-                                    handleErrorDuringRun(onError, runId);
-                                })));
+    public Mono<Object> performInference(EvalConfig config, String runId) {
+        return runService.isCanceled(runId).flatMap(isCanceled -> {
+            if (isCanceled) {
+                return Mono.empty();
+            }
 
+            return runService.updateToInferenceStatus(runId)
+                    .then(performListOperation(config.outputFilePrefix, infListEndpoint)
+                            .doOnError(onError -> handleErrorDuringRun(onError, runId))
+                            .flatMap(pendingFiles -> initPendingFiles(pendingFiles)
+                                    .then(runService.updateOutputs(runId, INF_OUTPUTS_KEY, pendingFiles))
+                                    .flatMap(ignored -> performNlpOperation(config.infConfigParams, infEndpoint)
+                                            .doOnError(infError -> handleNlpOperationError((WebClientResponseException) infError, pendingFiles)))));
+        });
+    }
+
+    public Mono<String> cancelEval(String runId) {
+        Map<String, String> cancelParams = new HashMap();
+        cancelParams.put(JOB_ID_KEY, runId);
+
+        return buildRequest(cancelParams, cancelEndpoint)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(String.class)
+                .doOnSuccess(res -> runService.updateToCanceledStatus(runId).subscribe());
     }
 
     private Disposable handleErrorDuringRun(Throwable err, String runId) {
         return runService.updateToErrorStatus(runId, err.getMessage())
                 .then(runService.refreshIndex())
                 .subscribe();
-    }
-
-    private Map<String, String> getListParams(String outputFilePrefix) {
-        Map<String, String> res = new HashMap<>();
-        res.put("output_file_prefix", outputFilePrefix);
-        return res;
     }
 }

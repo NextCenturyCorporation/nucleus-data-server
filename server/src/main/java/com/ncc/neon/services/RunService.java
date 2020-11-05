@@ -1,6 +1,7 @@
 package com.ncc.neon.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.Run;
 import com.ncc.neon.models.RunStatus;
 import com.ncc.neon.models.Score;
@@ -10,8 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,9 +33,14 @@ public class RunService extends ElasticSearchService<Run> {
         super(dbHost, runTable, runTable, Run.class, datasetService);
     }
 
-    public Mono<Tuple2<String, RestStatus>> initRun(String experimentId, String trainConfigFile, String infConfigFile) {
-        Run run = new Run(experimentId, trainConfigFile, infConfigFile);
+    public Mono<String> initRun(String experimentId, Map<String, String> trainConfigParams, Map<String, String> infConfigParams) {
+        Run run = new Run(experimentId, trainConfigParams, infConfigParams);
         return insert(run);
+    }
+
+    public String initRunSync(String experimentId, Map<String, String> trainConfigParams, Map<String, String> infConfigParams) throws UpsertException {
+        Run run = new Run(experimentId, trainConfigParams, infConfigParams);
+        return insertSync(run);
     }
 
     public Mono<RestStatus> updateToTrainStatus(String runId) {
@@ -46,16 +50,12 @@ public class RunService extends ElasticSearchService<Run> {
         return updateAndRefresh(data, runId);
     }
 
-    public Mono<RestStatus> completeTraining(String runId) {
-        Map<String, Object> data = new HashMap<>();
-        data.put(TRAIN_END_TIME_FIELD, DateUtil.getCurrentDateTime());
-        return updateAndRefresh(data, runId);
-    }
-
     public Mono<RestStatus> updateToInferenceStatus(String runId) {
+        String currTime = DateUtil.getCurrentDateTime();
         Map<String, Object> data = new HashMap<>();
         data.put(STATUS_FIELD, RunStatus.INFERENCING);
-        data.put(INF_START_TIME_FIELD, DateUtil.getCurrentDateTime());
+        data.put(TRAIN_END_TIME_FIELD, currTime);
+        data.put(INF_START_TIME_FIELD, currTime);
         return updateAndRefresh(data, runId);
     }
 
@@ -72,6 +72,12 @@ public class RunService extends ElasticSearchService<Run> {
         data.put(STATUS_FIELD, RunStatus.DONE);
         data.put(OVERALL_SCORE_FIELD, scoreData);
         return updateAndRefresh(data, completedRunId);
+    }
+
+    public Mono<RestStatus> updateToCanceledStatus(String canceledRunId) {
+        Map<String, Object> data = new HashMap<>();
+        data.put(STATUS_FIELD, RunStatus.CANCELED);
+        return updateAndRefresh(data, canceledRunId);
     }
 
     public Mono<RestStatus> updateToErrorStatus(String runId, String errorMsg) {
@@ -91,5 +97,9 @@ public class RunService extends ElasticSearchService<Run> {
         return getById(runId)
             .map(run -> run.getInfOutputs()[0]);
 
+    }
+
+    public Mono<Boolean> isCanceled(String runId) {
+        return getById(runId).flatMap(run -> Mono.just(run.getStatus() == RunStatus.CANCELED));
     }
 }

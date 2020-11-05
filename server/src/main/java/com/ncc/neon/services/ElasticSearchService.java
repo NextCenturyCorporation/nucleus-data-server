@@ -26,8 +26,6 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 import java.io.IOException;
 import java.util.Map;
@@ -94,6 +92,27 @@ public abstract class ElasticSearchService<T> {
         });
     }
 
+    public T getByDocId(String index, String dataType, String docid) throws IOException {
+        SearchRequest searchRequest = new SearchRequest(index);
+
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(QueryBuilders.termQuery("uuid", docid));
+        sourceBuilder.size(100);
+        searchRequest.source(sourceBuilder);
+
+        SearchResponse searchResponse = elasticSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+        SearchHit[] hits = searchResponse.getHits().getHits();
+
+        return new ObjectMapper().readValue(hits[0].getSourceAsString(), type);
+    }
+
+    public T getByIdSync(String id) throws IOException {
+        GetRequest gr = new GetRequest(index, dataType, id);
+        GetResponse response = elasticSearchClient.get(gr, RequestOptions.DEFAULT);
+
+        return new ObjectMapper().readValue(response.getSourceAsString(), type);
+    }
+
     public Mono<Long> count(Map<String, Object> fields) {
         SearchRequest searchRequest = new SearchRequest();
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -117,12 +136,20 @@ public abstract class ElasticSearchService<T> {
         });
     }
 
-    public Mono<Tuple2<String, RestStatus>> insert(T itemToAdd) {
+    public Mono<String> insert(T itemToAdd) {
         // Serialize item to json map.
         Map<String, Object> itemMap = new ObjectMapper().convertValue(itemToAdd, Map.class);
 
         IndexRequest indexRequest = new IndexRequest(index, dataType).source(itemMap);
         return completeIndexRequest(indexRequest);
+    }
+
+    public String insertSync(T itemToAdd) throws UpsertException {
+        // Serialize item to json map.
+        Map<String, Object> itemMap = new ObjectMapper().convertValue(itemToAdd, Map.class);
+
+        IndexRequest indexRequest = new IndexRequest(index, dataType).source(itemMap);
+        return completeIndexRequestSync(indexRequest);
     }
 
     public Mono<RestStatus> insertAndRefresh(T itemToInsert) {
@@ -137,7 +164,7 @@ public abstract class ElasticSearchService<T> {
                 .doOnSuccess(status -> datasetService.notify(notification));
     }
 
-    public Mono<Tuple2<String, RestStatus>> upsert(T itemToAdd, String id) {
+    public Mono<String> upsert(T itemToAdd, String id) {
         // Serialize item to json map.
         Map<String, Object> itemMap = new ObjectMapper().convertValue(itemToAdd, Map.class);
 
@@ -195,7 +222,7 @@ public abstract class ElasticSearchService<T> {
         });
     }
 
-    private Mono<Tuple2<String, RestStatus>> completeIndexRequest(IndexRequest request) {
+    private Mono<String> completeIndexRequest(IndexRequest request) {
         return Mono.create(sink -> {
             try {
                 IndexResponse indexResponse = elasticSearchClient.index(request, RequestOptions.DEFAULT);
@@ -203,11 +230,24 @@ public abstract class ElasticSearchService<T> {
                 if (indexResponse.status() != RestStatus.CREATED && indexResponse.status() != RestStatus.OK) {
                     sink.error(new UpsertException(request.id(), indexResponse.status().toString()));
                 } else {
-                    sink.success(Tuples.of(indexResponse.getId(), indexResponse.status()));
+                    sink.success(indexResponse.getId());
                 }
             } catch (Exception e) {
                 sink.error(new UpsertException(request.id(), e.getMessage()));
             }
         });
+    }
+
+    private String completeIndexRequestSync(IndexRequest request) throws UpsertException {
+        try {
+            IndexResponse indexResponse = elasticSearchClient.index(request, RequestOptions.DEFAULT);
+
+            if (indexResponse.status() != RestStatus.CREATED && indexResponse.status() != RestStatus.OK) {
+                throw new UpsertException(request.id(), indexResponse.status().toString());
+            }
+            return indexResponse.getId();
+        } catch (IOException e) {
+            throw new UpsertException(request.id(), e.getMessage());
+        }
     }
 }

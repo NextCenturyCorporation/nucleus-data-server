@@ -68,6 +68,32 @@
     ]
   },
   {
+    "name": "ir_wrapper",
+    "type": "IR",
+    "endpoints": [
+      {
+        "type": "IR",
+        "pathSegment": "/",
+        "method": "GET"
+      },
+      {
+        "type": "STATUS",
+        "pathSegment": "/status",
+        "method": "GET"
+      }, 
+      {
+        "type": "DOCFILE",
+        "pathSegment": "/docfile",
+        "method": "GET"
+      },
+      {
+        "type": "RETROFITTER",
+        "pathSegment": "/retrofitter",
+        "method": "POST"
+      }
+    ]
+  },
+  {
     "name": "en_preprocessor",
     "type": "PREPROCESSOR",
     "endpoints": [

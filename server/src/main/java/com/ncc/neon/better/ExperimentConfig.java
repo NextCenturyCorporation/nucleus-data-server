@@ -7,6 +7,8 @@ import com.ncc.neon.util.DateUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static com.ncc.neon.controllers.BetterController.SHARE_PATH;
@@ -37,10 +39,10 @@ public class ExperimentConfig {
 
         if (rawConfig.size() == 0) {
             // Add a single config with only required parameters.
-            evalConfigs.add(EvalConfig.buildConfig(module, trainFile, devFile, testFile, name, new ArrayList<>()));
+            evalConfigs.add(EvalConfig.buildConfig(module, trainFile, devFile, name, new ArrayList<>()));
         }
         else {
-            parseConfig(experimentForm.getTrainFile(), experimentForm.getDevFile(), experimentForm.getTestFile());
+            parseConfig(experimentForm.getTrainFile(), experimentForm.getDevFile());
         }
     }
 
@@ -62,14 +64,21 @@ public class ExperimentConfig {
 
     public String getName() { return name; }
 
-    private void parseConfig(String trainFile, String devFile, String testFile) {
+    private void initName() {
+        TimeZone tz = TimeZone.getTimeZone("UTC");
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
+        df.setTimeZone(tz);
+        name = module + "_experiment_" + df.format(new Date());
+    }
+
+    private void parseConfig(String trainFile, String devFile) {
         // Extract atomic data from hash map.
         ArrayList<List<String>> values = new ArrayList<>(rawConfig.values());
         ArrayList<ArrayList<String>> configs = crossProduct(values);
 
         for (int i = 0; i < configs.size(); i++) {
             String outputFilePrefix = name + i;
-            EvalConfig currConfig = EvalConfig.buildConfig(module, trainFile, devFile, testFile, outputFilePrefix, configs.get(i));
+            EvalConfig currConfig = EvalConfig.buildConfig(module, trainFile, devFile, outputFilePrefix, configs.get(i));
             evalConfigs.add(currConfig);
         }
     }

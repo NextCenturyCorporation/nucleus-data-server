@@ -1,29 +1,27 @@
 package com.ncc.neon.better;
 
-import java.net.ConnectException;
-import java.net.UnknownHostException;
-import java.util.Collections;
-import java.util.Map;
-
 import com.ncc.neon.exception.InvalidConfigDataTypeException;
 import com.ncc.neon.models.*;
-import com.ncc.neon.models.BetterFile;
-import com.ncc.neon.models.FileStatus;
 import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.FileShareService;
 import com.ncc.neon.services.ModuleService;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.net.ConnectException;
+import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.Map;
 
 
 /*
@@ -50,6 +48,12 @@ public abstract class NlpModule {
     }
 
     protected abstract Map<String, String> getListEndpointParams(String filePrefix);
+
+    /*
+    Each NLP module may have their own way for dealing with the response of their operation, so
+    let the concrete classes implement this handling logic.
+     */
+    protected abstract Mono<Object> handleNlpOperationSuccess(ClientResponse nlpResponse);
 
     public String getName() { return this.name; }
 
@@ -94,27 +98,28 @@ public abstract class NlpModule {
         return Mono.just(files).flatMap(fileList -> betterFileService.initMany(fileList));
     }
 
-    protected Mono<BetterFile[]> performNlpOperation(Map<String, String> data, HttpEndpoint endpoint) {
+    protected Mono<Object> performNlpOperation(Map<String, String> data, HttpEndpoint endpoint) {
         return buildRequest(data, endpoint)
                 .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(BetterFile[].class)
+                .exchange()
+                // Use flatMap so the success handling runs before the next step in the sequence.
+                .flatMap(this::handleNlpOperationSuccess)
                 .doOnError(this::handleHttpError);
-    }
-
-    protected Mono<RestStatus> handleNlpOperationSuccess(BetterFile[] readyFiles) {
-        // Set status to ready.
-        for (BetterFile readyFile : readyFiles) {
-            readyFile.setStatus(FileStatus.READY);
-        }
-
-        return Flux.fromArray(readyFiles)
-                .flatMap(readyFile -> betterFileService.upsertAndRefresh(readyFile, readyFile.getFilename()))
-                .then(Mono.just(RestStatus.OK));
     }
 
     protected Disposable handleNlpOperationError(WebClientResponseException err, String[] pendingFiles) {
         return reportErrorInPendingFiles(err.getResponseBodyAsString(), pendingFiles).subscribe();
+    }
+
+    protected Mono<RestStatus> updateFilesToReady(BetterFile[] files) {
+        // Set status to ready.
+        for (BetterFile readyFile : files) {
+            readyFile.setStatus(FileStatus.READY);
+        }
+
+        return Flux.fromArray(files)
+                .flatMap(readyFile -> betterFileService.upsertAndRefresh(readyFile, readyFile.getFilename()))
+                .then(Mono.just(RestStatus.OK));
     }
 
     protected Flux<Object> reportErrorInPendingFiles(String errorMessage, String[] pendingFiles) {
@@ -130,32 +135,42 @@ public abstract class NlpModule {
     }
 
     protected WebClient.RequestHeadersSpec<?> buildRequest(Map<String, String> data, HttpEndpoint endpoint) {
-        if (endpoint.getMethod() == HttpMethod.GET) {
-            // Build Http Headers for query params.
-            HttpHeaders params = new HttpHeaders();
-            try {
-                for (Map.Entry<String, String> entry : data.entrySet()) {
-                        params.add(entry.getKey(), entry.getValue());
+        switch (endpoint.getMethod()) {
+            case GET:
+                return client.get().uri(uriBuilder -> {
+                    uriBuilder.pathSegment(endpoint.getPathSegment());
+                    uriBuilder.queryParams(convertMapToHeaders(data));
+                    return uriBuilder.build();
+                });
+            case DELETE:
+                return client.delete().uri(uriBuilder -> {
+                    uriBuilder.pathSegment(endpoint.getPathSegment());
+                    uriBuilder.queryParams(convertMapToHeaders(data));
+                    return uriBuilder.build();
+                });
+            // Default to post request.
+            default:
+                return client.post()
+                        .uri(uriBuilder -> uriBuilder.pathSegment(endpoint.getPathSegment()).build())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(BodyInserters.fromValue(data));
+        }
+    }
 
-                }
+    private HttpHeaders convertMapToHeaders(Map<String, String> data) {
+        // Build Http Headers for query params.
+        HttpHeaders params = new HttpHeaders();
+        try {
+            for (Map.Entry<String, String> entry : data.entrySet()) {
+                params.add(entry.getKey(), entry.getValue());
             }
-            catch (ClassCastException e) {
-                // Get the class name of the invalid data type.
-                throw new InvalidConfigDataTypeException(e.getMessage().split(" ")[1]);
-            }
-
-            return client.get().uri(uriBuilder -> {
-                uriBuilder.pathSegment(endpoint.getPathSegment());
-                uriBuilder.queryParams(params);
-                return uriBuilder.build();
-            });
+        }
+        catch (ClassCastException e) {
+            // Get the class name of the invalid data type.
+            throw new InvalidConfigDataTypeException(e.getMessage().split(" ")[1]);
         }
 
-        // Otherwise, we are doing a post.
-        return client.post()
-                .uri(uriBuilder -> uriBuilder.pathSegment(endpoint.getPathSegment()).build())
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(data));
+        return params;
     }
 
     private WebClient buildNlpWebClient(String name) {

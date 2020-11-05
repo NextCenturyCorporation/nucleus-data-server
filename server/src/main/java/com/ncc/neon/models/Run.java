@@ -3,6 +3,8 @@ package com.ncc.neon.models;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 public class Run {
     public static final String EXPERIMENT_ID_KEY = "experiment_id";
@@ -11,9 +13,9 @@ public class Run {
     @JsonProperty(EXPERIMENT_ID_KEY)
     private final String experimentId;
     @JsonProperty("train_config")
-    private final String trainConfig;
+    private final Map<String, String> trainConfig;
     @JsonProperty("inf_config")
-    private final String infConfig;
+    private final Map<String, String> infConfig;
     @JsonProperty("train_outputs")
     private String[] trainOutputs;
     @JsonProperty("inf_outputs")
