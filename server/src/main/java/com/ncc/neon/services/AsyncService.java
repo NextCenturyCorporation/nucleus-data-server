@@ -43,6 +43,19 @@ public class AsyncService {
                                         Integer.parseInt(Objects.requireNonNull(env.getProperty("server_gpu_count")))).collectList()));
     }
 
+    public Mono<Object> processIRExperiment(IRExperimentConfig experimentConfig){
+        return moduleService.buildNlpModuleClient(experimentConfig.module)
+                .flatMap(nlpModule -> experimentService.insertNew(experimentConfig)
+                        .flatMap(insertRes -> Flux.fromArray(experimentConfig.getEvalConfigs())
+                                .flatMapSequential(config -> experimentService.incrementCurrRun(insertRes)
+                                                .flatMap(ignored -> processEvaluation(insertRes, config, (IENlpModule) nlpModule, experimentConfig.getTestFile())
+                                                        .flatMap(completedRunId -> experimentService.updateOnRunComplete(completedRunId, insertRes)
+                                                                .then(experimentService.checkForComplete(insertRes)))
+                                                        .onErrorResume(err -> experimentService.countErrorEvals(insertRes)
+                                                                .then(experimentService.checkForComplete(insertRes)))),
+                                        Integer.parseInt(Objects.requireNonNull(env.getProperty("server_gpu_count")))).collectList()));
+    }
+
     public Mono<?> performPreprocess(String file, String module) {
         return moduleService.buildNlpModuleClient(module).flatMap(nlpModule -> {
             PreprocessorNlpModule preprocessorNlpModule = (PreprocessorNlpModule)nlpModule;

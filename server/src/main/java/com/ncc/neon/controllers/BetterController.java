@@ -2,6 +2,7 @@ package com.ncc.neon.controllers;
 
 import com.ncc.neon.better.ExperimentConfig;
 import com.ncc.neon.better.IENlpModule;
+import com.ncc.neon.better.IRExperimentConfig;
 import com.ncc.neon.better.IRNlpModule;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.*;
@@ -184,6 +185,22 @@ public class BetterController {
             return Mono.error(e);
         }
         return asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly());
+    }
+
+    @PostMapping(path = "irexperiment")
+    ResponseEntity<Object> irexperiment(@RequestBody IRExperimentForm experimentForm) {
+        try {
+            IRExperimentConfig experimentConfig = new IRExperimentConfig(experimentForm);
+
+            // Build the experiment config for the evaluation
+            asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly())
+                    .subscribeOn(Schedulers.newSingle("thread"))
+                    .subscribe();
+        } catch (IOException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping(path = "eval/cancel")
