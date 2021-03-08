@@ -43,19 +43,6 @@ public class AsyncService {
                                         Integer.parseInt(Objects.requireNonNull(env.getProperty("server_gpu_count")))).collectList()));
     }
 
-    public Mono<Object> processIRExperiment(IRExperimentConfig experimentConfig){
-        return moduleService.buildNlpModuleClient(experimentConfig.module)
-                .flatMap(nlpModule -> experimentService.insertNew(experimentConfig)
-                        .flatMap(insertRes -> Flux.fromArray(experimentConfig.getEvalConfigs())
-                                .flatMapSequential(config -> experimentService.incrementCurrRun(insertRes)
-                                                .flatMap(ignored -> processEvaluation(insertRes, config, (IENlpModule) nlpModule, experimentConfig.getTestFile())
-                                                        .flatMap(completedRunId -> experimentService.updateOnRunComplete(completedRunId, insertRes)
-                                                                .then(experimentService.checkForComplete(insertRes)))
-                                                        .onErrorResume(err -> experimentService.countErrorEvals(insertRes)
-                                                                .then(experimentService.checkForComplete(insertRes)))),
-                                        Integer.parseInt(Objects.requireNonNull(env.getProperty("server_gpu_count")))).collectList()));
-    }
-
     public Mono<?> performPreprocess(String file, String module) {
         return moduleService.buildNlpModuleClient(module).flatMap(nlpModule -> {
             PreprocessorNlpModule preprocessorNlpModule = (PreprocessorNlpModule)nlpModule;
@@ -112,4 +99,51 @@ public class AsyncService {
                         .flatMap(infRes -> evalMono
                             .flatMap(evalRes -> Mono.just(runId))));
     }
+
+//    private Mono<String> processIREvaluation(String experimentId, EvalConfig config, IENlpModule ieNlpModule) {
+//        // Get the run id for the entire evaluation.
+//        String runId;
+//        try {
+//            runId = runService.initRunSync(experimentId, config.getTrainConfigParams(), config.getInfConfigParams());
+//        } catch (UpsertException e) {
+//            return Mono.error(e);
+//        }
+//
+//        // Variables used in flatMaps must be final.
+//        String finalRunId = runId;
+//
+//        Mono<Object> trainMono = moduleService.incrementJobCount(ieNlpModule.getName())
+//                .flatMap(ignored -> {
+//                    // Set job id equal to the new run id.
+//                    config.setJobIdParam(finalRunId);
+//
+//                    if (!infOnly) {
+//                        return runService.updateToTrainStatus(finalRunId)
+//                                .flatMap(test -> ieNlpModule.performTraining(config, finalRunId))
+//                                .doOnError(trainError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, trainError.getMessage())));
+//                    }
+//
+//                    return Mono.empty();
+//                });
+//
+//        Mono<RestStatus> infMono = ieNlpModule.performInference(config, runId)
+//                .doOnError(infError -> Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, infError.getMessage())))
+//                .flatMap(infRes -> moduleService.decrementJobCount(ieNlpModule.getName()));
+//
+//        Mono<RestStatus> evalMono = moduleService.buildNlpModuleClient(ModuleService.EVAL_SERVICE_NAME)
+//                .flatMap(evalModule -> {
+//                    EvalNlpModule evalNlpModule = (EvalNlpModule) evalModule;
+//                    return runService.getInferenceOutput(runId)
+//                            .flatMap(sysFile -> evalNlpModule.performEval(testFile, sysFile, runId)
+//                                    .doOnError(evalError -> {
+//                                        evalNlpModule.handleErrorDuringRun(evalError, runId);
+//                                        Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, evalError.getMessage()));
+//                                    }));
+//                });
+//
+//        return trainMono
+//                .flatMap(trainRes -> infMono
+//                        .flatMap(infRes -> evalMono
+//                                .flatMap(evalRes -> Mono.just(runId))));
+//    }
 }

@@ -2,7 +2,6 @@ package com.ncc.neon.controllers;
 
 import com.ncc.neon.better.ExperimentConfig;
 import com.ncc.neon.better.IENlpModule;
-import com.ncc.neon.better.IRExperimentConfig;
 import com.ncc.neon.better.IRNlpModule;
 import com.ncc.neon.exception.UpsertException;
 import com.ncc.neon.models.*;
@@ -146,6 +145,18 @@ public class BetterController {
         // return Mono String[]
     }
 
+    @GetMapping(path="irie")
+    Mono<Object> irie(@RequestParam("query") String query, @RequestParam("module") String module)  {
+        // synchronous service
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> {
+                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+                    return irModule.searchIR(query);
+                });
+        // static cast from nlpModule -> IR
+        // return Mono String[]
+    }
+
     @GetMapping(path = "getirdocs")
     List<Docfile> getirdocs(@RequestParam("docIds") String[] ids) throws IOException {
         return this.irDataService.getIRDocResponse("irdata", "irdata", ids);
@@ -187,21 +198,17 @@ public class BetterController {
         return asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly());
     }
 
-    @PostMapping(path = "irexperiment")
-    ResponseEntity<Object> irexperiment(@RequestBody IRExperimentForm experimentForm) {
-        try {
-            IRExperimentConfig experimentConfig = new IRExperimentConfig(experimentForm);
-
-            // Build the experiment config for the evaluation
-            asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly())
-                    .subscribeOn(Schedulers.newSingle("thread"))
-                    .subscribe();
-        } catch (IOException e) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        return ResponseEntity.ok().build();
-    }
+//    @PostMapping(path = "irexperiment")
+//    ResponseEntity<Object> irexperiment(@RequestBody IRExperimentForm experimentForm) {
+//
+//        String module = "ir_wrapper";
+//        return moduleService.buildNlpModuleClient(module)
+//                .flatMap(nlpModule -> {
+//                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+//                    return irModule.start(experimentForm);
+//                });
+//        return ResponseEntity.ok().build();
+//    }
 
     @DeleteMapping(path = "eval/cancel")
     Mono<Object> cancelEval(@RequestParam("module") String module, @RequestParam("run_id") String runId) {

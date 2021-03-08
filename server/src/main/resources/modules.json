@@ -90,6 +90,21 @@
         "type": "RETROFITTER",
         "pathSegment": "/retrofitter",
         "method": "POST"
+      },
+      {
+        "type": "START",
+        "pathSegment": "/start",
+        "method": "POST"
+      },
+      {
+        "type": "RANKER",
+        "pathSegment": "/ranker",
+        "method": "GET"
+      },
+      {
+        "type": "IRIE",
+        "pathSegment": "/irie",
+        "method": "GET"
       }
     ]
   },

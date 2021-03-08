@@ -11,12 +11,26 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class Docfile {
-    private final long id;
+    private String id;
     private String uuid;
     @JsonProperty("text")
     private String text;
     private String first_data;
     private String first_stamp;
+
+    private String domain;
+    @JsonProperty("guess-publish-date")
+    private String guess_publish_date;
+    private int nwords;
+    @JsonProperty("crawl-date")
+    private String crawl_date;
+    private int nchars;
+    private String language;
+    @JsonProperty("warc-file")
+    private String warc_file;
+    @JsonProperty("langdetect-confidence")
+    private String langdetect_confidence;
+
 
     @JsonProperty("PERSON")
     private List<List<String>> PERSON;

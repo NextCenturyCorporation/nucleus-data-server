@@ -7,4 +7,5 @@ public class IRExperimentForm {
     private final String taskFile;
     private final String corpus;
     private final String module;
+    private final String mode;
 }

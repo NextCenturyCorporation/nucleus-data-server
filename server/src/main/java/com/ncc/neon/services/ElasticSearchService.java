@@ -96,7 +96,7 @@ public abstract class ElasticSearchService<T> {
         SearchRequest searchRequest = new SearchRequest(index);
 
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-        sourceBuilder.query(QueryBuilders.termQuery("uuid", docid));
+        sourceBuilder.query(QueryBuilders.termQuery("id", docid));
         sourceBuilder.size(100);
         searchRequest.source(sourceBuilder);
 

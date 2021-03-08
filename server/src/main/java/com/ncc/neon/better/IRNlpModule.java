@@ -17,8 +17,11 @@ import java.util.Map;
 public class IRNlpModule extends NlpModule {
 
     private HttpEndpoint irEndpoint;
+    private HttpEndpoint irieEndpoint;
     private HttpEndpoint docfileEndpoint;
     private HttpEndpoint retrofitterEndpoint;
+    private HttpEndpoint startEndpoint;
+    private HttpEndpoint rankerEndpoint;
     private HashMap<String, String> params;
 
     public IRNlpModule(NlpModuleModel moduleModel, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService, Environment env) {
@@ -38,6 +41,12 @@ public class IRNlpModule extends NlpModule {
                     docfileEndpoint = endpoint;
                 case RETROFITTER:
                     retrofitterEndpoint = endpoint;
+                case START:
+                    startEndpoint = endpoint;
+                case RANKER:
+                    rankerEndpoint = endpoint;
+                case IRIE:
+                    irieEndpoint = endpoint;
             }
         }
     }
@@ -49,6 +58,11 @@ public class IRNlpModule extends NlpModule {
     }
 
     public Mono<IRResponse> searchIR(String query) {
+        this.params.put("query", query);
+        return this.performNlpOperation(this.params, irEndpoint).cast(IRResponse.class);
+    }
+
+    public Mono<IRResponse> irie(String query) {
         this.params.put("query", query);
         return this.performNlpOperation(this.params, irEndpoint).cast(IRResponse.class);
     }
@@ -68,6 +82,15 @@ public class IRNlpModule extends NlpModule {
     public Mono<IRResponse> retrofit(ArrayList<RelevanceJudgement> rels) {
         this.params.put("rels", rels.toString());
         return this.performNlpOperation(this.params, retrofitterEndpoint).cast(IRResponse.class);
+    }
+
+    public Mono<Object> start(Object eval){
+//        this.params.put("mode", eval.mode);
+        return this.performNlpOperation(this.params, startEndpoint);
+    }
+
+    public Mono<Object> ranker(){
+        return this.performNlpOperation(this.params, rankerEndpoint);
     }
 
 }
