@@ -40,17 +40,20 @@ public class BetterController {
     private ModuleService moduleService;
     private AsyncService asyncService;
     private IRDataService irDataService;
+    private IRDocEntityService irDocEntityService;
 
     BetterController(FileShareService fileShareService,
                      BetterFileService betterFileService,
                      ModuleService moduleService,
                      AsyncService asyncService,
-                     IRDataService irDataService) {
+                     IRDataService irDataService,
+                     IRDocEntityService irDocEntityService) {
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
         this.moduleService = moduleService;
         this.asyncService = asyncService;
         this.irDataService = irDataService;
+        this.irDocEntityService = irDocEntityService;
     }
 
     @GetMapping(path = "status")
@@ -160,6 +163,11 @@ public class BetterController {
     @GetMapping(path = "getirdocs")
     List<Docfile> getirdocs(@RequestParam("docIds") String[] ids) throws IOException {
         return this.irDataService.getIRDocResponse("irdata", "irdata", ids);
+    }
+
+    @GetMapping(path = "irentities")
+    IRDocEntities irDocEntities(@RequestParam("docId") String docId) throws IOException {
+        return this.irDocEntityService.getByIdSync(docId);
     }
 
     @GetMapping(path = "preprocess")
