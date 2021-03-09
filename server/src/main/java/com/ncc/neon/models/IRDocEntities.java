@@ -10,7 +10,9 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class IRDocEntities {
+    private String docid;
     private List<String> entities;
+    private List<String> relations;
     private int eventCount;
     private int ssCount;
 }
