@@ -103,6 +103,10 @@ public abstract class ElasticSearchService<T> {
         SearchResponse searchResponse = elasticSearchClient.search(searchRequest, RequestOptions.DEFAULT);
         SearchHit[] hits = searchResponse.getHits().getHits();
 
+        if (hits.length == 0) {
+            return null;
+        }
+
         return new ObjectMapper().readValue(hits[0].getSourceAsString(), type);
     }
 
