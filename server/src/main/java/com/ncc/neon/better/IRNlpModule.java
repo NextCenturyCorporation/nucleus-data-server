@@ -72,6 +72,10 @@ public class IRNlpModule extends NlpModule {
         return this.performNlpOperation(this.params, irPost).cast(IRResponse.class);
     }
 
+    public Mono<IRResponse> runIrRequest(Map<String, Object> request) {
+        return this.performPostNlpOperation(request, new HttpEndpoint("/request", HttpMethod.POST, EndpointType.IR)).cast(IRResponse.class);
+    }
+
     public Mono<IRResponse> irie(String query) {
         this.params.put("query", query);
         return this.performNlpOperation(this.params, irEndpoint).cast(IRResponse.class);

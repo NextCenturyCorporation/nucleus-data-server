@@ -8,6 +8,7 @@ import com.ncc.neon.services.ModuleService;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -106,6 +107,14 @@ public abstract class NlpModule {
                 .flatMap(this::handleNlpOperationSuccess)
                 .doOnError(this::handleHttpError);
     }
+    protected Mono<Object> performPostNlpOperation(Map<String, Object> data, HttpEndpoint endpoint) {
+        return buildPostRequest(data, endpoint)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                // Use flatMap so the success handling runs before the next step in the sequence.
+                .flatMap(this::handleNlpOperationSuccess)
+                .doOnError(this::handleHttpError);
+    }
 
     protected Disposable handleNlpOperationError(WebClientResponseException err, String[] pendingFiles) {
         return reportErrorInPendingFiles(err.getResponseBodyAsString(), pendingFiles).subscribe();
@@ -155,6 +164,16 @@ public abstract class NlpModule {
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(data));
         }
+    }
+
+    protected WebClient.RequestHeadersSpec<?> buildPostRequest(Map<String, Object> data, HttpEndpoint endpoint) {
+        if (!endpoint.getMethod().equals(HttpMethod.POST)) {
+            throw new UnsupportedOperationException("Can only use a Map<String,Obejct> data with a POST request");
+        }
+        return client.post()
+                .uri(uriBuilder -> uriBuilder.pathSegment(endpoint.getPathSegment()).build())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(data));
     }
 
     private HttpHeaders convertMapToHeaders(Map<String, String> data) {

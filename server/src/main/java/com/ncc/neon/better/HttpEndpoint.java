@@ -31,4 +31,8 @@ public class HttpEndpoint {
     public EndpointType getType() {
         return this.type;
     }
+
+    public String toString(){
+        return "HttpEndpoint {pathSegment="+pathSegment+ " method="+method+" type="+type+"}";
+    }
 }

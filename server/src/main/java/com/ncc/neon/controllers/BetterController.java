@@ -147,6 +147,25 @@ public class BetterController {
                 });
     }
 
+    /**
+     * Pass a request object through to the IR wrapper
+     * @param body the request, wrapped in an outer object {request: (Request obj)}
+     *             Note that this is a Map - this is generic so that it can be passed through without
+     *             having to create a bunch of data classes
+     * @param module the module, should be 'ir-wrapper'
+     * @return the query result
+     */
+    @PostMapping(path="irrequest")
+    Mono<Object> irRequest(@RequestBody Map<String, Object> body, @RequestParam("module") String module) {
+        // synchronous service
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> {
+                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+                    // Use the method to send the data via POST
+                    return irModule.runIrRequest(body);
+                });
+    }
+
     @GetMapping(path="irsearch")
     Mono<Object> irsearch(@RequestParam("query") String query, @RequestParam("module") String module)  {
         // synchronous service

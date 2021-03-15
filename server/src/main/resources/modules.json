@@ -74,13 +74,13 @@
       {
         "type": "IR",
         "pathSegment": "/",
-        "method": "GET"
+        "method": "POST"
       },
       {
         "type": "STATUS",
         "pathSegment": "/status",
         "method": "GET"
-      }, 
+      },
       {
         "type": "DOCFILE",
         "pathSegment": "/docfile",
