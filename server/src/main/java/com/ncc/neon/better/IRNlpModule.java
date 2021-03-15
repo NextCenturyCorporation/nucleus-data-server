@@ -1,5 +1,6 @@
 package com.ncc.neon.better;
 
+import com.ncc.neon.models.EndpointType;
 import com.ncc.neon.models.NlpModuleModel;
 import com.ncc.neon.models.RelevanceJudgement;
 import com.ncc.neon.models.IRResponse;
@@ -7,6 +8,7 @@ import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.FileShareService;
 import com.ncc.neon.services.ModuleService;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import reactor.core.publisher.Mono;
 
@@ -60,6 +62,14 @@ public class IRNlpModule extends NlpModule {
     public Mono<IRResponse> searchIR(String query) {
         this.params.put("query", query);
         return this.performNlpOperation(this.params, irEndpoint).cast(IRResponse.class);
+    }
+
+    public Mono<IRResponse> searchIRPost(String query) {
+        this.params.put("query", query);
+        // TODO - How do you actually update the IR endpoint?
+        // Changing the HTTP method in the json file doesnt seem to work
+        HttpEndpoint irPost = new HttpEndpoint(irEndpoint.getPathSegment(), HttpMethod.POST, EndpointType.IR);
+        return this.performNlpOperation(this.params, irPost).cast(IRResponse.class);
     }
 
     public Mono<IRResponse> irie(String query) {

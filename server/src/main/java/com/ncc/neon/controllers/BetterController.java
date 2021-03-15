@@ -136,6 +136,17 @@ public class BetterController {
         return res;
     }
 
+    @PostMapping(path="irsearch")
+    Mono<Object> irsearch(@RequestBody Map<String, String> body, @RequestParam("module") String module) {
+        // synchronous service
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> {
+                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+                    // Use the method to send the data via POST
+                    return irModule.searchIRPost(body.get("query"));
+                });
+    }
+
     @GetMapping(path="irsearch")
     Mono<Object> irsearch(@RequestParam("query") String query, @RequestParam("module") String module)  {
         // synchronous service
