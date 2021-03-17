@@ -196,7 +196,7 @@ public class BetterController {
     }
 
     @GetMapping(path = "irentities")
-    IRDocEntities irDocEntities(@RequestParam("docId") String docId) throws IOException {
+    Map irDocEntities(@RequestParam("docId") String docId) throws IOException {
         return this.irDocEntityService.getByIdSync(docId);
     }
 
