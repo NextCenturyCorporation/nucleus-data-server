@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.Disposable;
@@ -201,7 +202,13 @@ public abstract class NlpModule {
 
         url += host + ":" + port;
 
-        return WebClient.create(url);
+        return WebClient.builder().exchangeStrategies(ExchangeStrategies.builder()
+                .codecs(configurer -> configurer
+                        .defaultCodecs()
+                        // Increase the buffer size to 32MB
+                        .maxInMemorySize(32 * 1024 * 1024))
+                    .build())
+                .baseUrl(url).build();
     }
 
     private Throwable handleHttpError(Throwable err) {
