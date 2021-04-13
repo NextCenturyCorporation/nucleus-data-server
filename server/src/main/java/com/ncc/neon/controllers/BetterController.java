@@ -40,17 +40,20 @@ public class BetterController {
     private ModuleService moduleService;
     private AsyncService asyncService;
     private IRDataService irDataService;
+    private IRDocEntityService irDocEntityService;
 
     BetterController(FileShareService fileShareService,
                      BetterFileService betterFileService,
                      ModuleService moduleService,
                      AsyncService asyncService,
-                     IRDataService irDataService) {
+                     IRDataService irDataService,
+                     IRDocEntityService irDocEntityService) {
         this.fileShareService = fileShareService;
         this.betterFileService = betterFileService;
         this.moduleService = moduleService;
         this.asyncService = asyncService;
         this.irDataService = irDataService;
+        this.irDocEntityService = irDocEntityService;
     }
 
     @GetMapping(path = "status")
@@ -133,8 +136,50 @@ public class BetterController {
         return res;
     }
 
+    @PostMapping(path="irsearch")
+    Mono<Object> irsearch(@RequestBody Map<String, String> body, @RequestParam("module") String module) {
+        // synchronous service
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> {
+                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+                    // Use the method to send the data via POST
+                    return irModule.searchIRPost(body.get("query"));
+                });
+    }
+
+    /**
+     * Pass a request object through to the IR wrapper
+     * @param body the request, wrapped in an outer object {request: (Request obj)}
+     *             Note that this is a Map - this is generic so that it can be passed through without
+     *             having to create a bunch of data classes
+     * @param module the module, should be 'ir-wrapper'
+     * @return the query result
+     */
+    @PostMapping(path="irrequest")
+    Mono<Object> irRequest(@RequestBody Map<String, Object> body, @RequestParam("module") String module) {
+        // synchronous service
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> {
+                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+                    // Use the method to send the data via POST
+                    return irModule.runIrRequest(body);
+                });
+    }
+
     @GetMapping(path="irsearch")
     Mono<Object> irsearch(@RequestParam("query") String query, @RequestParam("module") String module)  {
+        // synchronous service
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> {
+                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+                    return irModule.searchIR(query);
+                });
+        // static cast from nlpModule -> IR
+        // return Mono String[]
+    }
+
+    @GetMapping(path="irie")
+    Mono<Object> irie(@RequestParam("query") String query, @RequestParam("module") String module)  {
         // synchronous service
         return moduleService.buildNlpModuleClient(module)
                 .flatMap(nlpModule -> {
@@ -148,6 +193,11 @@ public class BetterController {
     @GetMapping(path = "getirdocs")
     List<Docfile> getirdocs(@RequestParam("docIds") String[] ids) throws IOException {
         return this.irDataService.getIRDocResponse("irdata", "irdata", ids);
+    }
+
+    @GetMapping(path = "irentities")
+    Map irDocEntities(@RequestParam("docId") String docId) throws IOException {
+        return this.irDocEntityService.getByIdSync(docId);
     }
 
     @GetMapping(path = "preprocess")
@@ -185,6 +235,18 @@ public class BetterController {
         }
         return asyncService.processExperiment(experimentConfig, experimentForm.isInfOnly());
     }
+
+//    @PostMapping(path = "irexperiment")
+//    ResponseEntity<Object> irexperiment(@RequestBody IRExperimentForm experimentForm) {
+//
+//        String module = "ir_wrapper";
+//        return moduleService.buildNlpModuleClient(module)
+//                .flatMap(nlpModule -> {
+//                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+//                    return irModule.start(experimentForm);
+//                });
+//        return ResponseEntity.ok().build();
+//    }
 
     @DeleteMapping(path = "eval/cancel")
     Mono<Object> cancelEval(@RequestParam("module") String module, @RequestParam("run_id") String runId) {

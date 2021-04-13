@@ -96,21 +96,36 @@ public abstract class ElasticSearchService<T> {
         SearchRequest searchRequest = new SearchRequest(index);
 
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-        sourceBuilder.query(QueryBuilders.termQuery("uuid", docid));
+        sourceBuilder.query(QueryBuilders.termQuery("id", docid));
         sourceBuilder.size(100);
         searchRequest.source(sourceBuilder);
 
         SearchResponse searchResponse = elasticSearchClient.search(searchRequest, RequestOptions.DEFAULT);
         SearchHit[] hits = searchResponse.getHits().getHits();
 
+        if (hits.length == 0) {
+            return null;
+        }
+
         return new ObjectMapper().readValue(hits[0].getSourceAsString(), type);
     }
 
     public T getByIdSync(String id) throws IOException {
-        GetRequest gr = new GetRequest(index, dataType, id);
-        GetResponse response = elasticSearchClient.get(gr, RequestOptions.DEFAULT);
+        SearchRequest searchRequest = new SearchRequest(index);
 
-        return new ObjectMapper().readValue(response.getSourceAsString(), type);
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(QueryBuilders.termQuery("docid", id));
+        sourceBuilder.size(100);
+        searchRequest.source(sourceBuilder);
+
+        SearchResponse searchResponse = elasticSearchClient.search(searchRequest, RequestOptions.DEFAULT);
+        SearchHit[] hits = searchResponse.getHits().getHits();
+
+        if (hits.length == 0) {
+            return null;
+        }
+
+        return new ObjectMapper().readValue(hits[0].getSourceAsString(), type);
     }
 
     public Mono<Long> count(Map<String, Object> fields) {

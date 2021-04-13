@@ -1,5 +1,6 @@
 package com.ncc.neon.better;
 
+import com.ncc.neon.models.EndpointType;
 import com.ncc.neon.models.NlpModuleModel;
 import com.ncc.neon.models.RelevanceJudgement;
 import com.ncc.neon.models.IRResponse;
@@ -7,6 +8,7 @@ import com.ncc.neon.services.BetterFileService;
 import com.ncc.neon.services.FileShareService;
 import com.ncc.neon.services.ModuleService;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import reactor.core.publisher.Mono;
 
@@ -17,8 +19,11 @@ import java.util.Map;
 public class IRNlpModule extends NlpModule {
 
     private HttpEndpoint irEndpoint;
+    private HttpEndpoint irieEndpoint;
     private HttpEndpoint docfileEndpoint;
     private HttpEndpoint retrofitterEndpoint;
+    private HttpEndpoint startEndpoint;
+    private HttpEndpoint rankerEndpoint;
     private HashMap<String, String> params;
 
     public IRNlpModule(NlpModuleModel moduleModel, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService, Environment env) {
@@ -38,6 +43,12 @@ public class IRNlpModule extends NlpModule {
                     docfileEndpoint = endpoint;
                 case RETROFITTER:
                     retrofitterEndpoint = endpoint;
+                case START:
+                    startEndpoint = endpoint;
+                case RANKER:
+                    rankerEndpoint = endpoint;
+                case IRIE:
+                    irieEndpoint = endpoint;
             }
         }
     }
@@ -49,6 +60,23 @@ public class IRNlpModule extends NlpModule {
     }
 
     public Mono<IRResponse> searchIR(String query) {
+        this.params.put("query", query);
+        return this.performNlpOperation(this.params, irEndpoint).cast(IRResponse.class);
+    }
+
+    public Mono<IRResponse> searchIRPost(String query) {
+        this.params.put("query", query);
+        // TODO - How do you actually update the IR endpoint?
+        // Changing the HTTP method in the json file doesnt seem to work
+        HttpEndpoint irPost = new HttpEndpoint(irEndpoint.getPathSegment(), HttpMethod.POST, EndpointType.IR);
+        return this.performNlpOperation(this.params, irPost).cast(IRResponse.class);
+    }
+
+    public Mono<IRResponse> runIrRequest(Map<String, Object> request) {
+        return this.performPostNlpOperation(request, new HttpEndpoint("/request", HttpMethod.POST, EndpointType.IR)).cast(IRResponse.class);
+    }
+
+    public Mono<IRResponse> irie(String query) {
         this.params.put("query", query);
         return this.performNlpOperation(this.params, irEndpoint).cast(IRResponse.class);
     }
@@ -68,6 +96,15 @@ public class IRNlpModule extends NlpModule {
     public Mono<IRResponse> retrofit(ArrayList<RelevanceJudgement> rels) {
         this.params.put("rels", rels.toString());
         return this.performNlpOperation(this.params, retrofitterEndpoint).cast(IRResponse.class);
+    }
+
+    public Mono<Object> start(Object eval){
+//        this.params.put("mode", eval.mode);
+        return this.performNlpOperation(this.params, startEndpoint);
+    }
+
+    public Mono<Object> ranker(){
+        return this.performNlpOperation(this.params, rankerEndpoint);
     }
 
 }

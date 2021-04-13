@@ -9,5 +9,6 @@ import java.util.List;
 public class IRResponse {
     @JsonProperty("uuids")
     private List<String> uuids;
-
+    @JsonProperty("scores")
+    private List<String> scores;
 }

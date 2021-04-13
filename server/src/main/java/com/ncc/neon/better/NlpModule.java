@@ -8,10 +8,12 @@ import com.ncc.neon.services.ModuleService;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.Disposable;
@@ -106,6 +108,14 @@ public abstract class NlpModule {
                 .flatMap(this::handleNlpOperationSuccess)
                 .doOnError(this::handleHttpError);
     }
+    protected Mono<Object> performPostNlpOperation(Map<String, Object> data, HttpEndpoint endpoint) {
+        return buildPostRequest(data, endpoint)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                // Use flatMap so the success handling runs before the next step in the sequence.
+                .flatMap(this::handleNlpOperationSuccess)
+                .doOnError(this::handleHttpError);
+    }
 
     protected Disposable handleNlpOperationError(WebClientResponseException err, String[] pendingFiles) {
         return reportErrorInPendingFiles(err.getResponseBodyAsString(), pendingFiles).subscribe();
@@ -157,6 +167,16 @@ public abstract class NlpModule {
         }
     }
 
+    protected WebClient.RequestHeadersSpec<?> buildPostRequest(Map<String, Object> data, HttpEndpoint endpoint) {
+        if (!endpoint.getMethod().equals(HttpMethod.POST)) {
+            throw new UnsupportedOperationException("Can only use a Map<String,Obejct> data with a POST request");
+        }
+        return client.post()
+                .uri(uriBuilder -> uriBuilder.pathSegment(endpoint.getPathSegment()).build())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(data));
+    }
+
     private HttpHeaders convertMapToHeaders(Map<String, String> data) {
         // Build Http Headers for query params.
         HttpHeaders params = new HttpHeaders();
@@ -182,7 +202,13 @@ public abstract class NlpModule {
 
         url += host + ":" + port;
 
-        return WebClient.create(url);
+        return WebClient.builder().exchangeStrategies(ExchangeStrategies.builder()
+                .codecs(configurer -> configurer
+                        .defaultCodecs()
+                        // Increase the buffer size to 32MB
+                        .maxInMemorySize(32 * 1024 * 1024))
+                    .build())
+                .baseUrl(url).build();
     }
 
     private Throwable handleHttpError(Throwable err) {

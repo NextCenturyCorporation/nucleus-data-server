@@ -74,13 +74,13 @@
       {
         "type": "IR",
         "pathSegment": "/",
-        "method": "GET"
+        "method": "POST"
       },
       {
         "type": "STATUS",
         "pathSegment": "/status",
         "method": "GET"
-      }, 
+      },
       {
         "type": "DOCFILE",
         "pathSegment": "/docfile",
@@ -90,6 +90,21 @@
         "type": "RETROFITTER",
         "pathSegment": "/retrofitter",
         "method": "POST"
+      },
+      {
+        "type": "START",
+        "pathSegment": "/start",
+        "method": "POST"
+      },
+      {
+        "type": "RANKER",
+        "pathSegment": "/ranker",
+        "method": "GET"
+      },
+      {
+        "type": "IRIE",
+        "pathSegment": "/irie",
+        "method": "GET"
       }
     ]
   },
