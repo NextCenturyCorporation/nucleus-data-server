@@ -178,6 +178,12 @@ public class BetterController {
         // return Mono String[]
     }
 
+    /**
+     * Given a string query, it calls the ir-wrapper and convert the ranked docid into bp json format
+     * @param query query object
+     * @param module the module, should be 'ir-wrapper'
+     * @return the list of ranked ids for
+     */
     @GetMapping(path="irie")
     Mono<Object> irie(@RequestParam("query") String query, @RequestParam("module") String module)  {
         // synchronous service
@@ -190,11 +196,21 @@ public class BetterController {
         // return Mono String[]
     }
 
+    /**
+     * Return a list of ir doc ids
+     * @param docIds the ir doc ids
+     * @return doc info for the corresponding doc ids
+     */
     @GetMapping(path = "getirdocs")
     List<Docfile> getirdocs(@RequestParam("docIds") String[] ids) throws IOException {
         return this.irDataService.getIRDocResponse("irdata", "irdata", ids);
     }
 
+    /**
+     * Returns the entities for a given docid
+     * @param docId
+     * @return a map of the ir entities
+     */
     @GetMapping(path = "irentities")
     Map irDocEntities(@RequestParam("docId") String docId) throws IOException {
         return this.irDocEntityService.getByIdSync(docId);
@@ -257,6 +273,13 @@ public class BetterController {
                 });
     }
 
+    /**
+     * Deprecated. 2020 attempt to hook HITL UI with IR
+     * Pass a list of Relevance Judgement object through to the IR wrapper
+     * @param RelevanceJudgementList the relevance Judgement List object which is a list of docids and boolean}
+     * @param module the module, should be 'ir-wrapper'
+     * @return the IR Response object
+     */
     @PostMapping(path = "retrofitter" )
     Mono<IRResponse> retroactive(@RequestBody RelevanceJudgementList rels) throws IOException {
         String module = "ir_wrapper";
