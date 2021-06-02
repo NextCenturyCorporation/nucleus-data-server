@@ -76,12 +76,18 @@ public class IRNlpModule extends NlpModule {
         return this.performPostNlpOperation(request, new HttpEndpoint("/request", HttpMethod.POST, EndpointType.IR)).cast(IRResponse.class);
     }
 
+    /**
+     * Attempt to support starting the whole IR-IE process from the frontend
+     */
     public Mono<IRResponse> irie(String query) {
         this.params.put("query", query);
         return this.performNlpOperation(this.params, irEndpoint).cast(IRResponse.class);
     }
 
     //build a query for the docfile flask endpoint.
+    /**
+     * Deprecated. 2020 attempt to hook HITL UI with IR
+     */
     public Mono<String> getDocfile() {
         HashMap<String, String> params = new HashMap<>();
         return this.performNlpOperation(this.params, docfileEndpoint).cast(String.class);
@@ -93,6 +99,9 @@ public class IRNlpModule extends NlpModule {
         return null;
     }
 
+    /**
+     * Deprecated. 2020 attempt to hook HITL UI with IR
+     */
     public Mono<IRResponse> retrofit(ArrayList<RelevanceJudgement> rels) {
         this.params.put("rels", rels.toString());
         return this.performNlpOperation(this.params, retrofitterEndpoint).cast(IRResponse.class);
@@ -103,6 +112,9 @@ public class IRNlpModule extends NlpModule {
         return this.performNlpOperation(this.params, startEndpoint);
     }
 
+    /**
+     * Deprecated. 2020 attempt to hook HITL UI with IR
+     */
     public Mono<Object> ranker(){
         return this.performNlpOperation(this.params, rankerEndpoint);
     }
