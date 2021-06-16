@@ -24,6 +24,8 @@ public class IRNlpModule extends NlpModule {
     private HttpEndpoint retrofitterEndpoint;
     private HttpEndpoint startEndpoint;
     private HttpEndpoint rankerEndpoint;
+    private HttpEndpoint hitlRequestEndpoint;
+    private HttpEndpoint hitlEndpoint;
     private HashMap<String, String> params;
 
     public IRNlpModule(NlpModuleModel moduleModel, FileShareService fileShareService, BetterFileService betterFileService, ModuleService moduleService, Environment env) {
@@ -49,6 +51,10 @@ public class IRNlpModule extends NlpModule {
                     rankerEndpoint = endpoint;
                 case IRIE:
                     irieEndpoint = endpoint;
+                case HITLREQUEST:
+                    hitlRequestEndpoint = endpoint;
+                case HITL:
+                    hitlEndpoint = endpoint;
             }
         }
     }
@@ -74,6 +80,14 @@ public class IRNlpModule extends NlpModule {
 
     public Mono<IRResponse> runIrRequest(Map<String, Object> request) {
         return this.performPostNlpOperation(request, new HttpEndpoint("/request", HttpMethod.POST, EndpointType.IR)).cast(IRResponse.class);
+    }
+
+    public Mono<IRResponse> runHITLRequest(Map<String, Object> request) {
+        return this.performPostNlpOperation(request, new HttpEndpoint("/hitlRequest", HttpMethod.POST, EndpointType.IR)).cast(IRResponse.class);
+    }
+
+    public Mono<IRResponse> hitl(Map<String, Object> request) {
+        return this.performPostNlpOperation(request, new HttpEndpoint("/hitl", HttpMethod.POST, EndpointType.IR)).cast(IRResponse.class);
     }
 
     /**

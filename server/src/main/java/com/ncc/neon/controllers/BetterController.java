@@ -166,6 +166,42 @@ public class BetterController {
                 });
     }
 
+    /**
+     * Pass a request object through to the IR wrapper for HITL UI
+     * @param body the request, wrapped in an outer object {request: (Request obj)}
+     *             This is currently empty but fields may be added in the future
+     * @param module the module, should be 'ir-wrapper'
+     * @return the query result
+     */
+    @PostMapping(path="hitlrequest")
+    Mono<Object> hitlRequest(@RequestBody Map<String, Object> body, @RequestParam("module") String module) {
+        // synchronous service
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> {
+                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+                    // Use the method to send the data via POST
+                    return irModule.runHITLRequest(body);
+                });
+    }
+
+    /**
+     * Pass a request object through to the IR wrapper
+     * @param body the request, wrapped in an outer object {request: (relevantJudgementList obj)}
+     *             The type is currently a generic map but it may be changed to RelevanceJudgementList object
+     * @param module the module, should be 'ir-wrapper'
+     * @return the query result
+     */
+    @PostMapping(path="hitl")
+    Mono<Object> hitl(@RequestBody Map<String, Object> body, @RequestParam("module") String module) {
+        // synchronous service
+        return moduleService.buildNlpModuleClient(module)
+                .flatMap(nlpModule -> {
+                    IRNlpModule irModule = (IRNlpModule) nlpModule;
+                    // Use the method to send the data via POST
+                    return irModule.runHITLRequest(body);
+                });
+    }
+
     @GetMapping(path="irsearch")
     Mono<Object> irsearch(@RequestParam("query") String query, @RequestParam("module") String module)  {
         // synchronous service

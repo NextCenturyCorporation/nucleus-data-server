@@ -105,6 +105,16 @@
         "type": "IRIE",
         "pathSegment": "/irie",
         "method": "GET"
+      },
+      {
+        "type": "HITLREQUEST",
+        "pathSegment": "/hitlRequest",
+        "method": "POST"
+      },
+      {
+        "type": "HITL",
+        "pathSegment": "/hitl",
+        "method": "POST"
       }
     ]
   },
